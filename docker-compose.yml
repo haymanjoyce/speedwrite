@@ -1,0 +1,68 @@
+services:
+
+  # Build frontend assets and copy to shared volume, then exit
+  frontend:
+    build: ./frontend
+    container_name: logbooklm-frontend
+    entrypoint: ["sh", "-c", "cp -r /dist/. /output/"]
+    volumes:
+      - frontend_dist:/output
+    restart: "no"
+
+  app:
+    build: ./backend
+    container_name: logbooklm-app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /var/logbooklm:/var/logbooklm
+    networks:
+      - internal
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: logbooklm-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/logbooklm.com.conf:/etc/nginx/conf.d/logbooklm.com.conf:ro
+      - ./nginx/mcp.logbooklm.com.conf:/etc/nginx/conf.d/mcp.logbooklm.com.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+    networks:
+      - internal
+    depends_on:
+      - app
+      - mcp
+      - frontend
+
+  mcp:
+    build: ./mcp
+    container_name: logbooklm-mcp
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - REPO_ROOT=/opt/logbooklm
+    volumes:
+      - /opt/logbooklm:/opt/logbooklm:ro
+      - /var/logbooklm:/var/logbooklm
+    networks:
+      - internal
+    expose:
+      - "8765"
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  frontend_dist:

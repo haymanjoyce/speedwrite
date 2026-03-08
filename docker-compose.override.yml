@@ -1,0 +1,37 @@
+# docker-compose.override.yml — local development overrides
+#
+# Docker Compose automatically merges this with docker-compose.yml when you
+# run `docker compose up` locally. Do NOT use this file in production.
+#
+# Production deploys use only docker-compose.yml (or explicit -f flags).
+
+services:
+
+  app:
+    # Expose the backend API directly on the host for local testing
+    ports:
+      - "8000:8000"
+    # Use a local named volume instead of the host path /var/logbooklm
+    volumes:
+      - dev_logbooklm_data:/var/logbooklm
+
+  nginx:
+    # Shadow the SSL-only prod configs with HTTP-only local equivalents.
+    # Docker applies mounts in order; later mounts to the same container path
+    # win, so these override the prod configs from docker-compose.yml.
+    volumes:
+      - ./nginx/local_app.conf:/etc/nginx/conf.d/logbooklm.com.conf:ro
+      - ./nginx/local_mcp.conf:/etc/nginx/conf.d/mcp.logbooklm.com.conf:ro
+
+  mcp:
+    # Mount the local repo as REPO_ROOT instead of /opt/logbooklm (which
+    # won't exist locally). Same shadow-by-destination-path trick as nginx.
+    volumes:
+      - .:/opt/logbooklm:ro
+      - dev_logbooklm_data:/var/logbooklm
+    # Expose the MCP SSE port directly on the host for local Claude Code use
+    ports:
+      - "8765:8765"
+
+volumes:
+  dev_logbooklm_data:
