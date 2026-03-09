@@ -1,6 +1,6 @@
 """
 LogbookLM MCP Server (server-side)
-Scoped to /opt/logbooklm. Requires Bearer token auth via MCP_API_KEY env var.
+Scoped to /opt/logbooklm. Auth: OAuth 2.0 via FastMCP InMemoryOAuthProvider (required by claude.ai).
 Port: 8765
 """
 
@@ -9,13 +9,22 @@ import subprocess
 from pathlib import Path
 
 from fastmcp import FastMCP
-from starlette.requests import Request
-from starlette.responses import JSONResponse
+from mcp.server.auth.settings import ClientRegistrationOptions
+
+from oauth_provider import PersistentOAuthProvider
 
 REPO_ROOT = Path(os.getenv("REPO_ROOT", "/opt/logbooklm"))
-MCP_API_KEY = os.getenv("MCP_API_KEY", "")
+BASE_URL = os.getenv("MCP_BASE_URL", "http://localhost:8765")
+OAUTH_STATE_FILE = Path(os.getenv("OAUTH_STATE_FILE", "/var/logbooklm/oauth_state.json"))
 
-mcp = FastMCP("logbooklm-server")
+mcp = FastMCP(
+    "logbooklm-server",
+    auth=PersistentOAuthProvider(
+        state_file=OAUTH_STATE_FILE,
+        base_url=BASE_URL,
+        client_registration_options=ClientRegistrationOptions(enabled=True),
+    ),
+)
 
 
 def _check_path(path: Path) -> Path:
@@ -77,4 +86,4 @@ def list_files(relative_path: str = ".") -> list[str]:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="sse", host="0.0.0.0", port=8765)
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8765)

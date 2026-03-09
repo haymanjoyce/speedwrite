@@ -42,15 +42,15 @@ docker compose up --build
 
 - Backend API: http://localhost:8000
 - Health check: http://localhost:8000/health
-- MCP server: http://localhost:8765 (requires Bearer token)
+- MCP server: http://localhost:8765/mcp (OAuth protected)
 
 ### Running the local MCP server (no Docker)
 
 ```bash
 cd mcp
 pip install -r requirements.txt
-MCP_API_KEY=your-key REPO_ROOT=.. python local_server.py
-# Starts on port 8766
+python local_server.py
+# Starts on port 8766, OAuth state saved to mcp/.oauth_state.json
 ```
 
 ## Deploying to Production
@@ -65,25 +65,54 @@ bash deploy.sh
 
 ## MCP Servers
 
-### server.py (port 8765) — server-side, Docker
-- Scoped to `/opt/logbooklm` (the production repo clone)
-- Auth: `Authorization: Bearer <MCP_API_KEY>` header required
-- Transport: SSE
+### Transport
+Both servers use **Streamable HTTP** transport (not SSE). Claude.ai requires this — SSE returns 405 on POST requests.
+
+### Authentication
+Both servers use **OAuth 2.0** via a custom `PersistentOAuthProvider` (see `mcp/oauth_provider.py`). Claude.ai web requires OAuth — it does not support static Bearer tokens for remote MCP connections.
+
+Key lessons learned:
+- `InMemoryOAuthProvider` alone fails after server restarts — tokens are lost
+- `PersistentOAuthProvider` subclasses it and persists clients/tokens to a JSON file
+- Auth codes are intentionally NOT persisted (short-lived, single-use)
+- The OAuth discovery endpoint must advertise the public URL (not localhost) — set via `MCP_BASE_URL` env var
+- Dynamic Client Registration (DCR) must be enabled — claude.ai registers itself as a client
 
 ### local_server.py (port 8766) — local development
-- Scoped to the repo root (auto-detected from `__file__`)
-- Same Bearer token auth via `MCP_API_KEY` env var
-- Transport: SSE
+- Scoped to repo root (auto-detected from `__file__`)
+- OAuth state persisted to `mcp/.oauth_state.json`
+- Base URL defaults to `https://local.logbooklm.com`
+- Exposed via Cloudflare Tunnel (`local-mcp` tunnel) at `https://local.logbooklm.com`
+- Start: `python mcp/local_server.py`
+- Also requires Cloudflare tunnel: `cloudflared tunnel run local-mcp`
+
+### server.py (port 8765) — server-side, Docker
+- Scoped to `/opt/logbooklm`
+- OAuth state persisted to `/var/logbooklm/oauth_state.json` (on Docker volume, survives restarts)
+- Base URL from `MCP_BASE_URL` env var (set to `https://mcp.logbooklm.com` in production)
+- Exposed at `mcp.logbooklm.com` via Nginx reverse proxy
+
+### oauth_provider.py
+Custom persistent OAuth provider. Do not modify without understanding the full OAuth flow. Key behaviours:
+- Loads state from JSON file on startup
+- Saves after every mutation (register, token exchange, revoke)
+- Auth codes not persisted (intentional)
+
+### Connecting to claude.ai
+1. Go to Settings → Integrations → Add custom connector
+2. URL: `https://local.logbooklm.com/mcp` (note: /mcp not /sse)
+3. No auth headers needed — OAuth flow completes automatically in browser
+4. Set all tools to "Always allow" in connector settings
 
 ### Available Tools
 
-| Tool                | Description                              |
-|---------------------|------------------------------------------|
-| `get_recent_commits`| Last N git commits (default 10)          |
-| `get_current_diff`  | `git diff HEAD` output                   |
-| `read_session_log`  | Contents of `mcp/.session_log.md`        |
-| `read_file`         | Read any file within the repo root       |
-| `list_files`        | List files in a directory (recursive)    |
+| Tool                 | Description                           |
+|----------------------|---------------------------------------|
+| `get_recent_commits` | Last N git commits (default 10)       |
+| `get_current_diff`   | `git diff HEAD` output                |
+| `read_session_log`   | Contents of `mcp/.session_log.md`     |
+| `read_file`          | Read any file within the repo root    |
+| `list_files`         | List files in a directory             |
 
 ## Session Log Instructions
 
@@ -128,8 +157,9 @@ docker compose ps
 
 ## Environment Variables
 
-| Variable      | Required | Description                        |
-|---------------|----------|------------------------------------|
-| `MCP_API_KEY` | Yes      | Bearer token for MCP server auth   |
+| Variable           | Required | Description                                              |
+|--------------------|----------|----------------------------------------------------------|
+| `MCP_BASE_URL`     | Yes      | Public URL advertised in OAuth discovery metadata        |
+| `OAUTH_STATE_FILE` | No       | Override path for OAuth state JSON (server.py only)      |
 
 Create a `.env` file in the repo root with these values before starting Docker.

@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+node_modules/
+dist/
+.venv/
+# OAuth state files contain client secrets — never commit
+mcp/.oauth_state.json

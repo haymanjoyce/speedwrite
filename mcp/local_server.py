@@ -1,7 +1,7 @@
 """
 LogbookLM MCP Local Server
 Same tools as server.py but scoped to the local repo root directory.
-Port: 8766
+Port: 8766. Auth: OAuth 2.0 via FastMCP InMemoryOAuthProvider (required by claude.ai).
 """
 
 import os
@@ -9,11 +9,22 @@ import subprocess
 from pathlib import Path
 
 from fastmcp import FastMCP
+from mcp.server.auth.settings import ClientRegistrationOptions
+
+from oauth_provider import PersistentOAuthProvider
 
 REPO_ROOT = Path(os.getenv("REPO_ROOT", Path(__file__).resolve().parent.parent))
-MCP_API_KEY = os.getenv("MCP_API_KEY", "")
+BASE_URL = os.getenv("MCP_BASE_URL", "https://local.logbooklm.com")
+OAUTH_STATE_FILE = Path(__file__).resolve().parent / ".oauth_state.json"
 
-mcp = FastMCP("logbooklm-local")
+mcp = FastMCP(
+    "logbooklm-local",
+    auth=PersistentOAuthProvider(
+        state_file=OAUTH_STATE_FILE,
+        base_url=BASE_URL,
+        client_registration_options=ClientRegistrationOptions(enabled=True),
+    ),
+)
 
 
 def _check_path(path: Path) -> Path:
@@ -75,4 +86,4 @@ def list_files(relative_path: str = ".") -> list[str]:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="sse", host="0.0.0.0", port=8766)
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8766)
