@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_URL="https://github.com/haymanjoyce/logbooklm"
 REPO_DIR="/opt/logbooklm"
-DOMAINS=("logbooklm.com" "mcp.logbooklm.com")
+DOMAINS=("logbooklm.com")
 ADMIN_USER="richard"
 EMAIL="admin@logbooklm.com"   # update before running
 
@@ -63,7 +63,7 @@ else
 fi
 
 echo "==> [6/9] Creating data directories"
-mkdir -p /var/logbooklm/projects /var/logbooklm/index_store
+mkdir -p /var/logbooklm/projects
 chown -R "${ADMIN_USER}:${ADMIN_USER}" /var/logbooklm
 
 echo "==> [7/9] Obtaining SSL certificates"

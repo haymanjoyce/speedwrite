@@ -21,17 +21,6 @@ services:
     # win, so these override the prod configs from docker-compose.yml.
     volumes:
       - ./nginx/local_app.conf:/etc/nginx/conf.d/logbooklm.com.conf:ro
-      - ./nginx/local_mcp.conf:/etc/nginx/conf.d/mcp.logbooklm.com.conf:ro
-
-  mcp:
-    # Mount the local repo as REPO_ROOT instead of /opt/logbooklm (which
-    # won't exist locally). Same shadow-by-destination-path trick as nginx.
-    volumes:
-      - .:/opt/logbooklm:ro
-      - dev_logbooklm_data:/var/logbooklm
-    # Expose the MCP SSE port directly on the host for local Claude Code use
-    ports:
-      - "8765:8765"
 
 volumes:
   dev_logbooklm_data:
