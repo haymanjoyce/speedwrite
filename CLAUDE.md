@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-LogbookLM is an AI-powered engineering logbook. It captures git activity, diffs, and session logs to give an LLM full context of ongoing development work.
+LogbookLM is an AI-assisted document authoring platform. The core unit is a document — each document has its own evidence base, AI chat, and markdown content.
 
 ## Repository Structure
 

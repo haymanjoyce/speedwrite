@@ -5,7 +5,12 @@ REPO_URL="https://github.com/haymanjoyce/logbooklm"
 REPO_DIR="/opt/logbooklm"
 DOMAINS=("logbooklm.com")
 ADMIN_USER="richard"
-EMAIL="admin@logbooklm.com"   # update before running
+EMAIL=""   # Required: set your email before running (used for Let's Encrypt notifications)
+
+if [ -z "${EMAIL}" ]; then
+    echo "ERROR: Set the EMAIL variable before running bootstrap.sh"
+    exit 1
+fi
 
 echo "==> [1/9] Updating and hardening Ubuntu"
 apt-get update -y && apt-get upgrade -y
@@ -69,7 +74,7 @@ chown -R "${ADMIN_USER}:${ADMIN_USER}" /var/logbooklm
 echo "==> [7/9] Obtaining SSL certificates"
 for domain in "${DOMAINS[@]}"; do
     if [ ! -d "/etc/letsencrypt/live/${domain}" ]; then
-        certbot certonly --nginx --non-interactive --agree-tos \
+        certbot certonly --standalone --non-interactive --agree-tos \
             --email "${EMAIL}" -d "${domain}"
     else
         echo "Cert for ${domain} already exists."
