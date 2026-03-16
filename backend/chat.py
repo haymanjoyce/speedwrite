@@ -34,8 +34,7 @@ Document content:
 {document_content}
 ---
 
-{context_block}
-Respond conversationally and helpfully.\
+{evidence_block}{context_block}Respond conversationally and helpfully.\
 """
 
 _AGENT_SYSTEM = """\
@@ -47,8 +46,7 @@ Document content:
 {document_content}
 ---
 
-{context_block}
-If the user asks you to make changes to the document, respond with your
+{evidence_block}{context_block}If the user asks you to make changes to the document, respond with your
 proposed full revised document wrapped in XML tags like this:
 <proposed_document>
 ...full markdown content of the revised document...
@@ -58,6 +56,19 @@ You may also include a brief explanation before or after the tags.
 If the user is just asking a question, respond conversationally without
 proposing document changes.\
 """
+
+
+def _build_evidence_block(doc: dict) -> str:
+    items = doc.get("evidence", [])
+    if not items:
+        return ""
+    parts = ["Evidence base:"]
+    for item in items:
+        content = item.get("content", "")
+        if len(content) > 3000:
+            content = content[:3000] + "\n[truncated]"
+        parts.append(f"--- Source: {item['title']} ({item['type']}) ---\n{content}")
+    return "\n".join(parts) + "\n\n"
 
 
 @router.post("/{doc_id}/chat", response_model=ChatResponse)
@@ -77,9 +88,12 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
             "---\n"
         )
 
+    evidence_block = _build_evidence_block(doc)
+
     template = _AGENT_SYSTEM if data.mode == "agent" else _CHAT_SYSTEM
     system_prompt = template.format(
         document_content=doc.get("content", ""),
+        evidence_block=evidence_block,
         context_block=context_block,
     )
 

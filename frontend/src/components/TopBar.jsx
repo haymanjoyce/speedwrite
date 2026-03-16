@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-export default function TopBar({ user, onLogout, docTitle, isChatOpen, onToggleChat }) {
+export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel, isChatOpen, onToggleChat }) {
   return (
     <div className="h-12 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4 flex-shrink-0">
       <div className="flex items-center text-sm">
@@ -10,7 +10,19 @@ export default function TopBar({ user, onLogout, docTitle, isChatOpen, onToggleC
               LogbookLM
             </Link>
             <span className="text-gray-600 mx-2">/</span>
-            <span className="text-white truncate max-w-xs">{docTitle}</span>
+            {docId && subPageLabel ? (
+              <Link to={`/document/${docId}`} className="text-gray-400 hover:text-white truncate max-w-xs transition-colors">
+                {docTitle}
+              </Link>
+            ) : (
+              <span className="text-white truncate max-w-xs">{docTitle}</span>
+            )}
+            {subPageLabel && (
+              <>
+                <span className="text-gray-600 mx-2">/</span>
+                <span className="text-white">{subPageLabel}</span>
+              </>
+            )}
           </>
         ) : (
           <span className="text-white font-semibold tracking-tight">LogbookLM</span>

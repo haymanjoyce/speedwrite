@@ -49,4 +49,36 @@ export const api = {
   // Chat
   chatMessage: (docId, message, mode, context) =>
     request('POST', `/documents/${docId}/chat`, { message, mode, context }),
+
+  // Evidence
+  listEvidence: (docId) => request('GET', `/documents/${docId}/evidence`),
+  getEvidence: (docId, evidenceId) => request('GET', `/documents/${docId}/evidence/${evidenceId}`),
+  addEvidenceFile: async (docId, file) => {
+    const form = new FormData()
+    form.append('file', file)
+    const headers = {}
+    const token = localStorage.getItem('token')
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${BASE_URL}/documents/${docId}/evidence/file`, {
+      method: 'POST',
+      headers,
+      body: form,
+    })
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+      return
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Upload failed' }))
+      throw new Error(err.detail || 'Upload failed')
+    }
+    return res.json()
+  },
+  addEvidenceUrl: (docId, url) =>
+    request('POST', `/documents/${docId}/evidence/url`, { url }),
+  addEvidenceText: (docId, title, content) =>
+    request('POST', `/documents/${docId}/evidence/text`, { title, content }),
+  deleteEvidence: (docId, evidenceId) =>
+    request('DELETE', `/documents/${docId}/evidence/${evidenceId}`),
 }

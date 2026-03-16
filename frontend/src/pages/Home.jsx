@@ -99,6 +99,12 @@ export default function Home() {
                   Open →
                 </button>
                 <button
+                  onClick={() => navigate(`/document/${selectedDoc.id}/evidence`)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded font-medium text-sm transition-colors"
+                >
+                  Evidence
+                </button>
+                <button
                   onClick={handleDelete}
                   className="text-red-400 hover:text-red-600 text-sm transition-colors"
                 >
