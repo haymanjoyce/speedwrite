@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-export default function TopBar({ user, onLogout, docTitle }) {
+export default function TopBar({ user, onLogout, docTitle, isChatOpen, onToggleChat }) {
   return (
     <div className="h-12 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4 flex-shrink-0">
       <div className="flex items-center text-sm">
@@ -16,7 +16,20 @@ export default function TopBar({ user, onLogout, docTitle }) {
           <span className="text-white font-semibold tracking-tight">LogbookLM</span>
         )}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {onToggleChat && (
+          <button
+            onClick={onToggleChat}
+            className={`text-sm px-3 py-1 rounded transition-colors ${
+              isChatOpen
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white border border-gray-600 hover:border-gray-400'
+            }`}
+          >
+            Chat
+          </button>
+        )}
+        <span className="text-gray-600">|</span>
         <span className="text-gray-400 text-sm">{user?.email}</span>
         <button
           onClick={onLogout}
@@ -28,4 +41,3 @@ export default function TopBar({ user, onLogout, docTitle }) {
     </div>
   )
 }
-

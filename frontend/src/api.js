@@ -45,4 +45,8 @@ export const api = {
   createDocument: (data) => request('POST', '/documents/', data),
   updateDocument: (id, data) => request('PUT', `/documents/${id}`, data),
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
+
+  // Chat
+  chatMessage: (docId, message, mode, context) =>
+    request('POST', `/documents/${docId}/chat`, { message, mode, context }),
 }

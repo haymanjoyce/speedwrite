@@ -42,3 +42,4 @@ class Document(BaseModel):
     evidence: list = []
     audit_log: list = []
     shared_with: list = []
+    chat_history: list = []
