@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 
-export default function Editor({ document, onUpdate, onSelectText }) {
+export default function Editor({ document, onUpdate, onSelectText, contentOverride }) {
   const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState(null)
@@ -14,6 +14,10 @@ export default function Editor({ document, onUpdate, onSelectText }) {
     setLocalSelection('')
     clearTimeout(saveTimer.current)
   }, [document?.id])
+
+  useEffect(() => {
+    if (contentOverride != null) setContent(contentOverride)
+  }, [contentOverride])
 
   const scheduleSave = (docId, newContent) => {
     clearTimeout(saveTimer.current)

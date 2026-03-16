@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 
-export default function ChatPanel({ docId, document, onUpdateDocument, onClose, contextText, onClearContext }) {
+export default function ChatPanel({ docId, document, onUpdateDocument, onContentUpdate, onClose, contextText, onClearContext }) {
   const [mode, setMode] = useState('chat')
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -84,6 +84,7 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onClose, 
     try {
       const updated = await api.updateDocument(docId, { content: proposedContent })
       onUpdateDocument(updated)
+      onContentUpdate(proposedContent)
       setMessages((prev) =>
         prev.map((m, i) => (i === msgIndex ? { ...m, accepted: true, isNew: false } : m))
       )

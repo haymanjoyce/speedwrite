@@ -15,6 +15,7 @@ export default function Document() {
   const [doc, setDoc] = useState(location.state?.doc ?? null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [contextText, setContextText] = useState('')
+  const [editorContentOverride, setEditorContentOverride] = useState(null)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -54,12 +55,13 @@ export default function Document() {
       />
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar document={doc} />
-        <Editor document={doc} onUpdate={handleUpdate} onSelectText={handleSelectText} />
+        <Editor document={doc} onUpdate={handleUpdate} onSelectText={handleSelectText} contentOverride={editorContentOverride} />
         {isChatOpen && (
           <ChatPanel
             docId={id}
             document={doc}
             onUpdateDocument={handleUpdate}
+            onContentUpdate={setEditorContentOverride}
             onClose={() => setIsChatOpen(false)}
             contextText={contextText}
             onClearContext={() => setContextText('')}
