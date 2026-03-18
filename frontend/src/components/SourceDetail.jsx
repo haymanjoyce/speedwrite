@@ -8,7 +8,7 @@ function formatBytes(n) {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function SourceDetail({ item, onDelete }) {
+export default function SourceDetail({ item }) {
   if (!item) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
@@ -23,33 +23,25 @@ export default function SourceDetail({ item, onDelete }) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
-      <div className="flex items-start justify-between px-8 pt-8 pb-4 border-b border-gray-100 flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{item.title}</h1>
-          <div className="flex items-center gap-3 text-sm text-gray-500">
-            <span className="inline-flex items-center gap-1 bg-gray-100 rounded px-2 py-0.5">
-              {TYPE_ICON[item.type]} {TYPE_LABEL[item.type] ?? item.type}
-            </span>
-            <span>Added {new Date(item.created_at).toLocaleString()}</span>
-            {item.file_size != null && <span>{formatBytes(item.file_size)}</span>}
-          </div>
-          {item.url && (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline text-sm mt-2 inline-block break-all"
-            >
-              {item.url}
-            </a>
-          )}
+      <div className="px-8 pt-8 pb-4 border-b border-gray-100 flex-shrink-0">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{item.title}</h1>
+        <div className="flex items-center gap-3 text-sm text-gray-500">
+          <span className="inline-flex items-center gap-1 bg-gray-100 rounded px-2 py-0.5">
+            {TYPE_ICON[item.type]} {TYPE_LABEL[item.type] ?? item.type}
+          </span>
+          <span>Added {new Date(item.created_at).toLocaleString()}</span>
+          {item.file_size != null && <span>{formatBytes(item.file_size)}</span>}
         </div>
-        <button
-          onClick={() => onDelete(item.id)}
-          className="text-red-400 hover:text-red-600 text-sm transition-colors ml-6 flex-shrink-0"
-        >
-          Delete
-        </button>
+        {item.url && (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline text-sm mt-2 inline-block break-all"
+          >
+            {item.url}
+          </a>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-8 py-6">

@@ -34,7 +34,7 @@ export default function Home() {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete "${selectedDoc.title}"?`)) return
+    if (!window.confirm(`Are you sure you want to delete "${selectedDoc.title}"? This cannot be undone.`)) return
     try {
       await api.deleteDocument(selectedDoc.id)
       setDocuments((prev) => prev.filter((d) => d.id !== selectedDoc.id))
@@ -47,14 +47,21 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar user={user} onLogout={handleLogout} />
-      <ContextBar actions={[
-        { label: 'New Document', icon: '+', onClick: handleNewDocument, variant: 'primary' },
-      ]} />
+      <ContextBar actions={selectedDoc ? [
+        { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: 'default' },
+        { label: 'Evidence', onClick: () => navigate(`/document/${selectedDoc.id}/evidence`), variant: 'default' },
+        { label: 'Delete', onClick: handleDelete, variant: 'default' },
+      ] : []} />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
         <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
           <div className="px-4 pt-4 pb-3 border-b border-gray-200">
-            <p className="text-gray-900 font-semibold tracking-tight">Documents</p>
+            <button
+              onClick={handleNewDocument}
+              className="w-full text-sm bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1.5 transition-colors"
+            >
+              + New Document
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {documents.length === 0 && (
@@ -88,27 +95,7 @@ export default function Home() {
               <p className="text-sm text-gray-400 mb-8">
                 Last updated {new Date(selectedDoc.updated_at).toLocaleString()}
               </p>
-              <p className="text-gray-400 italic mb-10">No description yet.</p>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } })}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded font-medium transition-colors"
-                >
-                  Open →
-                </button>
-                <button
-                  onClick={() => navigate(`/document/${selectedDoc.id}/evidence`)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded font-medium text-sm transition-colors"
-                >
-                  Evidence
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="text-red-400 hover:text-red-600 text-sm transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
+              <p className="text-gray-400 italic">No description yet.</p>
             </div>
           )}
         </main>

@@ -52,12 +52,12 @@ export default function Evidence() {
     setSelectedItem(newItem)
   }
 
-  const handleDelete = async (evidenceId) => {
-    if (!window.confirm('Delete this source?')) return
+  const handleDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete "${selectedItem.title}"? This cannot be undone.`)) return
     try {
-      await api.deleteEvidence(id, evidenceId)
-      setItems((prev) => prev.filter((i) => i.id !== evidenceId))
-      if (selectedItem?.id === evidenceId) setSelectedItem(null)
+      await api.deleteEvidence(id, selectedItem.id)
+      setItems((prev) => prev.filter((i) => i.id !== selectedItem.id))
+      setSelectedItem(null)
     } catch (err) {
       console.error('Delete failed', err)
     }
@@ -67,15 +67,18 @@ export default function Evidence() {
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} docId={id} subPageLabel="Evidence" />
       <ContextBar actions={[
-        { label: 'Add Source', icon: '+', onClick: () => setShowModal(true), variant: 'primary' },
+        { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
+        ...(selectedItem ? [{ label: 'Delete', onClick: handleDelete, variant: 'default' }] : []),
+        { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]} />
       <div className="flex flex-1 overflow-hidden">
         <EvidenceSidebar
           items={items}
           selectedId={selectedItem?.id}
           onSelect={handleSelect}
+          onAdd={() => setShowModal(true)}
         />
-        <SourceDetail item={selectedItem} onDelete={handleDelete} />
+        <SourceDetail item={selectedItem} />
       </div>
       {showModal && (
         <AddSourceModal onAdd={handleAdd} onClose={() => setShowModal(false)} />

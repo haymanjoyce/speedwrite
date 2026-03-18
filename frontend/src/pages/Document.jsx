@@ -47,15 +47,15 @@ export default function Document() {
   }
 
   const modeControl = (
-    <div className="flex border border-gray-200 rounded overflow-hidden">
+    <div className="inline-flex rounded-full overflow-hidden border border-gray-200">
       {['chat', 'agent'].map((m) => (
         <button
           key={m}
           onClick={() => setChatMode(m)}
-          className={`px-3 py-0.5 text-xs transition-colors ${
+          className={`text-sm px-3 py-0.5 transition-colors cursor-pointer ${
             chatMode === m
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
+              ? 'text-white bg-blue-600 hover:bg-blue-700'
+              : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
           }`}
         >
           {m.charAt(0).toUpperCase() + m.slice(1)}
@@ -64,9 +64,10 @@ export default function Document() {
     </div>
   )
 
-  const contextBarActions = selectedText
-    ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }]
-    : []
+  const contextBarActions = [
+    { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
+    { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
+  ]
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
