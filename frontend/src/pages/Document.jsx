@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import ChatPanel from '../components/ChatPanel'
@@ -19,6 +19,7 @@ export default function Document() {
   const [selectedText, setSelectedText] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
   const [editorContentOverride, setEditorContentOverride] = useState(null)
+  const editorRef = useRef(null)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -74,8 +75,12 @@ export default function Document() {
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
       <ContextBar actions={contextBarActions} controls={modeControl} statusText={saveStatus} />
       <div className="flex flex-1 overflow-hidden">
-        <DocumentSidebar document={doc} />
+        <DocumentSidebar
+          document={doc}
+          onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
+        />
         <Editor
+          ref={editorRef}
           document={doc}
           onUpdate={handleUpdate}
           onSelectText={setSelectedText}

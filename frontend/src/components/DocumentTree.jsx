@@ -10,7 +10,7 @@ function parseHeadings(content) {
   return headings
 }
 
-export default function DocumentTree({ content }) {
+export default function DocumentTree({ content, onHeadingClick }) {
   const headings = parseHeadings(content)
   if (!headings.length) return null
 
@@ -19,7 +19,8 @@ export default function DocumentTree({ content }) {
       {headings.map((h, i) => (
         <div
           key={i}
-          className={`py-0.5 text-xs text-gray-500 hover:text-gray-800 cursor-default truncate ${
+          onClick={() => onHeadingClick?.(h.text)}
+          className={`py-0.5 text-xs text-gray-500 hover:text-gray-800 cursor-pointer truncate ${
             h.level === 3 ? 'pl-6' : 'pl-3'
           }`}
         >

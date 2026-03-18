@@ -1,9 +1,48 @@
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
 
-export default function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride }) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride }, ref) {
   const [content, setContent] = useState('')
   const saveTimer = useRef(null)
+  const textareaRef = useRef(null)
+
+  useImperativeHandle(ref, () => ({
+    scrollToHeading(headingText) {
+      const el = textareaRef.current
+      if (!el) return
+      const lines = el.value.split('\n')
+      let charOffset = 0
+      for (const line of lines) {
+        const m = line.match(/^#{1,6}\s+(.+)/)
+        if (m && m[1].trim() === headingText) {
+          // Use a mirror div to measure pixel offset of this line
+          const mirror = window.document.createElement('div')
+          const style = window.getComputedStyle(el)
+          ;['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
+            'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+            'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+            'boxSizing', 'whiteSpace', 'wordWrap', 'overflowWrap',
+          ].forEach((p) => { mirror.style[p] = style[p] })
+          mirror.style.position = 'absolute'
+          mirror.style.top = '-9999px'
+          mirror.style.left = '-9999px'
+          mirror.style.width = el.offsetWidth + 'px'
+          mirror.style.overflow = 'hidden'
+          mirror.style.visibility = 'hidden'
+          mirror.textContent = el.value.slice(0, charOffset)
+          const span = window.document.createElement('span')
+          span.textContent = '|'
+          mirror.appendChild(span)
+          window.document.body.appendChild(mirror)
+          const top = span.offsetTop
+          window.document.body.removeChild(mirror)
+          el.scrollTo({ top: Math.max(0, top - 24), behavior: 'smooth' })
+          return
+        }
+        charOffset += line.length + 1 // +1 for '\n'
+      }
+    },
+  }))
 
   useEffect(() => {
     setContent(document?.content ?? '')
@@ -53,6 +92,7 @@ export default function Editor({ document, onUpdate, onSelectText, onSaveStatus,
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
       <textarea
+        ref={textareaRef}
         className="flex-1 p-6 font-mono text-sm text-gray-800 resize-none outline-none leading-relaxed"
         value={content}
         onChange={handleChange}
@@ -64,4 +104,6 @@ export default function Editor({ document, onUpdate, onSelectText, onSaveStatus,
       />
     </div>
   )
-}
+})
+
+export default Editor
