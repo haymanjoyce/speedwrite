@@ -15,11 +15,11 @@ export default function DocumentTree({ content }) {
   if (!headings.length) return null
 
   return (
-    <div className="border-l border-gray-700 ml-5">
+    <div className="border-l border-gray-200 ml-5">
       {headings.map((h, i) => (
         <div
           key={i}
-          className={`py-0.5 text-xs text-gray-500 hover:text-gray-300 cursor-default truncate ${
+          className={`py-0.5 text-xs text-gray-500 hover:text-gray-800 cursor-default truncate ${
             h.level === 3 ? 'pl-6' : 'pl-3'
           }`}
         >

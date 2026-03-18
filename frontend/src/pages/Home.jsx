@@ -52,13 +52,13 @@ export default function Home() {
       ]} />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
-        <div className="w-64 bg-gray-700 border-r border-gray-600 flex flex-col flex-shrink-0">
-          <div className="px-4 pt-4 pb-3 border-b border-gray-600">
-            <p className="text-white font-semibold tracking-tight">Documents</p>
+        <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
+          <div className="px-4 pt-4 pb-3 border-b border-gray-200">
+            <p className="text-gray-900 font-semibold tracking-tight">Documents</p>
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {documents.length === 0 && (
-              <p className="text-gray-500 text-xs px-4 py-2">No documents yet.</p>
+              <p className="text-gray-400 text-xs px-4 py-2">No documents yet.</p>
             )}
             {documents.map((doc) => (
               <div
@@ -66,8 +66,8 @@ export default function Home() {
                 onClick={() => setSelectedDoc(doc)}
                 className={`px-4 py-2 cursor-pointer text-sm truncate transition-colors ${
                   doc.id === selectedDoc?.id
-                    ? 'bg-gray-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 {doc.title}
