@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 
-export default function Editor({ document, onUpdate, onSelectText, contentOverride }) {
+export default function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride }) {
   const [content, setContent] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState(null)
-  const [localSelection, setLocalSelection] = useState('')
   const saveTimer = useRef(null)
 
   useEffect(() => {
     setContent(document?.content ?? '')
-    setLastSaved(null)
-    setLocalSelection('')
+    if (onSelectText) onSelectText('')
     clearTimeout(saveTimer.current)
   }, [document?.id])
 
@@ -22,15 +18,14 @@ export default function Editor({ document, onUpdate, onSelectText, contentOverri
   const scheduleSave = (docId, newContent) => {
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
-      setSaving(true)
+      if (onSaveStatus) onSaveStatus('Saving…')
       try {
         const updated = await api.updateDocument(docId, { content: newContent })
-        setLastSaved(new Date())
+        if (onSaveStatus) onSaveStatus(`Saved ${new Date().toLocaleTimeString()}`)
         onUpdate(updated)
       } catch (err) {
         console.error('Auto-save failed', err)
-      } finally {
-        setSaving(false)
+        if (onSaveStatus) onSaveStatus('')
       }
     }, 1000)
   }
@@ -42,15 +37,9 @@ export default function Editor({ document, onUpdate, onSelectText, contentOverri
   }
 
   const handleSelect = (e) => {
+    if (!onSelectText) return
     const { selectionStart, selectionEnd } = e.target
-    setLocalSelection(selectionStart !== selectionEnd ? content.slice(selectionStart, selectionEnd) : '')
-  }
-
-  const handleAddToChat = () => {
-    if (onSelectText && localSelection) {
-      onSelectText(localSelection)
-      setLocalSelection('')
-    }
+    onSelectText(selectionStart !== selectionEnd ? content.slice(selectionStart, selectionEnd) : '')
   }
 
   if (!document) {
@@ -63,22 +52,6 @@ export default function Editor({ document, onUpdate, onSelectText, contentOverri
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
-      <div className="flex items-center justify-between px-6 py-2 border-b border-gray-200 flex-shrink-0 text-xs text-gray-400">
-        <div>
-          {localSelection && onSelectText && (
-            <button
-              onClick={handleAddToChat}
-              className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-            >
-              Add to chat ↗
-            </button>
-          )}
-        </div>
-        <div>
-          {saving && <span>Saving…</span>}
-          {!saving && lastSaved && <span>Saved {lastSaved.toLocaleTimeString()}</span>}
-        </div>
-      </div>
       <textarea
         className="flex-1 p-6 font-mono text-sm text-gray-800 resize-none outline-none leading-relaxed"
         value={content}

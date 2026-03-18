@@ -4,6 +4,7 @@ import { api } from '../api'
 import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
+import ContextBar from '../components/ContextBar'
 import TopBar from '../components/TopBar'
 
 export default function Document() {
@@ -15,6 +16,8 @@ export default function Document() {
   const [doc, setDoc] = useState(location.state?.doc ?? null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [contextText, setContextText] = useState('')
+  const [selectedText, setSelectedText] = useState('')
+  const [saveStatus, setSaveStatus] = useState('')
   const [editorContentOverride, setEditorContentOverride] = useState(null)
 
   useEffect(() => {
@@ -38,24 +41,30 @@ export default function Document() {
     setDoc(updated)
   }
 
-  // Called when user clicks "Add to chat" in the editor
-  const handleSelectText = (text) => {
-    setContextText(text)
+  const handleAddToChat = () => {
+    setContextText(selectedText)
+    setSelectedText('')
     setIsChatOpen(true)
   }
 
+  const contextBarActions = [
+    { label: 'Chat', icon: '💬', onClick: () => setIsChatOpen((v) => !v), variant: 'toggle', active: isChatOpen },
+    ...(selectedText ? [{ label: 'Add to chat', icon: '📎', onClick: handleAddToChat, variant: 'primary' }] : []),
+  ]
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar
-        user={user}
-        onLogout={handleLogout}
-        docTitle={doc?.title}
-        isChatOpen={isChatOpen}
-        onToggleChat={() => setIsChatOpen((v) => !v)}
-      />
+      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
+      <ContextBar actions={contextBarActions} statusText={saveStatus} />
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar document={doc} />
-        <Editor document={doc} onUpdate={handleUpdate} onSelectText={handleSelectText} contentOverride={editorContentOverride} />
+        <Editor
+          document={doc}
+          onUpdate={handleUpdate}
+          onSelectText={setSelectedText}
+          onSaveStatus={setSaveStatus}
+          contentOverride={editorContentOverride}
+        />
         {isChatOpen && (
           <ChatPanel
             docId={id}

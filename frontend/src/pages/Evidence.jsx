@@ -4,6 +4,7 @@ import { api } from '../api'
 import AddSourceModal from '../components/AddSourceModal'
 import EvidenceSidebar from '../components/EvidenceSidebar'
 import SourceDetail from '../components/SourceDetail'
+import ContextBar from '../components/ContextBar'
 import TopBar from '../components/TopBar'
 
 export default function Evidence() {
@@ -64,19 +65,15 @@ export default function Evidence() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar
-        user={user}
-        onLogout={handleLogout}
-        docTitle={doc?.title}
-        docId={id}
-        subPageLabel="Evidence"
-      />
+      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} docId={id} subPageLabel="Evidence" />
+      <ContextBar actions={[
+        { label: 'Add Source', icon: '+', onClick: () => setShowModal(true), variant: 'primary' },
+      ]} />
       <div className="flex flex-1 overflow-hidden">
         <EvidenceSidebar
           items={items}
           selectedId={selectedItem?.id}
           onSelect={handleSelect}
-          onAdd={() => setShowModal(true)}
         />
         <SourceDetail item={selectedItem} onDelete={handleDelete} />
       </div>

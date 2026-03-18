@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import ContextBar from '../components/ContextBar'
 import TopBar from '../components/TopBar'
 
 export default function Home() {
@@ -46,17 +47,14 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar user={user} onLogout={handleLogout} />
+      <ContextBar actions={[
+        { label: 'New Document', icon: '+', onClick: handleNewDocument, variant: 'primary' },
+      ]} />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
-        <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col flex-shrink-0">
-          <div className="px-4 pt-4 pb-3 border-b border-gray-700">
-            <p className="text-white font-semibold tracking-tight mb-3">LogbookLM</p>
-            <button
-              onClick={handleNewDocument}
-              className="w-full text-sm bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 transition-colors"
-            >
-              + New Document
-            </button>
+        <div className="w-64 bg-[#3d3d3d] border-r border-[#4d4d4d] flex flex-col flex-shrink-0">
+          <div className="px-4 pt-4 pb-3 border-b border-[#4d4d4d]">
+            <p className="text-white font-semibold tracking-tight">Documents</p>
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {documents.length === 0 && (

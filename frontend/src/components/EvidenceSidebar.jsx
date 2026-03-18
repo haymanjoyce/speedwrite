@@ -1,16 +1,10 @@
 const TYPE_ICON = { file: '📄', url: '🔗', text: '📝' }
 
-export default function EvidenceSidebar({ items, selectedId, onSelect, onAdd }) {
+export default function EvidenceSidebar({ items, selectedId, onSelect }) {
   return (
-    <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col flex-shrink-0">
-      <div className="px-4 pt-4 pb-3 border-b border-gray-700">
-        <p className="text-white font-semibold tracking-tight mb-3">Evidence</p>
-        <button
-          onClick={onAdd}
-          className="w-full text-sm bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 transition-colors"
-        >
-          + Add Source
-        </button>
+    <div className="w-64 bg-[#3d3d3d] border-r border-[#4d4d4d] flex flex-col flex-shrink-0">
+      <div className="px-4 pt-4 pb-3 border-b border-[#4d4d4d]">
+        <p className="text-white font-semibold tracking-tight">Evidence</p>
       </div>
       <div className="flex-1 overflow-y-auto py-2">
         {items.length === 0 && (
