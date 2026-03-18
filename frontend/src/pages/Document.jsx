@@ -47,7 +47,7 @@ export default function Document() {
   }
 
   const modeControl = (
-    <div className="flex border border-gray-200 rounded overflow-hidden ml-auto">
+    <div className="flex border border-gray-200 rounded overflow-hidden">
       {['chat', 'agent'].map((m) => (
         <button
           key={m}
