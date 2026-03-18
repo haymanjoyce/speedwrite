@@ -52,8 +52,8 @@ export default function Home() {
       ]} />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
-        <div className="w-64 bg-[#3d3d3d] border-r border-[#4d4d4d] flex flex-col flex-shrink-0">
-          <div className="px-4 pt-4 pb-3 border-b border-[#4d4d4d]">
+        <div className="w-64 bg-gray-700 border-r border-gray-600 flex flex-col flex-shrink-0">
+          <div className="px-4 pt-4 pb-3 border-b border-gray-600">
             <p className="text-white font-semibold tracking-tight">Documents</p>
           </div>
           <div className="flex-1 overflow-y-auto py-2">

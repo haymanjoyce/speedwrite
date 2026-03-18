@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel }) {
   return (
-    <div className="h-12 bg-[#1a1a1a] border-b border-[#4d4d4d] flex items-center justify-between px-4 flex-shrink-0">
+    <div className="h-12 bg-gray-900 border-b border-gray-600 flex items-center justify-between px-4 flex-shrink-0">
       <div className="flex items-center text-sm">
         {docTitle ? (
           <>
