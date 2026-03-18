@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 
-export default function ChatPanel({ docId, document, onUpdateDocument, onContentUpdate, onClose, contextText, onClearContext }) {
-  const [mode, setMode] = useState('chat')
+export default function ChatPanel({ docId, document, onUpdateDocument, onContentUpdate, contextText, onClearContext, mode }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -104,38 +103,6 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onContent
 
   return (
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white flex-shrink-0">
-        <span className="text-sm font-semibold text-gray-800">AI Chat</span>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded overflow-hidden border border-gray-200 text-xs">
-            <button
-              onClick={() => setMode('chat')}
-              className={`px-3 py-1 transition-colors ${
-                mode === 'chat' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              Chat
-            </button>
-            <button
-              onClick={() => setMode('agent')}
-              className={`px-3 py-1 transition-colors ${
-                mode === 'agent' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              Agent
-            </button>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none px-1"
-            aria-label="Close chat"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && !loading && (
