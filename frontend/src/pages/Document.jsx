@@ -19,6 +19,7 @@ export default function Document() {
   const [saveStatus, setSaveStatus] = useState('')
   const [editorContentOverride, setEditorContentOverride] = useState(null)
   const [pendingProposal, setPendingProposal] = useState(null)
+  const [editorMode, setEditorMode] = useState('edit')
   const editorRef = useRef(null)
 
   useEffect(() => {
@@ -67,10 +68,28 @@ export default function Document() {
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]
 
+  const editPreviewControl = !pendingProposal && (
+    <div className="inline-flex rounded-full overflow-hidden border border-gray-200">
+      {['edit', 'preview'].map((mode) => (
+        <button
+          key={mode}
+          onClick={() => setEditorMode(mode)}
+          className={`text-sm px-3 py-0.5 transition-colors cursor-pointer capitalize ${
+            editorMode === mode
+              ? 'text-white bg-blue-600'
+              : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+          }`}
+        >
+          {mode.charAt(0).toUpperCase() + mode.slice(1)}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
-      <ContextBar actions={contextBarActions} statusText={saveStatus} />
+      <ContextBar actions={contextBarActions} statusText={pendingProposal ? 'Reviewing changes…' : saveStatus} controls={editPreviewControl} />
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar
           document={doc}
@@ -85,6 +104,7 @@ export default function Document() {
           onSaveStatus={setSaveStatus}
           contentOverride={editorContentOverride}
           pendingProposal={pendingProposal}
+          editorMode={editorMode}
         />
         <ChatPanel
           docId={id}

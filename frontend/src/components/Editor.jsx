@@ -1,8 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
 import DiffView from './DiffView'
+import MarkdownPreview from './MarkdownPreview'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, pendingProposal }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, pendingProposal, editorMode }, ref) {
   const [content, setContent] = useState('')
   const saveTimer = useRef(null)
   const textareaRef = useRef(null)
@@ -99,6 +100,8 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
     <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
       {pendingProposal ? (
         <DiffView originalContent={content} proposedContent={pendingProposal} />
+      ) : editorMode === 'preview' ? (
+        <MarkdownPreview content={content} />
       ) : (
         <textarea
           ref={textareaRef}
