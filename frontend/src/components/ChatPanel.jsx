@@ -13,7 +13,7 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
     appendMessages(userMsg, assistantMsg) {
       setMessages((prev) => [
         ...prev,
-        { role: 'user', content: userMsg },
+        ...(userMsg != null ? [{ role: 'user', content: userMsg }] : []),
         { role: 'assistant', content: assistantMsg },
       ])
     },

@@ -75,6 +75,7 @@ export default function Document() {
 
   const handleReject = () => {
     setPendingProposal(null)
+    chatPanelRef.current?.appendMessages(null, 'Changes rejected.')
   }
 
   const contextBarActions = pendingProposal
