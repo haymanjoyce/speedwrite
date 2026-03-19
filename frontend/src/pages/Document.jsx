@@ -71,11 +71,13 @@ export default function Document() {
   const handleAccept = () => {
     setEditorContentOverride(pendingProposal)
     setPendingProposal(null)
+    api.addLogEntry(id, 'rewrite_accepted', 'AI rewrite accepted')
   }
 
   const handleReject = () => {
     setPendingProposal(null)
     chatPanelRef.current?.appendMessages(null, 'Changes rejected.')
+    api.addLogEntry(id, 'rewrite_rejected', 'AI rewrite rejected')
   }
 
   const contextBarActions = pendingProposal

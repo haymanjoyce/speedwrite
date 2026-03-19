@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from auth import get_current_user
 from models import Document, DocumentCreate, DocumentUpdate
-from storage import delete_document, list_documents, load_document, save_document
+from storage import append_audit_log, delete_document, list_documents, load_document, save_document
 
 router = APIRouter(prefix="/documents")
 
@@ -32,6 +32,7 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
         "audit_log": [],
         "shared_with": [],
     }
+    append_audit_log(doc, "document_created", "Document created")
     save_document(doc)
     return doc
 
@@ -64,6 +65,8 @@ def update_document(doc_id: str, data: DocumentUpdate, user=Depends(get_current_
     if data.title is not None:
         doc["title"] = data.title
     doc["updated_at"] = datetime.utcnow().isoformat()
+    word_count = len(doc["content"].split()) if doc.get("content") else 0
+    append_audit_log(doc, "document_edited", f"Document saved ({word_count} words)")
     save_document(doc)
     return doc
 
@@ -73,4 +76,6 @@ def delete_doc(doc_id: str, user=Depends(get_current_user)):
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    append_audit_log(doc, "document_deleted", f"Document deleted: {doc.get('title', 'Untitled')}")
+    save_document(doc)
     delete_document(user["id"], doc_id)

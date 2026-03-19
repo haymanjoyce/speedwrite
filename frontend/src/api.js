@@ -81,4 +81,9 @@ export const api = {
     request('POST', `/documents/${docId}/evidence/text`, { title, content }),
   deleteEvidence: (docId, evidenceId) =>
     request('DELETE', `/documents/${docId}/evidence/${evidenceId}`),
+
+  // Audit log
+  listLog: (docId) => request('GET', `/documents/${docId}/log`),
+  addLogEntry: (docId, event, detail) =>
+    request('POST', `/documents/${docId}/log`, { event, detail }),
 }

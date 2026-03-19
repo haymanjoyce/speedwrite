@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Document from './pages/Document'
 import Evidence from './pages/Evidence'
 import Home from './pages/Home'
+import Log from './pages/Log'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
@@ -36,6 +37,14 @@ export default function App() {
           element={
             <RequireAuth>
               <Evidence />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/document/:id/log"
+          element={
+            <RequireAuth>
+              <Log />
             </RequireAuth>
           }
         />

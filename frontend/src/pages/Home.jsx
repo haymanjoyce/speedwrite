@@ -50,6 +50,7 @@ export default function Home() {
       <ContextBar actions={selectedDoc ? [
         { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: 'default' },
         { label: 'Evidence', onClick: () => navigate(`/document/${selectedDoc.id}/evidence`), variant: 'default' },
+        { label: 'Log', onClick: () => navigate(`/document/${selectedDoc.id}/log`), variant: 'default' },
         { label: 'Delete', onClick: handleDelete, variant: 'default' },
       ] : []} />
       <div className="flex flex-1 overflow-hidden">

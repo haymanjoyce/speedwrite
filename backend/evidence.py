@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from auth import get_current_user
-from storage import DOCS_DIR, load_document, save_document
+from storage import DOCS_DIR, append_audit_log, load_document, save_document
 
 router = APIRouter(prefix="/documents")
 
@@ -159,6 +159,7 @@ async def add_evidence_file(
     }
     doc.setdefault("evidence", [])
     doc["evidence"].append(item)
+    append_audit_log(doc, "evidence_added", f"Source added: {filename} (file)")
     save_document(doc)
     return item
 
@@ -190,6 +191,7 @@ def add_evidence_url(doc_id: str, data: AddUrlRequest, user=Depends(get_current_
     }
     doc.setdefault("evidence", [])
     doc["evidence"].append(item)
+    append_audit_log(doc, "evidence_added", f"Source added: {title} (url)")
     save_document(doc)
     return item
 
@@ -214,6 +216,7 @@ def add_evidence_text(doc_id: str, data: AddTextRequest, user=Depends(get_curren
     }
     doc.setdefault("evidence", [])
     doc["evidence"].append(item)
+    append_audit_log(doc, "evidence_added", f"Source added: {data.title} (text)")
     save_document(doc)
     return item
 
@@ -235,4 +238,5 @@ def delete_evidence(doc_id: str, evidence_id: str, user=Depends(get_current_user
             fp.unlink()
 
     doc["evidence"] = [i for i in items if i["id"] != evidence_id]
+    append_audit_log(doc, "evidence_deleted", f"Source deleted: {item['title']}")
     save_document(doc)
