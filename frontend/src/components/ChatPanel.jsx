@@ -7,20 +7,24 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onContent
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
+  const historyLoadedRef = useRef(false)
 
-  // Populate from persisted chat_history when document loads
   useEffect(() => {
+    if (historyLoadedRef.current) return
+    historyLoadedRef.current = true
     const history = document?.chat_history ?? []
     setMessages(
       history.map((entry) => ({
         role: entry.role,
         content: entry.content,
         mode: entry.mode,
-        proposed_content: entry.proposed_content ?? null,
+        proposed_content: null,
         isNew: false,
+        accepted: undefined,
+        rejected: undefined,
       }))
     )
-  }, [document?.id])
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -59,6 +63,7 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onContent
 
     try {
       const res = await api.chatMessage(docId, text, mode, attachedContext)
+      console.log('assistant message:', res.message, 'proposed:', res.proposed_content)
       setMessages((prev) => [
         ...prev,
         {
@@ -80,16 +85,10 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onContent
   }
 
   const handleAccept = async (proposedContent, msgIndex) => {
-    try {
-      const updated = await api.updateDocument(docId, { content: proposedContent })
-      onUpdateDocument(updated)
-      onContentUpdate(proposedContent)
-      setMessages((prev) =>
-        prev.map((m, i) => (i === msgIndex ? { ...m, accepted: true, isNew: false } : m))
-      )
-    } catch (err) {
-      console.error('Failed to apply proposed changes', err)
-    }
+    onContentUpdate(proposedContent)
+    setMessages((prev) =>
+      prev.map((m, i) => (i === msgIndex ? { ...m, accepted: true, isNew: false } : m))
+    )
   }
 
   const handleReject = (msgIndex) => {
@@ -113,7 +112,15 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onContent
           </p>
         )}
 
-        {messages.map((msg, i) => (
+        {messages.map((msg, i) => {
+          console.log('message', i, {
+            role: msg.role,
+            proposed_content: msg.proposed_content,
+            isNew: msg.isNew,
+            accepted: msg.accepted,
+            rejected: msg.rejected,
+          })
+          return (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
@@ -124,7 +131,12 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onContent
             >
               {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
 
-              {msg.proposed_content && msg.isNew && !msg.accepted && !msg.rejected && (
+              {msg.role === 'assistant' && console.log('assistant msg render:', {
+                proposed_content: !!msg.proposed_content,
+                accepted: msg.accepted,
+                rejected: msg.rejected,
+              })}
+              {msg.proposed_content && !msg.accepted && !msg.rejected && (
                 <div className="mt-2 border border-amber-300 rounded bg-amber-50 p-2">
                   <p className="text-xs font-semibold text-amber-700 mb-1">Proposed changes</p>
                   <pre className="text-xs text-gray-700 whitespace-pre-wrap max-h-40 overflow-y-auto font-mono bg-white rounded p-1.5 border border-amber-100">
@@ -155,7 +167,8 @@ export default function ChatPanel({ docId, document, onUpdateDocument, onContent
               )}
             </div>
           </div>
-        ))}
+          )
+        })}
 
         {loading && (
           <div className="flex justify-start">

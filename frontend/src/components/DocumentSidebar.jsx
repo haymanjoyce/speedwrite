@@ -1,10 +1,16 @@
 import DocumentTree from './DocumentTree'
 
-export default function DocumentSidebar({ document, onHeadingClick }) {
+export default function DocumentSidebar({ document, onHeadingClick, onSectionSelect }) {
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0 overflow-y-auto">
       <div className="flex-1 py-4">
-        {document && <DocumentTree content={document.content} onHeadingClick={onHeadingClick} />}
+        {document && (
+          <DocumentTree
+            content={document.content}
+            onHeadingClick={onHeadingClick}
+            onSectionSelect={onSectionSelect}
+          />
+        )}
       </div>
     </div>
   )

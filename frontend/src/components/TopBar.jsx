@@ -29,7 +29,6 @@ export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel }
         )}
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-gray-200">|</span>
         <span className="text-gray-500 text-sm">{user?.email}</span>
         <button
           onClick={onLogout}

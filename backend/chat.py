@@ -46,7 +46,7 @@ Document content:
 {document_content}
 ---
 
-{evidence_block}{context_block}If the user asks you to make changes to the document, respond with your
+{evidence_block}{context_block}{context_scope_block}If the user asks you to make changes to the document, respond with your
 proposed full revised document wrapped in XML tags like this:
 <proposed_document>
 ...full markdown content of the revised document...
@@ -55,6 +55,19 @@ proposed full revised document wrapped in XML tags like this:
 You may also include a brief explanation before or after the tags.
 If the user is just asking a question, respond conversationally without
 proposing document changes.\
+"""
+
+_CONTEXT_SCOPE_INSTRUCTION = """\
+The user has selected the above section for editing. If the user asks \
+you to rewrite, improve, or modify content, make changes ONLY to the \
+selected section above. Return the complete document with the selected \
+section replaced by your revised version. The rest of the document must \
+remain exactly unchanged.
+
+IMPORTANT: You must still wrap your proposed full revised document in \
+<proposed_document> tags as per your instructions above. Never return \
+proposed changes as plain text.
+
 """
 
 
@@ -90,12 +103,19 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
 
     evidence_block = _build_evidence_block(doc)
 
+    context_scope_block = (
+        _CONTEXT_SCOPE_INSTRUCTION if data.mode == "agent" and data.context else ""
+    )
+
     template = _AGENT_SYSTEM if data.mode == "agent" else _CHAT_SYSTEM
-    system_prompt = template.format(
+    fmt_kwargs = dict(
         document_content=doc.get("content", ""),
         evidence_block=evidence_block,
         context_block=context_block,
     )
+    if data.mode == "agent":
+        fmt_kwargs["context_scope_block"] = context_scope_block
+    system_prompt = template.format(**fmt_kwargs)
 
     # Build messages for Anthropic — strip storage-only fields
     api_messages = [

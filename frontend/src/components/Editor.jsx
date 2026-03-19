@@ -51,7 +51,13 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
   }, [document?.id])
 
   useEffect(() => {
-    if (contentOverride != null) setContent(contentOverride)
+    if (contentOverride != null) {
+      setContent(contentOverride)
+      if (document?.id) {
+        onSaveStatus?.('Saving…')
+        scheduleSave(document.id, contentOverride)
+      }
+    }
   }, [contentOverride])
 
   const scheduleSave = (docId, newContent) => {

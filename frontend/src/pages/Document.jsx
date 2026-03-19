@@ -78,6 +78,7 @@ export default function Document() {
         <DocumentSidebar
           document={doc}
           onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
+          onSectionSelect={(text) => setContextText(text)}
         />
         <Editor
           ref={editorRef}
@@ -91,7 +92,10 @@ export default function Document() {
           docId={id}
           document={doc}
           onUpdateDocument={handleUpdate}
-          onContentUpdate={setEditorContentOverride}
+          onContentUpdate={(content) => {
+            console.log('onContentUpdate called with:', content)
+            setEditorContentOverride(content)
+          }}
           contextText={contextText}
           onClearContext={() => setContextText('')}
           mode={chatMode}
