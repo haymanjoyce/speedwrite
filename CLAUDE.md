@@ -31,6 +31,7 @@ logbooklm/
 │       │   ├── DocumentSidebar.jsx
 │       │   ├── DocumentTree.jsx
 │       │   ├── Editor.jsx
+│       │   ├── DiffView.jsx          # LCS-based inline diff renderer (replaces editor when proposal pending)
 │       │   ├── ChatPanel.jsx
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
@@ -61,7 +62,7 @@ All services share an internal Docker bridge network. `docker-compose.override.y
 Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Evidence, and Delete action pills when a document is selected.
-2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Evidence and Close pills; an "Add to chat" pill appears when editor text is selected.
+2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Evidence and Close pills; an "Add to chat" pill appears when editor text is selected. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
 3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Delete (when a source is selected), and Close pills.
 
 ### Navigation
@@ -72,7 +73,8 @@ Every view has a two-tier navigation:
 
 ## AI Features
 
-- **Agent panel**: Always-on agent mode — the AI can propose document changes in response to any message. Proposed changes appear in the chat panel with Accept/Reject buttons. Accepting applies the change to the editor and triggers auto-save.
+- **Agent panel**: Always-on agent mode — the AI can propose document changes in response to any message. When the AI returns a `<proposed_document>` block, the editor is replaced by an inline diff view (via `DiffView.jsx`). The context bar switches to Accept/Reject pills. Accepting applies the change to the editor and triggers auto-save; rejecting discards it.
+- **Inline diff view**: LCS-based line diff rendered in `DiffView.jsx`. Removed lines shown in red with strikethrough; added lines in green. Equal lines shown normally. The diff occupies the same flex slot as the editor.
 - **Context scoping**: When context is attached (selected editor text or a document section from the tree), the AI is instructed to change only that section and return the complete document with only that part replaced. When no context is attached, the AI can propose changes to the whole document.
 - **Evidence base**: Supports file uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, and plain text sources. All evidence is injected into AI context automatically.
 - **Backend model**: `claude-sonnet-4-20250514` via Anthropic API. Key stored in `.env` as `ANTHROPIC_API_KEY`.
@@ -87,8 +89,8 @@ Every view has a two-tier navigation:
 
 - Single agent mode — no chat/agent toggle.
 - Context chip shows attached text; dismissed with ×.
-- Chat history is loaded once on mount from the persisted document and never reloaded on subsequent document updates (prevents proposed changes from being overwritten).
-- Proposed changes block is shown when the AI returns `<proposed_document>` tags; dismissed permanently on Accept or Reject.
+- Chat history is loaded once on mount from the persisted document and never reloaded on subsequent document updates (prevents in-flight messages from being overwritten by auto-save triggers).
+- When the AI returns `<proposed_document>` tags, the extracted content is passed to `Document.jsx` via `onProposedChange`. The chat panel only ever shows the explanation text — proposed content is never rendered inside the chat.
 
 ## Data Storage
 
