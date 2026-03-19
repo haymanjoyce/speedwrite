@@ -1,13 +1,23 @@
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
 
-export default function ChatPanel({ docId, document, onProposedChange, contextText, onClearContext }) {
+const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedChange, contextText, onClearContext }, ref) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const historyLoadedRef = useRef(false)
+
+  useImperativeHandle(ref, () => ({
+    appendMessages(userMsg, assistantMsg) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: userMsg },
+        { role: 'assistant', content: assistantMsg },
+      ])
+    },
+  }))
 
   useEffect(() => {
     if (historyLoadedRef.current) return
@@ -57,7 +67,7 @@ export default function ChatPanel({ docId, document, onProposedChange, contextTe
     setLoading(true)
 
     try {
-      const res = await api.chatMessage(docId, text, 'agent', attachedContext)
+      const res = await api.chatMessage(docId, text, attachedContext)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)
@@ -154,4 +164,6 @@ export default function ChatPanel({ docId, document, onProposedChange, contextTe
       </div>
     </div>
   )
-}
+})
+
+export default ChatPanel

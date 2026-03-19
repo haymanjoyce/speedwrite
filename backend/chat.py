@@ -15,6 +15,7 @@ router = APIRouter(prefix="/documents")
 class ChatRequest(BaseModel):
     message: str
     context: Optional[str] = None
+    ignore_history: bool = False
 
 
 class ChatResponse(BaseModel):
@@ -101,10 +102,13 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     )
 
     # Build messages for Anthropic — strip storage-only fields
-    api_messages = [
-        {"role": entry["role"], "content": entry["content"]}
-        for entry in doc["chat_history"]
-    ]
+    if data.ignore_history:
+        api_messages = []
+    else:
+        api_messages = [
+            {"role": entry["role"], "content": entry["content"]}
+            for entry in doc["chat_history"]
+        ]
     api_messages.append({"role": "user", "content": data.message})
 
     client = anthropic.Anthropic()

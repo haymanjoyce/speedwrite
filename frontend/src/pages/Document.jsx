@@ -21,6 +21,7 @@ export default function Document() {
   const [pendingProposal, setPendingProposal] = useState(null)
   const [editorMode, setEditorMode] = useState('edit')
   const editorRef = useRef(null)
+  const chatPanelRef = useRef(null)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -46,6 +47,25 @@ export default function Document() {
   const handleAddToChat = () => {
     setContextText(selectedText)
     setSelectedText('')
+  }
+
+  const handleSectionRewrite = async (sectionContent) => {
+    setSaveStatus('Rewriting…')
+    try {
+      const res = await api.chatMessage(id, 'Rewrite this section.', sectionContent, true)
+      if (res.proposed_content) {
+        setPendingProposal(res.proposed_content)
+      }
+      chatPanelRef.current?.appendMessages(
+        'Rewrite this section.',
+        res.message || 'Proposed changes ready — accept or reject above.'
+      )
+    } catch (err) {
+      console.error('Rewrite failed', err)
+    } finally {
+      setSaveStatus('')
+      setContextText('')
+    }
   }
 
   const handleAccept = () => {
@@ -95,6 +115,7 @@ export default function Document() {
           document={doc}
           onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
           onSectionSelect={(text) => setContextText(text)}
+          onSectionRewrite={handleSectionRewrite}
         />
         <Editor
           ref={editorRef}
@@ -107,6 +128,7 @@ export default function Document() {
           editorMode={editorMode}
         />
         <ChatPanel
+          ref={chatPanelRef}
           docId={id}
           document={doc}
           onProposedChange={setPendingProposal}

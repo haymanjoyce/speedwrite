@@ -47,8 +47,8 @@ export const api = {
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
 
   // Chat
-  chatMessage: (docId, message, mode, context) =>
-    request('POST', `/documents/${docId}/chat`, { message, mode, context }),
+  chatMessage: (docId, message, context, ignoreHistory = false) =>
+    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory }),
 
   // Evidence
   listEvidence: (docId) => request('GET', `/documents/${docId}/evidence`),
