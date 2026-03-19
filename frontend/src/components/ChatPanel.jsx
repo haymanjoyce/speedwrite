@@ -8,7 +8,9 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
   const [submitOnEnter, setSubmitOnEnter] = useState(
     () => localStorage.getItem('logbooklm_submit_on_enter') !== 'false'
   )
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
   const historyLoadedRef = useRef(false)
 
@@ -34,9 +36,26 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
     )
   }, [])
 
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setShowScrollButton(false)
+  }
+
+  useEffect(() => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
+    if (isNearBottom) {
+      scrollToBottom()
+    }
   }, [messages, loading])
+
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
+    setShowScrollButton(!isNearBottom)
+  }
 
   const resizeTextarea = (el) => {
     if (!el) return
@@ -102,7 +121,11 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
   return (
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleMessagesScroll}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+      >
         {messages.length === 0 && !loading && (
           <p className="text-xs text-gray-400 text-center mt-8">
             Ask the AI to edit or rewrite parts of your document.
@@ -137,6 +160,18 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Scroll to bottom */}
+      {showScrollButton && (
+        <div className="flex justify-center py-1 flex-shrink-0">
+          <button
+            onClick={scrollToBottom}
+            className="bg-white border border-gray-200 rounded-full shadow-sm px-3 py-0.5 text-xs text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-colors cursor-pointer flex items-center gap-1"
+          >
+            ↓ Latest
+          </button>
+        </div>
+      )}
 
       {/* Context attachment chip */}
       {contextText && (

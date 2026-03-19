@@ -32,6 +32,7 @@ logbooklm/
 │       │   ├── DocumentTree.jsx
 │       │   ├── Editor.jsx
 │       │   ├── DiffView.jsx          # LCS-based inline diff renderer (replaces editor when proposal pending)
+│       │   ├── MarkdownPreview.jsx   # Custom markdown renderer for Preview mode (no external deps)
 │       │   ├── ChatPanel.jsx
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
@@ -62,7 +63,7 @@ All services share an internal Docker bridge network. `docker-compose.override.y
 Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Evidence, and Delete action pills when a document is selected.
-2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Evidence and Close pills; an "Add to chat" pill appears when editor text is selected. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
+2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Evidence and Close pills; an "Add to chat" pill appears when editor text is selected. An Edit/Preview segmented control in the context bar toggles between the raw markdown editor and a rendered preview. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
 3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Delete (when a source is selected), and Close pills.
 
 ### Navigation
@@ -73,16 +74,19 @@ Every view has a two-tier navigation:
 
 ## AI Features
 
-- **Agent panel**: Always-on agent mode — the AI can propose document changes in response to any message. When the AI returns a `<proposed_document>` block, the editor is replaced by an inline diff view (via `DiffView.jsx`). The context bar switches to Accept/Reject pills. Accepting applies the change to the editor and triggers auto-save; rejecting discards it.
+- **Agent panel**: Always-on agent mode — the AI can propose document changes in response to any message. When the AI returns a `<proposed_document>` block, the editor is replaced by an inline diff view (via `DiffView.jsx`). The context bar switches to Accept/Reject pills with "Reviewing changes…" status. Accepting applies the change to the editor and triggers auto-save; rejecting discards it and appends "Changes rejected." to the chat.
 - **Inline diff view**: LCS-based line diff rendered in `DiffView.jsx`. Removed lines shown in red with strikethrough; added lines in green. Equal lines shown normally. The diff occupies the same flex slot as the editor.
-- **Context scoping**: When context is attached (selected editor text or a document section from the tree), the AI is instructed to change only that section and return the complete document with only that part replaced. When no context is attached, the AI can propose changes to the whole document.
+- **Edit/Preview toggle**: Segmented pill control in the context bar switches between the raw markdown textarea (`edit`) and `MarkdownPreview.jsx` (`preview`). When a diff is pending, the toggle is hidden and DiffView always shows regardless of mode.
+- **Markdown preview**: `MarkdownPreview.jsx` is a custom renderer (no external deps) supporting h1–h3, bold, italic, inline code, fenced code blocks, unordered lists, paragraphs, and URLs.
+- **Rewrite button**: Each document tree node shows a "Rewrite" button on hover alongside "Add". Clicking it calls the chat API directly from `Document.jsx` with `ignore_history: true` (so prior chat history is excluded), sends "Rewrite this section." as the message with the section as context, and sets the pending proposal when a response arrives. The exchange is appended to the chat panel via `chatPanelRef.current.appendMessages(...)`.
+- **Context scoping**: When context is attached (selected editor text or a document section from the tree), the AI is instructed to change only that section and return the complete document with only that part replaced. When no context is attached, the AI can propose changes to the whole document. `ignore_history: bool` on `ChatRequest` lets callers skip chat history for fresh rewrites.
 - **Evidence base**: Supports file uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, and plain text sources. All evidence is injected into AI context automatically.
 - **Backend model**: `claude-sonnet-4-20250514` via Anthropic API. Key stored in `.env` as `ANTHROPIC_API_KEY`.
 
 ## Document Tree
 
 - Hovering a tree node highlights that node and all its child nodes (bg-blue-50).
-- An "Add" button appears on hover; clicking it extracts all content under that heading (up to the next equal/higher level heading) and sets it as chat context.
+- Two buttons appear on hover: **Add** (sets section as chat context chip) and **Rewrite** (triggers an immediate AI rewrite of that section, bypassing chat history).
 - Clicking the heading text scrolls the editor to that heading (via `useImperativeHandle` on Editor).
 
 ## Chat Panel
@@ -91,6 +95,9 @@ Every view has a two-tier navigation:
 - Context chip shows attached text; dismissed with ×.
 - Chat history is loaded once on mount from the persisted document and never reloaded on subsequent document updates (prevents in-flight messages from being overwritten by auto-save triggers).
 - When the AI returns `<proposed_document>` tags, the extracted content is passed to `Document.jsx` via `onProposedChange`. The chat panel only ever shows the explanation text — proposed content is never rendered inside the chat.
+- `ChatPanel` is a `forwardRef` component. It exposes `appendMessages(userMsg, assistantMsg)` via `useImperativeHandle` so `Document.jsx` can inject messages (e.g. after a Rewrite or Reject). If `userMsg` is `null`, only the assistant message is appended.
+- Enter key behaviour is user-configurable: "↵ on" sends on Enter (Shift+Enter for newline); "↵ off" reverts to Ctrl/Cmd+Enter only. Preference persisted in `localStorage` as `logbooklm_submit_on_enter`.
+- A "↓ Latest" button appears between the messages area and the input when the user has scrolled more than 100px from the bottom. Auto-scroll only fires when already near the bottom.
 
 ## Data Storage
 
