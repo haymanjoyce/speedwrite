@@ -1,7 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
+import DiffView from './DiffView'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, pendingProposal }, ref) {
   const [content, setContent] = useState('')
   const saveTimer = useRef(null)
   const textareaRef = useRef(null)
@@ -15,7 +16,6 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
       for (const line of lines) {
         const m = line.match(/^#{1,6}\s+(.+)/)
         if (m && m[1].trim() === headingText) {
-          // Use a mirror div to measure pixel offset of this line
           const mirror = window.document.createElement('div')
           const style = window.getComputedStyle(el)
           ;['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
@@ -39,7 +39,7 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
           el.scrollTo({ top: Math.max(0, top - 24), behavior: 'smooth' })
           return
         }
-        charOffset += line.length + 1 // +1 for '\n'
+        charOffset += line.length + 1
       }
     },
   }))
@@ -97,17 +97,21 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
-      <textarea
-        ref={textareaRef}
-        className="flex-1 p-6 font-mono text-sm text-gray-800 resize-none outline-none leading-relaxed"
-        value={content}
-        onChange={handleChange}
-        onSelect={handleSelect}
-        onMouseUp={handleSelect}
-        onKeyUp={handleSelect}
-        placeholder="Start writing in Markdown…"
-        spellCheck={false}
-      />
+      {pendingProposal ? (
+        <DiffView originalContent={content} proposedContent={pendingProposal} />
+      ) : (
+        <textarea
+          ref={textareaRef}
+          className="flex-1 p-6 font-mono text-sm text-gray-800 resize-none outline-none leading-relaxed"
+          value={content}
+          onChange={handleChange}
+          onSelect={handleSelect}
+          onMouseUp={handleSelect}
+          onKeyUp={handleSelect}
+          placeholder="Start writing in Markdown…"
+          spellCheck={false}
+        />
+      )}
     </div>
   )
 })

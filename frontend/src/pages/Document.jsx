@@ -18,6 +18,7 @@ export default function Document() {
   const [selectedText, setSelectedText] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
   const [editorContentOverride, setEditorContentOverride] = useState(null)
+  const [pendingProposal, setPendingProposal] = useState(null)
   const editorRef = useRef(null)
 
   useEffect(() => {
@@ -46,10 +47,25 @@ export default function Document() {
     setSelectedText('')
   }
 
-  const contextBarActions = [
-    { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
-    { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
-  ]
+  const handleAccept = () => {
+    setEditorContentOverride(pendingProposal)
+    setPendingProposal(null)
+  }
+
+  const handleReject = () => {
+    setPendingProposal(null)
+  }
+
+  const contextBarActions = pendingProposal
+    ? [
+        { label: 'Accept', onClick: handleAccept, variant: 'default' },
+        { label: 'Reject', onClick: handleReject, variant: 'default' },
+      ]
+    : [
+        ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'default' }] : []),
+        { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
+        { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
+      ]
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -68,11 +84,12 @@ export default function Document() {
           onSelectText={setSelectedText}
           onSaveStatus={setSaveStatus}
           contentOverride={editorContentOverride}
+          pendingProposal={pendingProposal}
         />
         <ChatPanel
           docId={id}
           document={doc}
-          onContentUpdate={setEditorContentOverride}
+          onProposedChange={setPendingProposal}
           contextText={contextText}
           onClearContext={() => setContextText('')}
         />

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 
-export default function ChatPanel({ docId, document, onContentUpdate, contextText, onClearContext }) {
+export default function ChatPanel({ docId, document, onProposedChange, contextText, onClearContext }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,10 +17,6 @@ export default function ChatPanel({ docId, document, onContentUpdate, contextTex
       history.map((entry) => ({
         role: entry.role,
         content: entry.content,
-        proposed_content: null,
-        isNew: false,
-        accepted: undefined,
-        rejected: undefined,
       }))
     )
   }, [])
@@ -52,7 +48,7 @@ export default function ChatPanel({ docId, document, onContentUpdate, contextTex
     if (!text || loading) return
 
     const attachedContext = contextText || null
-    setMessages((prev) => [...prev, { role: 'user', content: text, isNew: false }])
+    setMessages((prev) => [...prev, { role: 'user', content: text }])
     setInput('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -62,36 +58,18 @@ export default function ChatPanel({ docId, document, onContentUpdate, contextTex
 
     try {
       const res = await api.chatMessage(docId, text, 'agent', attachedContext)
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: res.message,
-          proposed_content: res.proposed_content ?? null,
-          isNew: true,
-        },
-      ])
+      setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
+      if (res.proposed_content) {
+        onProposedChange(res.proposed_content)
+      }
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: `Error: ${err.message}`, isNew: false },
+        { role: 'assistant', content: `Error: ${err.message}` },
       ])
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleAccept = (proposedContent, msgIndex) => {
-    onContentUpdate(proposedContent)
-    setMessages((prev) =>
-      prev.map((m, i) => (i === msgIndex ? { ...m, accepted: true, isNew: false } : m))
-    )
-  }
-
-  const handleReject = (msgIndex) => {
-    setMessages((prev) =>
-      prev.map((m, i) => (i === msgIndex ? { ...m, rejected: true, isNew: false } : m))
-    )
   }
 
   const isMac = navigator.platform.toUpperCase().includes('MAC')
@@ -117,36 +95,6 @@ export default function ChatPanel({ docId, document, onContentUpdate, contextTex
               }`}
             >
               {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
-
-              {msg.proposed_content && !msg.accepted && !msg.rejected && (
-                <div className="mt-2 border border-amber-300 rounded bg-amber-50 p-2">
-                  <p className="text-xs font-semibold text-amber-700 mb-1">Proposed changes</p>
-                  <pre className="text-xs text-gray-700 whitespace-pre-wrap max-h-40 overflow-y-auto font-mono bg-white rounded p-1.5 border border-amber-100">
-                    {msg.proposed_content}
-                  </pre>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => handleAccept(msg.proposed_content, i)}
-                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleReject(i)}
-                      className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded transition-colors"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {msg.accepted && (
-                <p className="text-xs text-green-600 mt-1">✓ Changes applied</p>
-              )}
-              {msg.rejected && msg.proposed_content && (
-                <p className="text-xs text-gray-400 mt-1">Changes rejected</p>
-              )}
             </div>
           </div>
         ))}
