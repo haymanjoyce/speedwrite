@@ -5,6 +5,9 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [submitOnEnter, setSubmitOnEnter] = useState(
+    () => localStorage.getItem('logbooklm_submit_on_enter') !== 'false'
+  )
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const historyLoadedRef = useRef(false)
@@ -46,8 +49,19 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
     resizeTextarea(e.target)
   }
 
+  const toggleSubmitOnEnter = () => {
+    setSubmitOnEnter((prev) => {
+      const next = !prev
+      localStorage.setItem('logbooklm_submit_on_enter', String(next))
+      return next
+    })
+  }
+
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault()
+      handleSend()
+    } else if (e.key === 'Enter' && !e.shiftKey && submitOnEnter) {
       e.preventDefault()
       handleSend()
     }
@@ -83,7 +97,7 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
   }
 
   const isMac = navigator.platform.toUpperCase().includes('MAC')
-  const sendHint = isMac ? '⌘↵' : 'Ctrl↵'
+  const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
 
   return (
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
@@ -147,19 +161,28 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Message… (${sendHint} to send)`}
+            placeholder={`Message… (${sendHint})`}
             rows={1}
             disabled={loading}
             className="flex-1 resize-none outline-none text-sm text-gray-800 placeholder-gray-400 bg-transparent"
             style={{ maxHeight: '144px', overflowY: 'auto' }}
           />
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            className="self-end text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
-          >
-            Send
-          </button>
+          <div className="self-end flex flex-col items-end gap-1">
+            <button
+              onClick={handleSend}
+              disabled={loading || !input.trim()}
+              className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
+            >
+              Send
+            </button>
+            <button
+              onClick={toggleSubmitOnEnter}
+              className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer leading-none"
+              title={submitOnEnter ? 'Enter sends (click to toggle)' : 'Enter adds new line (click to toggle)'}
+            >
+              {submitOnEnter ? '↵ on' : '↵ off'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
