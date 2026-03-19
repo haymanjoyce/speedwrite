@@ -14,28 +14,13 @@ router = APIRouter(prefix="/documents")
 
 class ChatRequest(BaseModel):
     message: str
-    mode: str = "chat"  # "chat" | "agent"
     context: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
     message: str
     proposed_content: Optional[str] = None
-    mode: str
 
-
-_CHAT_SYSTEM = """\
-You are an AI assistant helping the user work with their document.
-You can answer questions, provide summaries, suggest ideas, and discuss
-the content. You cannot make changes to the document directly.
-
-Document content:
----
-{document_content}
----
-
-{evidence_block}{context_block}Respond conversationally and helpfully.\
-"""
 
 _AGENT_SYSTEM = """\
 You are an AI agent helping the user edit their document. You can
@@ -46,27 +31,31 @@ Document content:
 {document_content}
 ---
 
-{evidence_block}{context_block}{context_scope_block}If the user asks you to make changes to the document, respond with your
-proposed full revised document wrapped in XML tags like this:
-<proposed_document>
-...full markdown content of the revised document...
-</proposed_document>
-
-You may also include a brief explanation before or after the tags.
+{evidence_block}{context_block}{scope_instruction}You may also include a brief explanation before or after any \
+proposed changes.
 If the user is just asking a question, respond conversationally without
 proposing document changes.\
 """
 
-_CONTEXT_SCOPE_INSTRUCTION = """\
-The user has selected the above section for editing. If the user asks \
-you to rewrite, improve, or modify content, make changes ONLY to the \
-selected section above. Return the complete document with the selected \
-section replaced by your revised version. The rest of the document must \
-remain exactly unchanged.
+_SCOPED_INSTRUCTION = """\
+The user has selected the following section for editing (shown above \
+between the --- markers). You must ONLY rewrite that selected section.
+Do NOT rewrite or modify any other part of the document.
 
-IMPORTANT: You must still wrap your proposed full revised document in \
-<proposed_document> tags as per your instructions above. Never return \
-proposed changes as plain text.
+When proposing changes, return the COMPLETE document with ONLY the \
+selected section replaced. Wrap the full revised document in XML tags:
+<proposed_document>
+...complete document with only the selected section changed...
+</proposed_document>
+
+"""
+
+_UNSCOPED_INSTRUCTION = """\
+If the user asks you to make changes, respond with your proposed full \
+revised document wrapped in XML tags:
+<proposed_document>
+...full markdown content of the revised document...
+</proposed_document>
 
 """
 
@@ -102,20 +91,14 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
         )
 
     evidence_block = _build_evidence_block(doc)
+    scope_instruction = _SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION
 
-    context_scope_block = (
-        _CONTEXT_SCOPE_INSTRUCTION if data.mode == "agent" and data.context else ""
-    )
-
-    template = _AGENT_SYSTEM if data.mode == "agent" else _CHAT_SYSTEM
-    fmt_kwargs = dict(
+    system_prompt = _AGENT_SYSTEM.format(
         document_content=doc.get("content", ""),
         evidence_block=evidence_block,
         context_block=context_block,
+        scope_instruction=scope_instruction,
     )
-    if data.mode == "agent":
-        fmt_kwargs["context_scope_block"] = context_scope_block
-    system_prompt = template.format(**fmt_kwargs)
 
     # Build messages for Anthropic — strip storage-only fields
     api_messages = [
@@ -133,35 +116,32 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     )
     raw_text = response.content[0].text
 
-    # Extract proposed document in agent mode
     proposed_content: Optional[str] = None
     clean_message = raw_text
-    if data.mode == "agent":
-        match = re.search(
-            r"<proposed_document>(.*?)</proposed_document>", raw_text, re.DOTALL
-        )
-        if match:
-            proposed_content = match.group(1).strip()
-            clean_message = re.sub(
-                r"<proposed_document>.*?</proposed_document>",
-                "",
-                raw_text,
-                flags=re.DOTALL,
-            ).strip()
+    match = re.search(
+        r"<proposed_document>(.*?)</proposed_document>", raw_text, re.DOTALL
+    )
+    if match:
+        proposed_content = match.group(1).strip()
+        clean_message = re.sub(
+            r"<proposed_document>.*?</proposed_document>",
+            "",
+            raw_text,
+            flags=re.DOTALL,
+        ).strip()
 
     now = datetime.utcnow().isoformat()
     doc["chat_history"].append(
-        {"role": "user", "content": data.message, "mode": data.mode, "timestamp": now}
+        {"role": "user", "content": data.message, "timestamp": now}
     )
     doc["chat_history"].append(
         {
             "role": "assistant",
             "content": clean_message,
-            "mode": data.mode,
             "timestamp": now,
             "proposed_content": proposed_content,
         }
     )
     save_document(doc)
 
-    return ChatResponse(message=clean_message, proposed_content=proposed_content, mode=data.mode)
+    return ChatResponse(message=clean_message, proposed_content=proposed_content)
