@@ -2,7 +2,6 @@ import re
 import uuid
 from datetime import datetime
 
-import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -88,39 +87,6 @@ def delete_doc(doc_id: str, user=Depends(get_current_user)):
 class ProtectRequest(BaseModel):
     heading: str
 
-
-class DescribeResponse(BaseModel):
-    description: str
-
-
-@router.post("/{doc_id}/describe", response_model=DescribeResponse)
-def describe_document(doc_id: str, user=Depends(get_current_user)):
-    doc = load_document(user["id"], doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    client = anthropic.Anthropic()
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=512,
-        system="You are a helpful assistant that writes concise document summaries.",
-        messages=[{
-            "role": "user",
-            "content": (
-                "Write a short description of the following document in 3-4 sentences. "
-                "The description should summarise what the document is about, its main topics, "
-                "and who might find it useful. Write in third person, present tense.\n\n"
-                f"Document title: {doc.get('title', 'Untitled')}\n\n"
-                f"Document content:\n---\n{doc.get('content', '')}\n---\n\n"
-                "Respond with only the description paragraph, no preamble or labels."
-            ),
-        }],
-    )
-
-    description = response.content[0].text.strip()
-    doc["description"] = description
-    save_document(doc)
-    return DescribeResponse(description=description)
 
 
 @router.post("/{doc_id}/protect")
