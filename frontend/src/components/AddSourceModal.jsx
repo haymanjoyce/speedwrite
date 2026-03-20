@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import Button from './Button'
 
 const TYPES = [
   { id: 'file', label: '📄 File', desc: '.pdf, .txt, .md, .docx' },
@@ -125,20 +126,12 @@ export default function AddSourceModal({ onAdd, onClose }) {
             {error && <p className="text-xs text-red-600">{error}</p>}
 
             <div className="flex justify-end gap-3 pt-1">
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 transition-colors"
-              >
+              <Button type="button" variant="ghost" size="md" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white px-5 py-2 rounded transition-colors font-medium"
-              >
+              </Button>
+              <Button type="submit" variant="primary" size="md" disabled={loading}>
                 {loading ? 'Adding…' : 'Add Source'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import TopBar from '../components/TopBar'
 
@@ -73,12 +74,9 @@ export default function Home() {
         {/* Left panel */}
         <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
           <div className="px-4 pt-4 pb-3 border-b border-gray-200">
-            <button
-              onClick={handleNewDocument}
-              className="w-full text-sm bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1.5 transition-colors"
-            >
+            <Button variant="primary" size="md" onClick={handleNewDocument} className="w-full">
               + New Document
-            </button>
+            </Button>
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {documents.length === 0 && (
@@ -117,13 +115,9 @@ export default function Home() {
               ) : (
                 <p className="text-gray-400 italic mb-6">No description yet.</p>
               )}
-              <button
-                onClick={handleGenerateDescription}
-                disabled={generatingDescription}
-                className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer transition-colors disabled:text-gray-400"
-              >
+              <Button variant="secondary" onClick={handleGenerateDescription} disabled={generatingDescription}>
                 {generatingDescription ? 'Generating…' : selectedDoc.description ? 'Regenerate description' : 'Generate description'}
-              </button>
+              </Button>
             </div>
           )}
         </main>

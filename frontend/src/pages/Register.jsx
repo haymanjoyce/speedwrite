@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import Button from '../components/Button'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -61,12 +62,9 @@ export default function Register() {
               required
             />
           </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-2 text-sm font-medium"
-          >
+          <Button type="submit" variant="primary" size="md" className="w-full">
             Create account
-          </button>
+          </Button>
         </form>
         <p className="mt-4 text-sm text-gray-500 text-center">
           Already have an account?{' '}

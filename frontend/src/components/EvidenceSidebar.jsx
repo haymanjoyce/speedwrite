@@ -1,15 +1,14 @@
+import Button from './Button'
+
 const TYPE_ICON = { file: '📄', url: '🔗', text: '📝' }
 
 export default function EvidenceSidebar({ items, selectedId, onSelect, onAdd }) {
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
       <div className="px-4 pt-4 pb-3 border-b border-gray-200">
-        <button
-          onClick={onAdd}
-          className="w-full text-sm bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1.5 transition-colors"
-        >
+        <Button variant="primary" size="md" onClick={onAdd} className="w-full">
           + Add Source
-        </button>
+        </Button>
       </div>
       <div className="flex-1 overflow-y-auto py-2">
         {items.length === 0 && (

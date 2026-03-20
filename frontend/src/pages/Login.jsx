@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import Button from '../components/Button'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -46,12 +47,9 @@ export default function Login() {
               required
             />
           </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-2 text-sm font-medium"
-          >
+          <Button type="submit" variant="primary" size="md" className="w-full">
             Sign in
-          </button>
+          </Button>
         </form>
         <p className="mt-4 text-sm text-gray-500 text-center">
           No account?{' '}
