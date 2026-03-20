@@ -68,6 +68,7 @@ export default function Evidence() {
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} docId={id} subPageLabel="Evidence" />
       <ContextBar actions={[
         { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
+        { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
         ...(selectedItem ? [{ label: 'Delete', onClick: handleDelete, variant: 'default' }] : []),
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]} />

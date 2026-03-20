@@ -110,6 +110,7 @@ export default function Document() {
     : [
         ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'default' }] : []),
         { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
+        { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]
 

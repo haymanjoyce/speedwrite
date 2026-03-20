@@ -62,6 +62,7 @@ export default function Log() {
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} docId={id} subPageLabel="Log" />
       <ContextBar actions={[
         { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
+        { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]} />
       <div className="flex flex-1 overflow-hidden">
