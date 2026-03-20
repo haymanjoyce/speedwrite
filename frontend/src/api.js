@@ -41,7 +41,7 @@ export const api = {
 
   // Documents
   listDocuments: () => request('GET', '/documents/'),
-  getDocument: (id) => request('GET', `/documents/${id}`),
+  getDocument: (id) => request('GET', `/documents/${id}?_=${Date.now()}`),
   createDocument: (data) => request('POST', '/documents/', data),
   updateDocument: (id, data) => request('PUT', `/documents/${id}`, data),
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),

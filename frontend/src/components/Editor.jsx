@@ -3,7 +3,7 @@ import { api } from '../api'
 import DiffView from './DiffView'
 import MarkdownPreview from './MarkdownPreview'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, pendingProposal, editorMode, protectedSections = [] }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, protectedSections = [] }, ref) {
   const [content, setContent] = useState('')
   const saveTimer = useRef(null)
   const textareaRef = useRef(null)
@@ -58,6 +58,7 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
         onSaveStatus?.('Saving…')
         scheduleSave(document.id, contentOverride)
       }
+      onContentOverrideApplied?.()
     }
   }, [contentOverride])
 

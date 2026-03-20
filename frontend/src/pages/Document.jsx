@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
@@ -10,10 +10,8 @@ import TopBar from '../components/TopBar'
 export default function Document() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const location = useLocation()
   const [user, setUser] = useState(null)
-  // Seed with data passed from library view for instant render; fetch fresh copy in background
-  const [doc, setDoc] = useState(location.state?.doc ?? null)
+  const [doc, setDoc] = useState(null)
   const [contextText, setContextText] = useState('')
   const [selectedText, setSelectedText] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
@@ -33,9 +31,9 @@ export default function Document() {
 
   useEffect(() => {
     if (!id) return
-    api.getDocument(id).then((d) => {
-      setDoc(d)
-      setProtectedSections(d.protected_sections ?? [])
+    api.getDocument(id).then((data) => {
+      setDoc(data)
+      setProtectedSections(data.protected_sections ?? [])
     }).catch(() => navigate('/'))
   }, [id])
 
@@ -152,6 +150,7 @@ export default function Document() {
           onSelectText={setSelectedText}
           onSaveStatus={setSaveStatus}
           contentOverride={editorContentOverride}
+          onContentOverrideApplied={() => setEditorContentOverride(null)}
           pendingProposal={pendingProposal}
           editorMode={editorMode}
           protectedSections={protectedSections}
