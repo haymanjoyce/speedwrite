@@ -37,6 +37,7 @@ class Document(BaseModel):
     user_id: str
     title: str
     content: str
+    description: str = ""
     created_at: str
     updated_at: str
     evidence: list = []

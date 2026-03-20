@@ -9,6 +9,7 @@ export default function Home() {
   const [user, setUser] = useState(null)
   const [documents, setDocuments] = useState([])
   const [selectedDoc, setSelectedDoc] = useState(null)
+  const [generatingDescription, setGeneratingDescription] = useState(false)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -41,6 +42,21 @@ export default function Home() {
       setSelectedDoc(null)
     } catch (err) {
       console.error('Delete failed', err)
+    }
+  }
+
+  const handleGenerateDescription = async () => {
+    if (!selectedDoc) return
+    setGeneratingDescription(true)
+    try {
+      const { description } = await api.generateDescription(selectedDoc.id)
+      const updated = { ...selectedDoc, description }
+      setSelectedDoc(updated)
+      setDocuments((prev) => prev.map((d) => d.id === updated.id ? updated : d))
+    } catch (err) {
+      console.error('Generate description failed', err)
+    } finally {
+      setGeneratingDescription(false)
     }
   }
 
@@ -93,10 +109,21 @@ export default function Home() {
           ) : (
             <div className="p-10 max-w-2xl">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedDoc.title}</h1>
-              <p className="text-sm text-gray-400 mb-8">
+              <p className="text-sm text-gray-400 mb-6">
                 Last updated {new Date(selectedDoc.updated_at).toLocaleString()}
               </p>
-              <p className="text-gray-400 italic">No description yet.</p>
+              {selectedDoc.description ? (
+                <p className="text-gray-600 leading-relaxed mb-6">{selectedDoc.description}</p>
+              ) : (
+                <p className="text-gray-400 italic mb-6">No description yet.</p>
+              )}
+              <button
+                onClick={handleGenerateDescription}
+                disabled={generatingDescription}
+                className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer transition-colors disabled:text-gray-400"
+              >
+                {generatingDescription ? 'Generating…' : selectedDoc.description ? 'Regenerate description' : 'Generate description'}
+              </button>
             </div>
           )}
         </main>

@@ -86,4 +86,7 @@ export const api = {
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
   addLogEntry: (docId, event, detail) =>
     request('POST', `/documents/${docId}/log`, { event, detail }),
+
+  // Description
+  generateDescription: (docId) => request('POST', `/documents/${docId}/describe`),
 }
