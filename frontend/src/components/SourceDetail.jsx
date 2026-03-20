@@ -1,5 +1,7 @@
-const TYPE_LABEL = { file: 'File', url: 'URL', text: 'Plain text' }
-const TYPE_ICON = { file: '📄', url: '🔗', text: '📝' }
+import { useEffect, useState } from 'react'
+
+const TYPE_LABEL = { file: 'File', url: 'URL', text: 'Plain text', document: 'Document' }
+const TYPE_ICON = { file: '📄', url: '🔗', text: '📝', document: '📑' }
 const MAX_CONTENT = 2000
 
 function formatBytes(n) {
@@ -8,7 +10,18 @@ function formatBytes(n) {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function SourceDetail({ item }) {
+export default function SourceDetail({ item, onToggleSync, onFetchLiveContent }) {
+  const [liveContent, setLiveContent] = useState(null)
+
+  useEffect(() => {
+    if (item?.type === 'document' && item.sync) {
+      setLiveContent(null)
+      onFetchLiveContent?.().then(setLiveContent).catch(console.error)
+    } else {
+      setLiveContent(null)
+    }
+  }, [item?.id, item?.sync])
+
   if (!item) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
@@ -17,9 +30,11 @@ export default function SourceDetail({ item }) {
     )
   }
 
-  const content = item.content ?? ''
-  const truncated = content.length > MAX_CONTENT
-  const displayContent = truncated ? content.slice(0, MAX_CONTENT) : content
+  const rawContent = (item.type === 'document' && item.sync)
+    ? (liveContent ?? '')
+    : (item.content ?? '')
+  const truncated = rawContent.length > MAX_CONTENT
+  const displayContent = truncated ? rawContent.slice(0, MAX_CONTENT) : rawContent
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
@@ -41,6 +56,26 @@ export default function SourceDetail({ item }) {
           >
             {item.url}
           </a>
+        )}
+        {item.type === 'document' && (
+          <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
+            <button
+              onClick={() => onToggleSync?.(!item.sync)}
+              className="inline-flex items-center gap-1.5 text-xs border border-gray-200 rounded-full px-2.5 py-0.5 hover:border-gray-300 transition-colors"
+            >
+              <span className={`w-2 h-2 rounded-full ${item.sync ? 'bg-green-500' : 'bg-gray-300'}`} />
+              Sync: {item.sync ? 'On' : 'Off'}
+            </button>
+            {item.sync ? (
+              <span className="text-xs text-gray-400">Live content (sync on)</span>
+            ) : (
+              item.synced_at && (
+                <span className="text-xs text-gray-400">
+                  Snapshot — Last synced: {new Date(item.synced_at).toLocaleString()}
+                </span>
+              )
+            )}
+          </div>
         )}
       </div>
 

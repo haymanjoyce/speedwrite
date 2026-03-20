@@ -45,11 +45,38 @@ export default function Evidence() {
       newItem = await api.addEvidenceFile(id, payload)
     } else if (type === 'url') {
       newItem = await api.addEvidenceUrl(id, payload)
+    } else if (type === 'document') {
+      newItem = await api.addEvidenceDocument(id, payload)
     } else {
       newItem = await api.addEvidenceText(id, payload.title, payload.content)
     }
     setItems((prev) => [...prev, newItem])
     setSelectedItem(newItem)
+  }
+
+  const handleSync = async () => {
+    try {
+      const updated = await api.syncEvidence(id, selectedItem.id)
+      setSelectedItem(updated)
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+    } catch (err) {
+      console.error('Sync failed', err)
+    }
+  }
+
+  const handleFetchLiveContent = async () => {
+    const sourceDoc = await api.getDocument(selectedItem.source_doc_id)
+    return sourceDoc.content ?? ''
+  }
+
+  const handleToggleSync = async (syncOn) => {
+    try {
+      const updated = await api.updateEvidence(id, selectedItem.id, { sync: syncOn })
+      setSelectedItem(updated)
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+    } catch (err) {
+      console.error('Toggle sync failed', err)
+    }
   }
 
   const handleDelete = async () => {
@@ -69,6 +96,7 @@ export default function Evidence() {
       <ContextBar actions={[
         { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
         { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
+        ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
         ...(selectedItem ? [{ label: 'Delete', onClick: handleDelete, variant: 'default' }] : []),
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]} />
@@ -79,10 +107,10 @@ export default function Evidence() {
           onSelect={handleSelect}
           onAdd={() => setShowModal(true)}
         />
-        <SourceDetail item={selectedItem} />
+        <SourceDetail item={selectedItem} onToggleSync={handleToggleSync} onFetchLiveContent={handleFetchLiveContent} />
       </div>
       {showModal && (
-        <AddSourceModal onAdd={handleAdd} onClose={() => setShowModal(false)} />
+        <AddSourceModal onAdd={handleAdd} onClose={() => setShowModal(false)} docId={id} />
       )}
     </div>
   )

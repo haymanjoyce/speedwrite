@@ -1,13 +1,15 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { api } from '../api'
 import Button from './Button'
 
 const TYPES = [
   { id: 'file', label: '📄 File', desc: '.pdf, .txt, .md, .docx' },
   { id: 'url', label: '🔗 URL', desc: 'Fetch a web page' },
   { id: 'text', label: '📝 Text', desc: 'Paste text directly' },
+  { id: 'document', label: '📑 Document', desc: 'Add another document' },
 ]
 
-export default function AddSourceModal({ onAdd, onClose }) {
+export default function AddSourceModal({ onAdd, onClose, docId }) {
   const [type, setType] = useState('file')
   const [url, setUrl] = useState('')
   const [textTitle, setTextTitle] = useState('')
@@ -15,7 +17,17 @@ export default function AddSourceModal({ onAdd, onClose }) {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [documents, setDocuments] = useState([])
+  const [selectedDocId, setSelectedDocId] = useState(null)
   const fileRef = useRef(null)
+
+  useEffect(() => {
+    if (type === 'document') {
+      api.listDocuments().then((docs) => {
+        setDocuments(docs.filter((d) => d.id !== docId))
+      }).catch(console.error)
+    }
+  }, [type])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -28,13 +40,16 @@ export default function AddSourceModal({ onAdd, onClose }) {
       } else if (type === 'url') {
         if (!url.trim()) { setError('Please enter a URL.'); setLoading(false); return }
         await onAdd('url', url.trim())
-      } else {
+      } else if (type === 'text') {
         if (!textTitle.trim() || !textContent.trim()) {
           setError('Please enter a title and content.')
           setLoading(false)
           return
         }
         await onAdd('text', { title: textTitle.trim(), content: textContent.trim() })
+      } else if (type === 'document') {
+        if (!selectedDocId) { setError('Please select a document.'); setLoading(false); return }
+        await onAdd('document', selectedDocId)
       }
       onClose()
     } catch (err) {
@@ -121,6 +136,28 @@ export default function AddSourceModal({ onAdd, onClose }) {
                   />
                 </div>
               </>
+            )}
+
+            {type === 'document' && (
+              <div className="max-h-48 overflow-y-auto border border-gray-200 rounded">
+                {documents.length === 0 ? (
+                  <p className="text-xs text-gray-400 px-3 py-4 text-center">No other documents available.</p>
+                ) : (
+                  documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      onClick={() => setSelectedDocId(doc.id)}
+                      className={`px-3 py-2 cursor-pointer text-sm transition-colors ${
+                        doc.id === selectedDocId
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {doc.title}
+                    </div>
+                  ))
+                )}
+              </div>
             )}
 
             {error && <p className="text-xs text-red-600">{error}</p>}

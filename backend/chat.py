@@ -85,7 +85,11 @@ def _build_evidence_block(doc: dict) -> str:
         return ""
     parts = ["Evidence base:"]
     for item in items:
-        content = item.get("content", "")
+        if item.get("type") == "document" and item.get("sync"):
+            source = load_document(doc["user_id"], item["source_doc_id"])
+            content = source.get("content", "") if source else item.get("content", "")
+        else:
+            content = item.get("content", "")
         if len(content) > 3000:
             content = content[:3000] + "\n[truncated]"
         parts.append(f"--- Source: {item['title']} ({item['type']}) ---\n{content}")

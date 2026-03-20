@@ -76,6 +76,9 @@ class EvidenceItem(BaseModel):
     filename: Optional[str] = None
     file_size: Optional[int] = None
     created_at: str
+    source_doc_id: Optional[str] = None
+    sync: Optional[bool] = None
+    synced_at: Optional[str] = None
 
 
 class EvidenceItemFull(EvidenceItem):
@@ -89,6 +92,14 @@ class AddUrlRequest(BaseModel):
 class AddTextRequest(BaseModel):
     title: str
     content: str
+
+
+class AddDocumentRequest(BaseModel):
+    source_doc_id: str
+
+
+class UpdateEvidenceRequest(BaseModel):
+    sync: Optional[bool] = None
 
 
 # --- Endpoints ---
@@ -217,6 +228,79 @@ def add_evidence_text(doc_id: str, data: AddTextRequest, user=Depends(get_curren
     doc.setdefault("evidence", [])
     doc["evidence"].append(item)
     append_audit_log(doc, "evidence_added", f"Source added: {data.title} (text)")
+    save_document(doc)
+    return item
+
+
+@router.post("/{doc_id}/evidence/document", response_model=EvidenceItemFull)
+def add_evidence_document(doc_id: str, data: AddDocumentRequest, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    source = load_document(user["id"], data.source_doc_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Source document not found")
+
+    evidence_id = str(uuid.uuid4())
+    now = datetime.utcnow().isoformat()
+    item = {
+        "id": evidence_id,
+        "type": "document",
+        "title": source.get("title", "Untitled"),
+        "source_doc_id": data.source_doc_id,
+        "content": source.get("content", ""),
+        "sync": True,
+        "synced_at": now,
+        "url": None,
+        "filename": None,
+        "file_size": None,
+        "created_at": now,
+    }
+    doc.setdefault("evidence", [])
+    doc["evidence"].append(item)
+    append_audit_log(doc, "evidence_added", f"Source added: {item['title']} (document)")
+    save_document(doc)
+    return item
+
+
+@router.patch("/{doc_id}/evidence/{evidence_id}", response_model=EvidenceItemFull)
+def update_evidence_item(doc_id: str, evidence_id: str, data: UpdateEvidenceRequest, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    items = doc.get("evidence", [])
+    item = next((i for i in items if i["id"] == evidence_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evidence item not found")
+
+    if data.sync is not None:
+        item["sync"] = data.sync
+    save_document(doc)
+    return item
+
+
+@router.post("/{doc_id}/evidence/{evidence_id}/sync", response_model=EvidenceItemFull)
+def sync_evidence_item(doc_id: str, evidence_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    items = doc.get("evidence", [])
+    item = next((i for i in items if i["id"] == evidence_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evidence item not found")
+    if item.get("type") != "document":
+        raise HTTPException(status_code=400, detail="Only document-type evidence can be synced")
+
+    source = load_document(user["id"], item["source_doc_id"])
+    if not source:
+        raise HTTPException(status_code=404, detail="Source document not found")
+
+    item["content"] = source.get("content", "")
+    item["title"] = source.get("title", item["title"])
+    item["synced_at"] = datetime.utcnow().isoformat()
     save_document(doc)
     return item
 

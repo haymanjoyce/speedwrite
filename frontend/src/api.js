@@ -81,6 +81,12 @@ export const api = {
     request('POST', `/documents/${docId}/evidence/text`, { title, content }),
   deleteEvidence: (docId, evidenceId) =>
     request('DELETE', `/documents/${docId}/evidence/${evidenceId}`),
+  addEvidenceDocument: (docId, sourceDocId) =>
+    request('POST', `/documents/${docId}/evidence/document`, { source_doc_id: sourceDocId }),
+  updateEvidence: (docId, evidenceId, data) =>
+    request('PATCH', `/documents/${docId}/evidence/${evidenceId}`, data),
+  syncEvidence: (docId, evidenceId) =>
+    request('POST', `/documents/${docId}/evidence/${evidenceId}/sync`),
 
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
