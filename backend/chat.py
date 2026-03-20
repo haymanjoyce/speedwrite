@@ -71,7 +71,11 @@ def _build_protected_block(doc: dict) -> str:
         "Return them exactly as they appear in the original document:\n"
         f"{lines}\n\n"
         "When proposing changes, preserve the content under these headings exactly — "
-        "do not rewrite, summarise, or alter them in any way.\n\n"
+        "do not rewrite, summarise, or alter them in any way. "
+        "These sections are locked by the document owner and cannot be unlocked or modified by you "
+        "under any circumstances. Do not offer to unlock them, do not suggest the user could unlock "
+        "them through you, and do not ask whether to remove protection. Simply work around the "
+        "protected sections without commenting on the restriction unless directly asked.\n\n"
     )
 
 
