@@ -14,6 +14,7 @@ logbooklm/
 │   ├── documents.py
 │   ├── chat.py
 │   ├── evidence.py
+│   ├── log.py
 │   ├── models.py
 │   └── storage.py
 ├── frontend/                         # React 18 + Vite + Tailwind CSS
@@ -22,12 +23,14 @@ logbooklm/
 │       │   ├── Home.jsx
 │       │   ├── Document.jsx
 │       │   ├── Evidence.jsx
+│       │   ├── Log.jsx
 │       │   ├── Login.jsx
 │       │   └── Register.jsx
 │       ├── components/
 │       │   ├── TopBar.jsx            # Global nav: breadcrumb + user/logout
 │       │   ├── ContextBar.jsx        # Secondary nav: context-specific action pills
 │       │   ├── Sidebar.jsx           # Unused — kept in repo
+│       │   ├── Button.jsx            # Reusable button (variant: primary/secondary/danger/ghost; size: sm/md)
 │       │   ├── DocumentSidebar.jsx
 │       │   ├── DocumentTree.jsx
 │       │   ├── Editor.jsx
@@ -64,7 +67,8 @@ Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Evidence, and Delete action pills when a document is selected.
 2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Evidence and Close pills; an "Add to chat" pill appears when editor text is selected. An Edit/Preview segmented control in the context bar toggles between the raw markdown editor and a rendered preview. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
-3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Delete (when a source is selected), and Close pills.
+3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Log, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
+4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows Document, Evidence, and Close pills.
 
 ### Navigation
 
@@ -80,13 +84,15 @@ Every view has a two-tier navigation:
 - **Markdown preview**: `MarkdownPreview.jsx` is a custom renderer (no external deps) supporting h1–h3, bold, italic, inline code, fenced code blocks, unordered lists, paragraphs, and URLs.
 - **Rewrite button**: Each document tree node shows a "Rewrite" button on hover alongside "Add". Clicking it calls the chat API directly from `Document.jsx` with `ignore_history: true` (so prior chat history is excluded), sends "Rewrite this section." as the message with the section as context, and sets the pending proposal when a response arrives. The exchange is appended to the chat panel via `chatPanelRef.current.appendMessages(...)`.
 - **Context scoping**: When context is attached (selected editor text or a document section from the tree), the AI is instructed to change only that section and return the complete document with only that part replaced. When no context is attached, the AI can propose changes to the whole document. `ignore_history: bool` on `ChatRequest` lets callers skip chat history for fresh rewrites.
-- **Evidence base**: Supports file uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, and plain text sources. All evidence is injected into AI context automatically.
+- **Evidence base**: Supports file uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, and other documents as sources. All evidence is injected into AI context automatically. Document-type sources have a sync toggle: sync=on fetches live content from the source document at chat time; sync=off uses a stored snapshot. "Sync now" (context bar) manually refreshes the snapshot (only available when sync=off).
+- **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. After `Editor.jsx` applies it, `onContentOverrideApplied` fires immediately to clear it back to `null`, preventing re-application on subsequent renders.
 - **Backend model**: `claude-sonnet-4-20250514` via Anthropic API. Key stored in `.env` as `ANTHROPIC_API_KEY`.
 
 ## Document Tree
 
 - Hovering a tree node highlights that node and all its child nodes (bg-blue-50).
-- Two buttons appear on hover: **Add** (sets section as chat context chip) and **Rewrite** (triggers an immediate AI rewrite of that section, bypassing chat history).
+- Two buttons appear on hover: **Add** (sets section as chat context chip) and **Rewrite** (triggers an immediate AI rewrite of that section, bypassing chat history). Rewrite is hidden for protected headings.
+- Protected headings shown with `bg-gray-100` background and a lock icon (🔒). Lock icon for unlocked headings shown faintly on hover only.
 - Clicking the heading text scrolls the editor to that heading (via `useImperativeHandle` on Editor).
 
 ## Chat Panel
@@ -99,6 +105,22 @@ Every view has a two-tier navigation:
 - Enter key behaviour is user-configurable: "↵ on" sends on Enter (Shift+Enter for newline); "↵ off" reverts to Ctrl/Cmd+Enter only. Preference persisted in `localStorage` as `logbooklm_submit_on_enter`.
 - A "↓ Latest" button appears between the messages area and the input when the user has scrolled more than 100px from the bottom. Auto-scroll only fires when already near the bottom.
 
+## Audit Log
+
+- Append-only log stored as `audit_log` array on each document JSON.
+- `append_audit_log(doc, event, detail)` helper in `storage.py` creates a UUID entry and appends it.
+- Events: `document_created`, `document_edited`, `rewrite_accepted`, `rewrite_rejected`, `evidence_added`, `evidence_deleted`, `document_deleted`.
+- `GET /documents/{doc_id}/log` returns entries newest-first. `POST /documents/{doc_id}/log` appends a manual entry.
+- Log view (`/document/:id/log`) in `Log.jsx` — left panel lists entries, right panel shows selected entry detail.
+
+## Section Locking
+
+- `protected_sections: list` on each document stores locked heading texts.
+- Backend enforces via system prompt in `chat.py` (`_build_protected_block`) — AI instructed never to modify locked sections and never to offer to unlock them.
+- `POST /documents/{doc_id}/protect` adds a heading; `DELETE /documents/{doc_id}/protect` removes one.
+- Frontend: optimistic update in `Document.jsx` with error revert. `DocumentTree.jsx` shows lock icons and applies `bg-gray-100` to protected nodes.
+- `MarkdownPreview.jsx` and `DiffView.jsx` both highlight protected blocks visually.
+
 ## Data Storage
 
 JSON files on disk — no database.
@@ -106,7 +128,7 @@ JSON files on disk — no database.
 | Path | Purpose |
 |------|---------|
 | `/var/logbooklm/users.json` | All user accounts |
-| `/var/logbooklm/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, and chat history |
+| `/var/logbooklm/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, audit log, and protected sections |
 | `/var/logbooklm/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
 
 ## Environment Variables
