@@ -61,6 +61,20 @@ revised document wrapped in XML tags:
 """
 
 
+def _build_protected_block(doc: dict) -> str:
+    sections = doc.get("protected_sections", [])
+    if not sections:
+        return ""
+    lines = "\n".join(f"- {s}" for s in sections)
+    return (
+        "The following sections are protected and must not be modified under any circumstances. "
+        "Return them exactly as they appear in the original document:\n"
+        f"{lines}\n\n"
+        "When proposing changes, preserve the content under these headings exactly — "
+        "do not rewrite, summarise, or alter them in any way.\n\n"
+    )
+
+
 def _build_evidence_block(doc: dict) -> str:
     items = doc.get("evidence", [])
     if not items:
@@ -92,7 +106,8 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
         )
 
     evidence_block = _build_evidence_block(doc)
-    scope_instruction = _SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION
+    protected_block = _build_protected_block(doc)
+    scope_instruction = protected_block + (_SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION)
 
     system_prompt = _AGENT_SYSTEM.format(
         document_content=doc.get("content", ""),

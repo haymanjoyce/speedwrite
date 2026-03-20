@@ -20,6 +20,7 @@ export default function Document() {
   const [editorContentOverride, setEditorContentOverride] = useState(null)
   const [pendingProposal, setPendingProposal] = useState(null)
   const [editorMode, setEditorMode] = useState('edit')
+  const [protectedSections, setProtectedSections] = useState([])
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -32,7 +33,10 @@ export default function Document() {
 
   useEffect(() => {
     if (!id) return
-    api.getDocument(id).then(setDoc).catch(() => navigate('/'))
+    api.getDocument(id).then((d) => {
+      setDoc(d)
+      setProtectedSections(d.protected_sections ?? [])
+    }).catch(() => navigate('/'))
   }, [id])
 
   const handleLogout = () => {
@@ -42,6 +46,24 @@ export default function Document() {
 
   const handleUpdate = (updated) => {
     setDoc(updated)
+  }
+
+  const handleToggleProtection = async (headingText) => {
+    const isProtected = protectedSections.includes(headingText)
+    const updated = isProtected
+      ? protectedSections.filter((h) => h !== headingText)
+      : [...protectedSections, headingText]
+    setProtectedSections(updated)
+    try {
+      if (isProtected) {
+        await api.unprotectSection(id, headingText)
+      } else {
+        await api.protectSection(id, headingText)
+      }
+    } catch (err) {
+      console.error('Toggle protection failed', err)
+      setProtectedSections(protectedSections) // revert on error
+    }
   }
 
   const handleAddToChat = () => {
@@ -119,6 +141,8 @@ export default function Document() {
           onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
           onSectionSelect={(text) => setContextText(text)}
           onSectionRewrite={handleSectionRewrite}
+          protectedSections={protectedSections}
+          onToggleProtection={handleToggleProtection}
         />
         <Editor
           ref={editorRef}
@@ -129,6 +153,7 @@ export default function Document() {
           contentOverride={editorContentOverride}
           pendingProposal={pendingProposal}
           editorMode={editorMode}
+          protectedSections={protectedSections}
         />
         <ChatPanel
           ref={chatPanelRef}

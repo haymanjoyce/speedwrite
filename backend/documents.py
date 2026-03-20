@@ -34,6 +34,7 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
         "evidence": [],
         "audit_log": [],
         "shared_with": [],
+        "protected_sections": [],
     }
     append_audit_log(doc, "document_created", "Document created")
     save_document(doc)
@@ -84,6 +85,10 @@ def delete_doc(doc_id: str, user=Depends(get_current_user)):
     delete_document(user["id"], doc_id)
 
 
+class ProtectRequest(BaseModel):
+    heading: str
+
+
 class DescribeResponse(BaseModel):
     description: str
 
@@ -116,3 +121,26 @@ def describe_document(doc_id: str, user=Depends(get_current_user)):
     doc["description"] = description
     save_document(doc)
     return DescribeResponse(description=description)
+
+
+@router.post("/{doc_id}/protect")
+def protect_section(doc_id: str, data: ProtectRequest, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    doc.setdefault("protected_sections", [])
+    if data.heading not in doc["protected_sections"]:
+        doc["protected_sections"].append(data.heading)
+        save_document(doc)
+    return doc["protected_sections"]
+
+
+@router.delete("/{doc_id}/protect")
+def unprotect_section(doc_id: str, data: ProtectRequest, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    doc.setdefault("protected_sections", [])
+    doc["protected_sections"] = [h for h in doc["protected_sections"] if h != data.heading]
+    save_document(doc)
+    return doc["protected_sections"]

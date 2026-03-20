@@ -3,7 +3,7 @@ import { api } from '../api'
 import DiffView from './DiffView'
 import MarkdownPreview from './MarkdownPreview'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, pendingProposal, editorMode }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, pendingProposal, editorMode, protectedSections = [] }, ref) {
   const [content, setContent] = useState('')
   const saveTimer = useRef(null)
   const textareaRef = useRef(null)
@@ -99,9 +99,9 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
       {pendingProposal ? (
-        <DiffView originalContent={content} proposedContent={pendingProposal} />
+        <DiffView originalContent={content} proposedContent={pendingProposal} protectedSections={protectedSections} />
       ) : editorMode === 'preview' ? (
-        <MarkdownPreview content={content} />
+        <MarkdownPreview content={content} protectedSections={protectedSections} />
       ) : (
         <textarea
           ref={textareaRef}

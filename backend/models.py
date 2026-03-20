@@ -44,3 +44,4 @@ class Document(BaseModel):
     audit_log: list = []
     shared_with: list = []
     chat_history: list = []
+    protected_sections: list = []

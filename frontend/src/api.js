@@ -89,4 +89,10 @@ export const api = {
 
   // Description
   generateDescription: (docId) => request('POST', `/documents/${docId}/describe`),
+
+  // Section protection
+  protectSection: (docId, heading) =>
+    request('POST', `/documents/${docId}/protect`, { heading }),
+  unprotectSection: (docId, heading) =>
+    request('DELETE', `/documents/${docId}/protect`, { heading }),
 }

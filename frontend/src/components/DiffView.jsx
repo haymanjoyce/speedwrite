@@ -17,27 +17,65 @@ function diffLines(oldLines, newLines) {
   let j = newLines.length
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
-      result.push({ type: 'equal', line: oldLines[i - 1] })
+      result.push({ type: 'equal', line: oldLines[i - 1], origIndex: i - 1 })
       i--; j--
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      result.push({ type: 'add', line: newLines[j - 1] })
+      result.push({ type: 'add', line: newLines[j - 1], origIndex: i })
       j--
     } else {
-      result.push({ type: 'remove', line: oldLines[i - 1] })
+      result.push({ type: 'remove', line: oldLines[i - 1], origIndex: i - 1 })
       i--
     }
   }
   return result.reverse()
 }
 
-export default function DiffView({ originalContent, proposedContent }) {
+function getProtectedLineSet(content, protectedSections) {
+  if (!protectedSections || protectedSections.length === 0) return new Set()
+  const lines = content.split('\n')
+  const protectedSet = new Set()
+  for (const heading of protectedSections) {
+    let startLine = -1
+    let startLevel = 0
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^(#{1,6})\s+(.+)/)
+      if (m && m[2].trim() === heading) {
+        startLine = i
+        startLevel = m[1].length
+        break
+      }
+    }
+    if (startLine === -1) continue
+    protectedSet.add(startLine)
+    for (let i = startLine + 1; i < lines.length; i++) {
+      const m = lines[i].match(/^(#{1,6})\s+/)
+      if (m && m[1].length <= startLevel) break
+      protectedSet.add(i)
+    }
+  }
+  return protectedSet
+}
+
+export default function DiffView({ originalContent, proposedContent, protectedSections = [] }) {
   const oldLines = (originalContent ?? '').split('\n')
   const newLines = (proposedContent ?? '').split('\n')
   const diff = diffLines(oldLines, newLines)
+  const protectedLineSet = getProtectedLineSet(originalContent ?? '', protectedSections)
 
   return (
     <div className="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed bg-white">
       {diff.map((entry, i) => {
+        const isProtected = protectedLineSet.has(entry.origIndex)
+
+        if (isProtected) {
+          return (
+            <div key={i} className="flex border-l-2 border-gray-300 bg-gray-100">
+              <span className="w-4 flex-shrink-0 select-none text-gray-400">~</span>
+              <span className="text-gray-400 whitespace-pre-wrap break-all">{entry.line}</span>
+            </div>
+          )
+        }
+
         if (entry.type === 'equal') {
           return (
             <div key={i} className="flex">
