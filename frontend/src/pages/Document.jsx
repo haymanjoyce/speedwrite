@@ -1,11 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
+import ActionsDropdown from '../components/ActionsDropdown'
 import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
+import InstructionBar from '../components/InstructionBar'
 import TopBar from '../components/TopBar'
+
+const ACTION_LABELS = {
+  summarise: 'Summarise',
+  extract_key_points: 'Extract key points',
+  rewrite: 'Rewrite',
+  restructure: 'Restructure',
+  expand: 'Expand',
+  condense: 'Condense',
+}
+
+const DIFF_ACTIONS = new Set(['rewrite', 'restructure', 'expand', 'condense'])
 
 export default function Document() {
   const navigate = useNavigate()
@@ -19,6 +32,8 @@ export default function Document() {
   const [pendingProposal, setPendingProposal] = useState(null)
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
+  const [pendingAction, setPendingAction] = useState(null)
+  const [isActionRunning, setIsActionRunning] = useState(false)
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -100,6 +115,40 @@ export default function Document() {
     api.addLogEntry(id, 'rewrite_rejected', 'AI rewrite rejected')
   }
 
+  // Called by ActionsDropdown: instructions=null means show instruction bar (diff actions)
+  const handleActionSelect = (action, instructions) => {
+    if (instructions === null) {
+      setPendingAction(action)
+    } else {
+      runAction(action, instructions)
+    }
+  }
+
+  const runAction = async (action, instructions) => {
+    setPendingAction(null)
+    setIsActionRunning(true)
+    setSaveStatus('Running…')
+    try {
+      const res = await api.documentAction(id, action, instructions)
+      if (DIFF_ACTIONS.has(action)) {
+        if (res.proposed_content) {
+          setPendingProposal(res.proposed_content)
+        }
+        chatPanelRef.current?.appendMessages(
+          ACTION_LABELS[action],
+          res.result || 'Proposed changes ready — accept or reject above.'
+        )
+      } else {
+        chatPanelRef.current?.appendMessages(ACTION_LABELS[action], res.result)
+      }
+    } catch (err) {
+      console.error('Action failed', err)
+    } finally {
+      setIsActionRunning(false)
+      setSaveStatus('')
+    }
+  }
+
   const contextBarActions = pendingProposal
     ? [
         { label: 'Accept', onClick: handleAccept, variant: 'default' },
@@ -130,10 +179,29 @@ export default function Document() {
     </div>
   )
 
+  const actionsControl = !pendingProposal && (
+    <ActionsDropdown onAction={handleActionSelect} disabled={isActionRunning} />
+  )
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
-      <ContextBar actions={contextBarActions} statusText={pendingProposal ? 'Reviewing changes…' : saveStatus} controls={editPreviewControl} />
+      <ContextBar
+        actions={contextBarActions}
+        statusText={pendingProposal ? 'Reviewing changes…' : saveStatus}
+        controls={
+          (actionsControl || editPreviewControl)
+            ? <div className="flex items-center gap-2">{actionsControl}{editPreviewControl}</div>
+            : null
+        }
+      />
+      {pendingAction && (
+        <InstructionBar
+          action={ACTION_LABELS[pendingAction]}
+          onRun={(instructions) => runAction(pendingAction, instructions)}
+          onCancel={() => setPendingAction(null)}
+        />
+      )}
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar
           document={doc}

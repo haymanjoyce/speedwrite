@@ -50,7 +50,8 @@ export default function Home() {
     if (!selectedDoc) return
     setGeneratingDescription(true)
     try {
-      const { description } = await api.generateDescription(selectedDoc.id)
+      const res = await api.documentAction(selectedDoc.id, 'summarise')
+      const description = res.result
       const updated = { ...selectedDoc, description }
       setSelectedDoc(updated)
       setDocuments((prev) => prev.map((d) => d.id === updated.id ? updated : d))

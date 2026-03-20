@@ -49,6 +49,8 @@ export const api = {
   // Chat
   chatMessage: (docId, message, context, ignoreHistory = false) =>
     request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory }),
+  documentAction: (docId, action, instructions = '') =>
+    request('POST', `/documents/${docId}/action`, { action, instructions }),
 
   // Evidence
   listEvidence: (docId) => request('GET', `/documents/${docId}/evidence`),
