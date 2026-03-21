@@ -44,6 +44,7 @@ logbooklm/
 │       │   ├── ActionsDropdown.jsx   # Actions pill + dropdown menu for document-level AI actions
 │       │   ├── InstructionBar.jsx    # Slim bar below context bar for optional action instructions
 │       │   ├── ProviderToggle.jsx    # Segmented pill to switch between Anthropic and Ollama
+│       │   ├── SegmentedControl.jsx  # Reusable segmented pill control (options, value, onChange)
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
 │       │   └── AddSourceModal.jsx
@@ -106,12 +107,15 @@ Every view has a two-tier navigation:
 - Two buttons appear on hover: **Add** (sets section as chat context chip) and **Rewrite** (triggers an immediate AI rewrite of that section, bypassing chat history). Rewrite is hidden for protected headings.
 - Protected headings shown with `bg-gray-100` background and a lock icon (🔒). Lock icon for unlocked headings shown faintly on hover only.
 - Clicking the heading text scrolls the editor to that heading (via `useImperativeHandle` on Editor).
+- When the document has no `##` headings, `DocumentSidebar.jsx` shows a placeholder: "No structure yet. Add ## headings to build a document tree." `parseHeadings` is exported from `DocumentTree.jsx` for use by the sidebar.
+- `SegmentedControl.jsx` is used for the Edit/Preview toggle in `Document.jsx` and internally by `ProviderToggle.jsx`. Styling matches `ContextBar` action pills exactly (text-xs, px-3 py-0.5, rounded-full).
 
 ## Chat Panel
 
 - Single agent mode — no chat/agent toggle.
 - Context chip shows attached text; dismissed with ×.
-- Chat history is loaded (and reset) whenever `document?.id` changes. This fires once per document, so mid-conversation saves (which update the document prop without changing its ID) do not overwrite in-flight messages.
+- Chat history is loaded (and reset) whenever `document?.id` changes. This fires once per document, so mid-conversation saves (which update the document prop without changing its ID) do not overwrite in-flight messages. On load, a `setTimeout(..., 0)` scrolls to the bottom after the DOM updates.
+- **Note on double fetches in development**: `React.StrictMode` is enabled in `main.jsx`. In React 18 development mode, this intentionally mounts → unmounts → remounts every component, causing each effect to fire twice. Two `GET /documents/:id` requests on page load is expected behaviour in dev and does not happen in production builds.
 - When the AI returns `<proposed_document>` tags, the extracted content is passed to `Document.jsx` via `onProposedChange`. The chat panel only ever shows the explanation text — proposed content is never rendered inside the chat.
 - `ChatPanel` is a `forwardRef` component. It exposes `appendMessages(userMsg, assistantMsg)` via `useImperativeHandle` so `Document.jsx` can inject messages (e.g. after a Rewrite or Reject). If `userMsg` is `null`, only the assistant message is appended.
 - Enter key behaviour is user-configurable: "↵ on" sends on Enter (Shift+Enter for newline); "↵ off" reverts to Ctrl/Cmd+Enter only. Preference persisted in `localStorage` as `logbooklm_submit_on_enter`.
