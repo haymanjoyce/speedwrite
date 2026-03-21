@@ -15,6 +15,7 @@ export default function Evidence() {
   const [items, setItems] = useState([])
   const [selectedItem, setSelectedItem] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [reindexStatus, setReindexStatus] = useState('')
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -79,6 +80,17 @@ export default function Evidence() {
     }
   }
 
+  const handleReindex = async () => {
+    try {
+      await api.reindexEvidence(id)
+      setReindexStatus('Reindex started')
+    } catch (err) {
+      setReindexStatus('Reindex failed')
+    } finally {
+      setTimeout(() => setReindexStatus(''), 3000)
+    }
+  }
+
   const handleDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete "${selectedItem.title}"? This cannot be undone.`)) return
     try {
@@ -93,13 +105,17 @@ export default function Evidence() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} docId={id} subPageLabel="Evidence" />
-      <ContextBar actions={[
-        { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
-        { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
-        ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
-        ...(selectedItem ? [{ label: 'Delete', onClick: handleDelete, variant: 'default' }] : []),
-        { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
-      ]} />
+      <ContextBar
+        statusText={reindexStatus}
+        actions={[
+          { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
+          { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
+          { label: 'Reindex', onClick: handleReindex, variant: 'default' },
+          ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
+          ...(selectedItem ? [{ label: 'Delete', onClick: handleDelete, variant: 'default' }] : []),
+          { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
+        ]}
+      />
       <div className="flex flex-1 overflow-hidden">
         <EvidenceSidebar
           items={items}

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from auth import get_current_user
+from embeddings import index_evidence_background, remove_evidence_chunks
 from storage import DOCS_DIR, append_audit_log, load_document, save_document
 
 router = APIRouter(prefix="/documents")
@@ -172,6 +173,7 @@ async def add_evidence_file(
     doc["evidence"].append(item)
     append_audit_log(doc, "evidence_added", f"Source added: {filename} (file)")
     save_document(doc)
+    index_evidence_background(user["id"], doc_id, evidence_id, filename, content)
     return item
 
 
@@ -204,6 +206,7 @@ def add_evidence_url(doc_id: str, data: AddUrlRequest, user=Depends(get_current_
     doc["evidence"].append(item)
     append_audit_log(doc, "evidence_added", f"Source added: {title} (url)")
     save_document(doc)
+    index_evidence_background(user["id"], doc_id, evidence_id, title, content)
     return item
 
 
@@ -229,6 +232,7 @@ def add_evidence_text(doc_id: str, data: AddTextRequest, user=Depends(get_curren
     doc["evidence"].append(item)
     append_audit_log(doc, "evidence_added", f"Source added: {data.title} (text)")
     save_document(doc)
+    index_evidence_background(user["id"], doc_id, evidence_id, data.title, data.content)
     return item
 
 
@@ -261,6 +265,11 @@ def add_evidence_document(doc_id: str, data: AddDocumentRequest, user=Depends(ge
     doc["evidence"].append(item)
     append_audit_log(doc, "evidence_added", f"Source added: {item['title']} (document)")
     save_document(doc)
+    # Only index snapshot (sync=off) — live sources are fetched at chat time
+    if not item.get("sync"):
+        index_evidence_background(
+            user["id"], doc_id, evidence_id, item["title"], item["content"]
+        )
     return item
 
 
@@ -324,3 +333,4 @@ def delete_evidence(doc_id: str, evidence_id: str, user=Depends(get_current_user
     doc["evidence"] = [i for i in items if i["id"] != evidence_id]
     append_audit_log(doc, "evidence_deleted", f"Source deleted: {item['title']}")
     save_document(doc)
+    remove_evidence_chunks(user["id"], doc_id, evidence_id)

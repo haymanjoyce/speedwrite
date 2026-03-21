@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_current_user
-from chat import _build_protected_block
+from chat import _build_evidence_block, _build_protected_block
 from storage import load_document
 
 router = APIRouter(prefix="/documents")
@@ -55,7 +55,7 @@ Document content:
 {content}
 ---
 
-{protected_block}\
+{evidence_block}{protected_block}\
 """
 
 
@@ -78,10 +78,13 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    query = f"{data.action} {data.instructions}".strip()
+    evidence_block = _build_evidence_block(doc, query=query)
     protected_block = _build_protected_block(doc)
     system_prompt = _SYSTEM.format(
         title=doc.get("title", "Untitled"),
         content=doc.get("content", ""),
+        evidence_block=evidence_block,
         protected_block=protected_block,
     )
 

@@ -89,6 +89,8 @@ export const api = {
     request('PATCH', `/documents/${docId}/evidence/${evidenceId}`, data),
   syncEvidence: (docId, evidenceId) =>
     request('POST', `/documents/${docId}/evidence/${evidenceId}/sync`),
+  reindexEvidence: (docId) =>
+    request('POST', `/documents/${docId}/evidence/reindex`),
 
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),

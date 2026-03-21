@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_current_user
+from embeddings import RAG_THRESHOLD_CHARS, load_chunks, retrieve_relevant_chunks
 from storage import load_document, save_document
 
 router = APIRouter(prefix="/documents")
@@ -79,21 +80,58 @@ def _build_protected_block(doc: dict) -> str:
     )
 
 
-def _build_evidence_block(doc: dict) -> str:
+def _build_evidence_block(doc: dict, query: str = "") -> str:
     items = doc.get("evidence", [])
     if not items:
         return ""
-    parts = ["Evidence base:"]
-    for item in items:
-        if item.get("type") == "document" and item.get("sync"):
-            source = load_document(doc["user_id"], item["source_doc_id"])
-            content = source.get("content", "") if source else item.get("content", "")
-        else:
-            content = item.get("content", "")
+
+    # Separate live sync-on document sources (never RAG, always live)
+    live_doc_sources = [
+        i for i in items
+        if i.get("type") == "document" and i.get("sync")
+    ]
+    other_sources = [
+        i for i in items
+        if not (i.get("type") == "document" and i.get("sync"))
+    ]
+
+    parts = []
+
+    # Always include live document sources directly
+    for item in live_doc_sources:
+        source = load_document(doc["user_id"], item["source_doc_id"])
+        content = source.get("content", "") if source else item.get("content", "")
+        if len(content) > 3000:
+            content = content[:3000] + "\n[truncated]"
+        parts.append(f"--- Source: {item['title']} (live document) ---\n{content}")
+
+    # Decide RAG vs full dump for other sources
+    total_len = sum(len(i.get("content", "")) for i in other_sources)
+
+    if query and total_len > RAG_THRESHOLD_CHARS:
+        try:
+            chunks = retrieve_relevant_chunks(doc["user_id"], doc["id"], query)
+            if chunks:
+                rag_parts = ["Relevant evidence (semantically retrieved):"]
+                for chunk in chunks:
+                    rag_parts.append(
+                        f"--- From: {chunk['evidence_title']} ---\n{chunk['text']}"
+                    )
+                all_parts = rag_parts + parts
+                return "\n".join(all_parts) + "\n\n"
+        except Exception:
+            pass  # Fall through to full dump
+
+    # Full dump path (small evidence base, RAG unavailable, or no chunks returned)
+    for item in other_sources:
+        content = item.get("content", "")
         if len(content) > 3000:
             content = content[:3000] + "\n[truncated]"
         parts.append(f"--- Source: {item['title']} ({item['type']}) ---\n{content}")
-    return "\n".join(parts) + "\n\n"
+
+    if not parts:
+        return ""
+    return "Evidence base:\n" + "\n".join(parts) + "\n\n"
 
 
 @router.post("/{doc_id}/chat", response_model=ChatResponse)
@@ -113,7 +151,7 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
             "---\n"
         )
 
-    evidence_block = _build_evidence_block(doc)
+    evidence_block = _build_evidence_block(doc, query=data.message)
     protected_block = _build_protected_block(doc)
     scope_instruction = protected_block + (_SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION)
 
