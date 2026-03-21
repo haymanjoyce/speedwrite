@@ -12,7 +12,6 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
-  const historyLoadedRef = useRef(false)
 
   useImperativeHandle(ref, () => ({
     appendMessages(userMsg, assistantMsg) {
@@ -25,16 +24,17 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
   }))
 
   useEffect(() => {
-    if (historyLoadedRef.current) return
-    historyLoadedRef.current = true
     const history = document?.chat_history ?? []
     setMessages(
       history.map((entry) => ({
         role: entry.role,
         content: entry.content,
+        proposed_content: null,
+        accepted: undefined,
+        rejected: undefined,
       }))
     )
-  }, [])
+  }, [document?.id])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
