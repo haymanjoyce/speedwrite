@@ -41,7 +41,6 @@ def _complete_anthropic(system: str, messages: list[dict], max_tokens: int) -> s
 
 
 def _complete_ollama(system: str, messages: list[dict], max_tokens: int) -> str:
-    print(f"Ollama request: model={OLLAMA_CHAT_MODEL}, messages={len(messages)}")
     ollama_messages = [{"role": "system", "content": system}] + messages
     try:
         timeout = httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)
