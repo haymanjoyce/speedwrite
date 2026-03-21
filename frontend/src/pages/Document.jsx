@@ -8,6 +8,7 @@ import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
 import InstructionBar from '../components/InstructionBar'
 import ProviderToggle from '../components/ProviderToggle'
+import SegmentedControl from '../components/SegmentedControl'
 import TopBar from '../components/TopBar'
 
 const ACTION_LABELS = {
@@ -175,21 +176,14 @@ export default function Document() {
       ]
 
   const editPreviewControl = !pendingProposal && (
-    <div className="inline-flex rounded-full overflow-hidden border border-gray-200">
-      {['edit', 'preview'].map((mode) => (
-        <button
-          key={mode}
-          onClick={() => setEditorMode(mode)}
-          className={`text-sm px-3 py-0.5 transition-colors cursor-pointer capitalize ${
-            editorMode === mode
-              ? 'text-white bg-blue-600'
-              : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
-          }`}
-        >
-          {mode.charAt(0).toUpperCase() + mode.slice(1)}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      options={[
+        { value: 'edit', label: 'Edit' },
+        { value: 'preview', label: 'Preview' },
+      ]}
+      value={editorMode}
+      onChange={setEditorMode}
+    />
   )
 
   const actionsControl = !pendingProposal && (
