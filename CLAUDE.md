@@ -16,6 +16,8 @@ logbooklm/
 │   ├── evidence.py
 │   ├── actions.py
 │   ├── embeddings.py
+│   ├── llm.py           # Unified LLM abstraction (Anthropic + Ollama)
+│   ├── config.py        # GET /config endpoint (exposes server-side defaults)
 │   ├── log.py
 │   ├── models.py
 │   └── storage.py
@@ -41,6 +43,7 @@ logbooklm/
 │       │   ├── ChatPanel.jsx
 │       │   ├── ActionsDropdown.jsx   # Actions pill + dropdown menu for document-level AI actions
 │       │   ├── InstructionBar.jsx    # Slim bar below context bar for optional action instructions
+│       │   ├── ProviderToggle.jsx    # Segmented pill to switch between Anthropic and Ollama
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
 │       │   └── AddSourceModal.jsx
@@ -70,7 +73,7 @@ All services share an internal Docker bridge network. `docker-compose.override.y
 Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Evidence, and Delete action pills when a document is selected.
-2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Actions (dropdown), Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected. An Edit/Preview segmented control and the Actions dropdown are rendered as `controls` on the right of the context bar. When a diff action is selected, an InstructionBar appears below the context bar. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
+2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Actions (dropdown), Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected. An Actions dropdown, ProviderToggle (Anthropic/Ollama), and Edit/Preview segmented control are rendered as `controls` on the right of the context bar. When a diff action is selected, an InstructionBar appears below the context bar. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
 3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Log, Reindex, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
 4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows Document, Evidence, and Close pills.
 
@@ -92,7 +95,8 @@ Every view has a two-tier navigation:
 - **Embeddings and RAG**: Evidence sources are chunked (2000 chars, 200 overlap) and embedded via Ollama (`nomic-embed-text`) in background threads. Embeddings stored at `/var/logbooklm/embeddings/{user_id}/{doc_id}.json`. At chat/action time, if total non-live evidence content exceeds 8000 characters and embeddings exist, top-5 semantically relevant chunks are retrieved (cosine similarity, no threshold) instead of the full dump. Live sync-on document sources are always included directly. If Ollama is unavailable, falls back to full truncated dump silently. `POST /documents/{doc_id}/evidence/reindex` triggers a fire-and-forget reindex of all eligible sources. Implemented in `backend/embeddings.py` (pure Python, no numpy). Per-document threading locks prevent race conditions during concurrent indexing. `OLLAMA_HOST` env var configures the Ollama endpoint.
 - **Document actions**: Whole-document AI actions accessible via the Actions dropdown in the context bar. Chat-output actions (Summarise, Extract key points) append results directly to the chat panel. Diff-producing actions (Rewrite, Restructure, Expand, Condense) show an InstructionBar for optional instructions, then set `pendingProposal` to trigger the diff view. Implemented in `backend/actions.py` (`POST /documents/{doc_id}/action`). `Home.jsx` description generation reuses the `summarise` action.
 - **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. After `Editor.jsx` applies it, `onContentOverrideApplied` fires immediately to clear it back to `null`, preventing re-application on subsequent renders.
-- **Backend model**: `claude-sonnet-4-20250514` via Anthropic API. Key stored in `.env` as `ANTHROPIC_API_KEY`.
+- **LLM provider selection**: The ProviderToggle in the Document view lets users switch between Anthropic and Ollama for chat and actions at runtime. The selected provider is sent in the request body (`provider` field) and persisted to `localStorage` as `logbooklm_llm_provider`. On mount, if no localStorage preference exists, `GET /api/config` is fetched to initialise the provider from the server-side `LLM_PROVIDER` env var. All LLM calls are routed through `backend/llm.py` (`complete()` → `_complete_anthropic` or `_complete_ollama`). Ollama uses `httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)` to accommodate slow local inference.
+- **Backend model**: Anthropic path uses `claude-sonnet-4-20250514`. Ollama path uses `OLLAMA_CHAT_MODEL` env var (default: `llama3.2`). Anthropic API key stored in `.env` as `ANTHROPIC_API_KEY`.
 
 ## Document Tree
 
@@ -144,7 +148,28 @@ JSON files on disk — no database.
 |----------|---------|
 | `JWT_SECRET` | JWT signing secret |
 | `ANTHROPIC_API_KEY` | Anthropic API key for AI features |
-| `OLLAMA_HOST` | Ollama base URL for embeddings (default: `http://host.docker.internal:11434`) |
+| `LLM_PROVIDER` | Default LLM provider: `anthropic` (default) or `ollama` |
+| `OLLAMA_HOST` | Ollama base URL for both embeddings and chat (default: `http://host.docker.internal:11434`) |
+| `OLLAMA_CHAT_MODEL` | Ollama model for chat completions (default: `llama3.2`) |
+
+## Ollama Setup (for local LLM and/or embeddings)
+
+Ollama runs outside Docker on the host machine. The Docker container reaches it via `host.docker.internal`.
+
+```bash
+# Install Ollama: https://ollama.com
+ollama pull nomic-embed-text   # required for embeddings/RAG
+ollama pull llama3.2           # required if LLM_PROVIDER=ollama
+```
+
+Set in `.env`:
+```
+LLM_PROVIDER=ollama            # optional — omit to keep Anthropic for chat
+OLLAMA_CHAT_MODEL=llama3.2     # optional — defaults to llama3.2
+OLLAMA_HOST=http://host.docker.internal:11434   # default, no change needed on Mac/Linux
+```
+
+Embeddings are always attempted via Ollama regardless of `LLM_PROVIDER`. If Ollama is unreachable, the embedding step is skipped silently and RAG falls back to a full context dump.
 
 ## Running Locally
 
