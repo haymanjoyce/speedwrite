@@ -41,6 +41,7 @@ def _complete_anthropic(system: str, messages: list[dict], max_tokens: int) -> s
 
 def _complete_ollama(system: str, messages: list[dict], max_tokens: int) -> str:
     ollama_messages = [{"role": "system", "content": system}] + messages
+    timeout = httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)
     resp = httpx.post(
         f"{OLLAMA_HOST}/api/chat",
         json={
@@ -49,7 +50,7 @@ def _complete_ollama(system: str, messages: list[dict], max_tokens: int) -> str:
             "stream": False,
             "options": {"num_predict": max_tokens},
         },
-        timeout=120,
+        timeout=timeout,
     )
     resp.raise_for_status()
     return resp.json()["message"]["content"]
