@@ -3,6 +3,7 @@ from typing import Optional
 
 import anthropic
 import httpx
+from fastapi import HTTPException
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
@@ -41,16 +42,32 @@ def _complete_anthropic(system: str, messages: list[dict], max_tokens: int) -> s
 
 def _complete_ollama(system: str, messages: list[dict], max_tokens: int) -> str:
     ollama_messages = [{"role": "system", "content": system}] + messages
-    timeout = httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)
-    resp = httpx.post(
-        f"{OLLAMA_HOST}/api/chat",
-        json={
-            "model": OLLAMA_CHAT_MODEL,
-            "messages": ollama_messages,
-            "stream": False,
-            "options": {"num_predict": max_tokens},
-        },
-        timeout=timeout,
-    )
-    resp.raise_for_status()
-    return resp.json()["message"]["content"]
+    try:
+        timeout = httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)
+        resp = httpx.post(
+            f"{OLLAMA_HOST}/api/chat",
+            json={
+                "model": OLLAMA_CHAT_MODEL,
+                "messages": ollama_messages,
+                "stream": False,
+                "options": {"num_predict": max_tokens},
+            },
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        return resp.json()["message"]["content"]
+    except httpx.ConnectError:
+        raise HTTPException(
+            status_code=503,
+            detail="Ollama is not available. Please check that Ollama is running."
+        )
+    except httpx.ReadTimeout:
+        raise HTTPException(
+            status_code=504,
+            detail="Ollama timed out. The model may be overloaded or too large for your hardware."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ollama error: {str(e)}"
+        )
