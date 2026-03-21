@@ -15,6 +15,7 @@ logbooklm/
 │   ├── chat.py
 │   ├── evidence.py
 │   ├── actions.py
+│   ├── embeddings.py
 │   ├── log.py
 │   ├── models.py
 │   └── storage.py
@@ -70,7 +71,7 @@ Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Evidence, and Delete action pills when a document is selected.
 2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Actions (dropdown), Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected. An Edit/Preview segmented control and the Actions dropdown are rendered as `controls` on the right of the context bar. When a diff action is selected, an InstructionBar appears below the context bar. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
-3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Log, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
+3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Log, Reindex, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
 4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows Document, Evidence, and Close pills.
 
 ### Navigation
@@ -88,6 +89,7 @@ Every view has a two-tier navigation:
 - **Rewrite button**: Each document tree node shows a "Rewrite" button on hover alongside "Add". Clicking it calls the chat API directly from `Document.jsx` with `ignore_history: true` (so prior chat history is excluded), sends "Rewrite this section." as the message with the section as context, and sets the pending proposal when a response arrives. The exchange is appended to the chat panel via `chatPanelRef.current.appendMessages(...)`.
 - **Context scoping**: When context is attached (selected editor text or a document section from the tree), the AI is instructed to change only that section and return the complete document with only that part replaced. When no context is attached, the AI can propose changes to the whole document. `ignore_history: bool` on `ChatRequest` lets callers skip chat history for fresh rewrites.
 - **Evidence base**: Supports file uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, and other documents as sources. All evidence is injected into AI context automatically. Document-type sources have a sync toggle: sync=on fetches live content from the source document at chat time; sync=off uses a stored snapshot. "Sync now" (context bar) manually refreshes the snapshot (only available when sync=off).
+- **Embeddings and RAG**: Evidence sources are chunked (2000 chars, 200 overlap) and embedded via Ollama (`nomic-embed-text`) in background threads. Embeddings stored at `/var/logbooklm/embeddings/{user_id}/{doc_id}.json`. At chat/action time, if total non-live evidence content exceeds 8000 characters and embeddings exist, top-5 semantically relevant chunks are retrieved (cosine similarity, no threshold) instead of the full dump. Live sync-on document sources are always included directly. If Ollama is unavailable, falls back to full truncated dump silently. `POST /documents/{doc_id}/evidence/reindex` triggers a fire-and-forget reindex of all eligible sources. Implemented in `backend/embeddings.py` (pure Python, no numpy). Per-document threading locks prevent race conditions during concurrent indexing. `OLLAMA_HOST` env var configures the Ollama endpoint.
 - **Document actions**: Whole-document AI actions accessible via the Actions dropdown in the context bar. Chat-output actions (Summarise, Extract key points) append results directly to the chat panel. Diff-producing actions (Rewrite, Restructure, Expand, Condense) show an InstructionBar for optional instructions, then set `pendingProposal` to trigger the diff view. Implemented in `backend/actions.py` (`POST /documents/{doc_id}/action`). `Home.jsx` description generation reuses the `summarise` action.
 - **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. After `Editor.jsx` applies it, `onContentOverrideApplied` fires immediately to clear it back to `null`, preventing re-application on subsequent renders.
 - **Backend model**: `claude-sonnet-4-20250514` via Anthropic API. Key stored in `.env` as `ANTHROPIC_API_KEY`.
@@ -134,6 +136,7 @@ JSON files on disk — no database.
 | `/var/logbooklm/users.json` | All user accounts |
 | `/var/logbooklm/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, audit log, and protected sections |
 | `/var/logbooklm/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
+| `/var/logbooklm/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources in a document |
 
 ## Environment Variables
 
@@ -141,6 +144,7 @@ JSON files on disk — no database.
 |----------|---------|
 | `JWT_SECRET` | JWT signing secret |
 | `ANTHROPIC_API_KEY` | Anthropic API key for AI features |
+| `OLLAMA_HOST` | Ollama base URL for embeddings (default: `http://host.docker.internal:11434`) |
 
 ## Running Locally
 

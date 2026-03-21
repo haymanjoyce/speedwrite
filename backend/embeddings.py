@@ -135,8 +135,8 @@ def index_evidence_background(
     def _run():
         try:
             index_evidence_sync(user_id, doc_id, evidence_id, evidence_title, content)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Embedding failed for evidence {evidence_id}: {e}")
     threading.Thread(target=_run, daemon=True).start()
 
 
