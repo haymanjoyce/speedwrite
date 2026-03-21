@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
 
-const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedChange, contextText, onClearContext }, ref) {
+const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedChange, contextText, onClearContext, provider }, ref) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -100,7 +100,7 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
     setLoading(true)
 
     try {
-      const res = await api.chatMessage(docId, text, attachedContext)
+      const res = await api.chatMessage(docId, text, attachedContext, false, provider)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)

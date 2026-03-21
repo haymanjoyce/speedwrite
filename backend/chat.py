@@ -2,12 +2,12 @@ import re
 from datetime import datetime
 from typing import Optional
 
-import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_current_user
 from embeddings import RAG_THRESHOLD_CHARS, load_chunks, retrieve_relevant_chunks
+from llm import complete
 from storage import load_document, save_document
 
 router = APIRouter(prefix="/documents")
@@ -17,6 +17,7 @@ class ChatRequest(BaseModel):
     message: str
     context: Optional[str] = None
     ignore_history: bool = False
+    provider: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -172,14 +173,12 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
         ]
     api_messages.append({"role": "user", "content": data.message})
 
-    client = anthropic.Anthropic()
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2048,
+    raw_text = complete(
         system=system_prompt,
         messages=api_messages,
+        provider=data.provider,
+        max_tokens=2048,
     )
-    raw_text = response.content[0].text
 
     proposed_content: Optional[str] = None
     clean_message = raw_text

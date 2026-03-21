@@ -38,6 +38,7 @@ export const api = {
   login: (email, password) =>
     request('POST', '/auth/login', { email, password }),
   me: () => request('GET', '/auth/me'),
+  getConfig: () => request('GET', '/config'),
 
   // Documents
   listDocuments: () => request('GET', '/documents/'),
@@ -47,10 +48,10 @@ export const api = {
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
 
   // Chat
-  chatMessage: (docId, message, context, ignoreHistory = false) =>
-    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory }),
-  documentAction: (docId, action, instructions = '') =>
-    request('POST', `/documents/${docId}/action`, { action, instructions }),
+  chatMessage: (docId, message, context, ignoreHistory = false, provider = null) =>
+    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider }),
+  documentAction: (docId, action, instructions = '', provider = null) =>
+    request('POST', `/documents/${docId}/action`, { action, instructions, provider }),
 
   // Evidence
   listEvidence: (docId) => request('GET', `/documents/${docId}/evidence`),

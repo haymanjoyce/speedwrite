@@ -7,6 +7,7 @@ import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
 import InstructionBar from '../components/InstructionBar'
+import ProviderToggle from '../components/ProviderToggle'
 import TopBar from '../components/TopBar'
 
 const ACTION_LABELS = {
@@ -34,6 +35,9 @@ export default function Document() {
   const [protectedSections, setProtectedSections] = useState([])
   const [pendingAction, setPendingAction] = useState(null)
   const [isActionRunning, setIsActionRunning] = useState(false)
+  const [provider, setProvider] = useState(
+    localStorage.getItem('logbooklm_llm_provider') ?? 'anthropic'
+  )
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -42,7 +46,16 @@ export default function Document() {
       localStorage.removeItem('token')
       navigate('/login')
     })
+    // Initialise provider from server config only if no localStorage preference saved
+    if (!localStorage.getItem('logbooklm_llm_provider')) {
+      api.getConfig().then((cfg) => setProvider(cfg.llm_provider)).catch(() => {})
+    }
   }, [])
+
+  const handleProviderChange = (p) => {
+    setProvider(p)
+    localStorage.setItem('logbooklm_llm_provider', p)
+  }
 
   useEffect(() => {
     if (!id) return
@@ -87,7 +100,7 @@ export default function Document() {
   const handleSectionRewrite = async (sectionContent) => {
     setSaveStatus('Rewriting…')
     try {
-      const res = await api.chatMessage(id, 'Rewrite this section.', sectionContent, true)
+      const res = await api.chatMessage(id, 'Rewrite this section.', sectionContent, true, provider)
       if (res.proposed_content) {
         setPendingProposal(res.proposed_content)
       }
@@ -129,7 +142,7 @@ export default function Document() {
     setIsActionRunning(true)
     setSaveStatus('Running…')
     try {
-      const res = await api.documentAction(id, action, instructions)
+      const res = await api.documentAction(id, action, instructions, provider)
       if (DIFF_ACTIONS.has(action)) {
         if (res.proposed_content) {
           setPendingProposal(res.proposed_content)
@@ -183,6 +196,10 @@ export default function Document() {
     <ActionsDropdown onAction={handleActionSelect} disabled={isActionRunning} />
   )
 
+  const providerControl = !pendingProposal && (
+    <ProviderToggle provider={provider} onChange={handleProviderChange} />
+  )
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
@@ -190,8 +207,8 @@ export default function Document() {
         actions={contextBarActions}
         statusText={pendingProposal ? 'Reviewing changes…' : saveStatus}
         controls={
-          (actionsControl || editPreviewControl)
-            ? <div className="flex items-center gap-2">{actionsControl}{editPreviewControl}</div>
+          (actionsControl || providerControl || editPreviewControl)
+            ? <div className="flex items-center gap-2">{actionsControl}{providerControl}{editPreviewControl}</div>
             : null
         }
       />
@@ -230,6 +247,7 @@ export default function Document() {
           onProposedChange={setPendingProposal}
           contextText={contextText}
           onClearContext={() => setContextText('')}
+          provider={provider}
         />
       </div>
     </div>

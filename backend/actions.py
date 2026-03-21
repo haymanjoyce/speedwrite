@@ -1,12 +1,12 @@
 import re
 from typing import Optional
 
-import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_current_user
 from chat import _build_evidence_block, _build_protected_block
+from llm import complete
 from storage import load_document
 
 router = APIRouter(prefix="/documents")
@@ -62,6 +62,7 @@ Document content:
 class ActionRequest(BaseModel):
     action: str
     instructions: Optional[str] = ""
+    provider: Optional[str] = None
 
 
 class ActionResponse(BaseModel):
@@ -91,14 +92,12 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
     extra = f" {data.instructions.strip()}" if data.instructions and data.instructions.strip() else ""
     user_message = _USER_PROMPTS[data.action].format(extra=extra)
 
-    client = anthropic.Anthropic()
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=4096,
+    raw_text = complete(
         system=system_prompt,
         messages=[{"role": "user", "content": user_message}],
+        provider=data.provider,
+        max_tokens=4096,
     )
-    raw_text = response.content[0].text
 
     proposed_content: Optional[str] = None
     result = raw_text
