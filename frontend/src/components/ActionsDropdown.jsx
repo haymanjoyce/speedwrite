@@ -42,7 +42,7 @@ export default function ActionsDropdown({ onAction, disabled }) {
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
-        className="rounded-full px-3 py-1 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-0.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Actions
       </button>
