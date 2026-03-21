@@ -111,6 +111,10 @@ export default function Document() {
       )
     } catch (err) {
       console.error('Rewrite failed', err)
+      chatPanelRef.current?.appendMessages(
+        null,
+        `Rewrite failed: ${err.message || 'Unknown error'}`
+      )
     } finally {
       setSaveStatus('')
       setContextText('')
