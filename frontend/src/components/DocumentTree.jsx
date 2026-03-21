@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-function parseHeadings(content) {
+export function parseHeadings(content) {
   const lines = (content || '').split('\n')
   const headings = []
   lines.forEach((line, lineIndex) => {
