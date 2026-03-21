@@ -34,6 +34,9 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
         rejected: undefined,
       }))
     )
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+    }, 0)
   }, [document?.id])
 
   const scrollToBottom = () => {
