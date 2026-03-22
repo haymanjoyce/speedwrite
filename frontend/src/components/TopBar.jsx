@@ -1,9 +1,15 @@
 import { Link } from 'react-router-dom'
 
 export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel }) {
+  const breadcrumbTitle = docTitle
+    ? subPageLabel
+      ? `SpeedWrite / ${docTitle} / ${subPageLabel}`
+      : `SpeedWrite / ${docTitle}`
+    : 'SpeedWrite'
+
   return (
     <div className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
-      <div className="flex items-center text-sm">
+      <div className="flex items-center text-sm min-w-0 overflow-hidden whitespace-nowrap" title={breadcrumbTitle}>
         {docTitle ? (
           <>
             <Link to="/" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors">

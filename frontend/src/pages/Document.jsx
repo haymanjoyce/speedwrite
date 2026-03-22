@@ -180,7 +180,7 @@ export default function Document() {
         { label: 'Reject', onClick: handleReject, variant: 'default' },
       ]
     : [
-        ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'default' }] : []),
+        ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }] : []),
         { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
         { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },

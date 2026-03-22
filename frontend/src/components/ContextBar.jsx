@@ -7,7 +7,11 @@ export default function ContextBar({ actions = [], controls, statusText }) {
           <button
             key={i}
             onClick={action.onClick}
-            className="text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-0.5 transition-colors cursor-pointer"
+            className={`text-xs rounded-full px-3 py-0.5 transition-colors cursor-pointer ${
+            action.variant === 'primary'
+              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+          }`}
           >
             {action.label}
           </button>
