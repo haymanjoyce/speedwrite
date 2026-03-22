@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="https://github.com/haymanjoyce/logbooklm"
-REPO_DIR="/opt/logbooklm"
-DOMAINS=("logbooklm.com")
+REPO_URL="https://github.com/haymanjoyce/speedwrite"
+REPO_DIR="/opt/speedwrite"
+DOMAINS=("speedwrite.app")
 ADMIN_USER="richard"
 EMAIL=""   # Required: set your email before running (used for Let's Encrypt notifications)
 
@@ -70,6 +70,8 @@ fi
 echo "==> [6/9] Creating data directories"
 mkdir -p /var/logbooklm/projects
 chown -R "${ADMIN_USER}:${ADMIN_USER}" /var/logbooklm
+# NOTE: data directory /var/logbooklm is intentionally kept at this path.
+# Migrate to /var/speedwrite on VPS deploy if starting fresh.
 
 echo "==> [7/9] Obtaining SSL certificates"
 for domain in "${DOMAINS[@]}"; do

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_DIR="/opt/logbooklm"
+REPO_DIR="/opt/speedwrite"
 cd "${REPO_DIR}"
 
 echo "==> Pulling latest code"

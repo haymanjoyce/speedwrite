@@ -1,13 +1,13 @@
-# LogbookLM — Claude Code Context
+# SpeedWrite — Claude Code Context
 
 ## Project Overview
 
-LogbookLM is an AI-assisted document authoring platform. The core unit is a document — each document has its own evidence base, AI agent chat, and markdown content.
+SpeedWrite is an AI-assisted document authoring platform. The core unit is a document — each document has its own evidence base, AI agent chat, and markdown content.
 
 ## Repository Structure
 
 ```
-logbooklm/
+speedwrite/
 ├── backend/
 │   ├── main.py
 │   ├── auth.py
@@ -51,7 +51,7 @@ logbooklm/
 │       └── api.js
 ├── nginx/
 │   ├── local_app.conf
-│   └── logbooklm.com.conf
+│   └── speedwrite.app.conf
 ├── docker-compose.yml
 ├── docker-compose.override.yml
 ├── bootstrap.sh
@@ -148,6 +148,8 @@ JSON files on disk — no database.
 | `/var/logbooklm/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, audit log, and protected sections |
 | `/var/logbooklm/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
 | `/var/logbooklm/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources in a document |
+
+> **Note**: Data directories use `/var/logbooklm` on both local dev and the current VPS. Migration to `/var/speedwrite` is needed when provisioning a fresh VPS for the speedwrite.app deployment.
 
 ## Environment Variables
 

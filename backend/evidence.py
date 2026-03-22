@@ -49,7 +49,7 @@ def _fetch_url(url: str) -> tuple[str, str]:
         url,
         timeout=15,
         follow_redirects=True,
-        headers={"User-Agent": "Mozilla/5.0 (compatible; LogbookLM/1.0)"},
+        headers={"User-Agent": "Mozilla/5.0 (compatible; SpeedWrite/1.0)"},
     )
     resp.raise_for_status()
 

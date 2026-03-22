@@ -9,7 +9,7 @@ from documents import router as documents_router
 from evidence import router as evidence_router
 from log import router as log_router
 
-app = FastAPI(title="LogbookLM API")
+app = FastAPI(title="SpeedWrite API")
 
 app.include_router(config_router)
 app.include_router(auth_router)

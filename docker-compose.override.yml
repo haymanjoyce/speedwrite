@@ -20,7 +20,7 @@ services:
     # Docker applies mounts in order; later mounts to the same container path
     # win, so these override the prod configs from docker-compose.yml.
     volumes:
-      - ./nginx/local_app.conf:/etc/nginx/conf.d/logbooklm.com.conf:ro
+      - ./nginx/local_app.conf:/etc/nginx/conf.d/speedwrite.app.conf:ro
       - /dev/null:/etc/nginx/conf.d/default.conf:ro
 
 volumes:

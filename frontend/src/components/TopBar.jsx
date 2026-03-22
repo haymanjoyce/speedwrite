@@ -7,7 +7,7 @@ export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel }
         {docTitle ? (
           <>
             <Link to="/" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors">
-              LogbookLM
+              SpeedWrite
             </Link>
             <span className="text-gray-200 mx-2">/</span>
             {docId && subPageLabel ? (
@@ -25,7 +25,7 @@ export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel }
             )}
           </>
         ) : (
-          <span className="text-gray-900 font-semibold tracking-tight">LogbookLM</span>
+          <span className="text-gray-900 font-semibold tracking-tight">SpeedWrite</span>
         )}
       </div>
       <div className="flex items-center gap-3">

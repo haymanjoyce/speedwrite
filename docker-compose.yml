@@ -3,7 +3,7 @@ services:
   # Build frontend assets and copy to shared volume, then exit
   frontend:
     build: ./frontend
-    container_name: logbooklm-frontend
+    container_name: speedwrite-frontend
     entrypoint: ["sh", "-c", "cp -r /dist/. /output/"]
     volumes:
       - frontend_dist:/output
@@ -11,7 +11,7 @@ services:
 
   app:
     build: ./backend
-    container_name: logbooklm-app
+    container_name: speedwrite-app
     restart: unless-stopped
     env_file: .env
     volumes:
@@ -28,13 +28,13 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
-    container_name: logbooklm-nginx
+    container_name: speedwrite-nginx
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/logbooklm.com.conf:/etc/nginx/conf.d/logbooklm.com.conf:ro
+      - ./nginx/speedwrite.app.conf:/etc/nginx/conf.d/speedwrite.app.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - frontend_dist:/usr/share/nginx/html:ro
     networks:
