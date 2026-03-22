@@ -110,15 +110,9 @@ export default function Home() {
               <div className="h-full flex items-center justify-center">
                 <div className="text-center max-w-sm px-6">
                   <h1 className="text-xl font-semibold text-gray-800 mb-3">Welcome to SpeedWrite</h1>
-                  <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                  <p className="text-sm text-gray-500 leading-relaxed">
                     SpeedWrite is an AI-assisted document authoring platform. Create a document, attach evidence sources, and let AI help you write, rewrite, and refine your content.
                   </p>
-                  <button
-                    onClick={handleNewDocument}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded px-4 py-2 transition-colors"
-                  >
-                    Create your first document
-                  </button>
                 </div>
               </div>
             ) : (
