@@ -56,46 +56,66 @@ function getProtectedLineSet(content, protectedSections) {
   return protectedSet
 }
 
+import { useEffect, useRef } from 'react'
+
 export default function DiffView({ originalContent, proposedContent, protectedSections = [] }) {
   const oldLines = (originalContent ?? '').split('\n')
   const newLines = (proposedContent ?? '').split('\n')
   const diff = diffLines(oldLines, newLines)
   const protectedLineSet = getProtectedLineSet(originalContent ?? '', protectedSections)
+  const firstChangeRef = useRef(null)
+
+  useEffect(() => {
+    firstChangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [])
+
+  let firstChangeSeen = false
+  let prevType = null
 
   return (
     <div className="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed bg-white">
       {diff.map((entry, i) => {
         const isProtected = protectedLineSet.has(entry.origIndex)
+        const isEmpty = entry.line === ''
 
         if (isProtected) {
+          prevType = 'protected'
           return (
-            <div key={i} className="flex border-l-2 border-gray-300 bg-gray-100">
-              <span className="w-4 flex-shrink-0 select-none text-gray-400">~</span>
+            <div key={i} className={`flex border-l-2 border-gray-300 bg-gray-100 py-0.5${isEmpty ? ' min-h-[1rem]' : ''}`}>
+              <span className="w-4 font-mono text-xs flex-shrink-0 select-none text-gray-400">~</span>
               <span className="text-gray-400 whitespace-pre-wrap break-all">{entry.line}</span>
             </div>
           )
         }
 
         if (entry.type === 'equal') {
+          const separator = prevType === 'add' || prevType === 'remove'
+          prevType = 'equal'
           return (
-            <div key={i} className="flex">
-              <span className="w-4 flex-shrink-0 select-none text-gray-300"> </span>
-              <span className="text-gray-800 whitespace-pre-wrap break-all">{entry.line}</span>
+            <div key={i} className={`flex py-0.5${isEmpty ? ' min-h-[1rem]' : ''}${separator ? ' border-t border-gray-100 mt-0.5' : ''}`}>
+              <span className="w-4 font-mono text-xs flex-shrink-0 select-none text-gray-300"> </span>
+              <span className="text-gray-500 whitespace-pre-wrap break-all">{entry.line}</span>
             </div>
           )
         }
+
+        const isFirstChange = !firstChangeSeen
+        if (isFirstChange) firstChangeSeen = true
+
         if (entry.type === 'remove') {
+          prevType = 'remove'
           return (
-            <div key={i} className="flex border-l-2 border-red-400" style={{ background: '#fee2e2' }}>
-              <span className="w-4 flex-shrink-0 select-none text-red-400">-</span>
+            <div key={i} ref={isFirstChange ? firstChangeRef : null} className={`flex border-l-2 border-red-400 py-0.5${isEmpty ? ' min-h-[1rem]' : ''}`} style={{ background: '#fee2e2' }}>
+              <span className="w-4 font-mono text-xs flex-shrink-0 select-none text-red-400">-</span>
               <span className="text-red-700 line-through whitespace-pre-wrap break-all">{entry.line}</span>
             </div>
           )
         }
         // add
+        prevType = 'add'
         return (
-          <div key={i} className="flex border-l-2 border-green-400" style={{ background: '#dcfce7' }}>
-            <span className="w-4 flex-shrink-0 select-none text-green-500">+</span>
+          <div key={i} ref={isFirstChange ? firstChangeRef : null} className={`flex border-l-2 border-green-400 py-0.5${isEmpty ? ' min-h-[1rem]' : ''}`} style={{ background: '#dcfce7' }}>
+            <span className="w-4 font-mono text-xs flex-shrink-0 select-none text-green-500">+</span>
             <span className="text-green-700 whitespace-pre-wrap break-all">{entry.line}</span>
           </div>
         )

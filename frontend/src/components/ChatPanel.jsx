@@ -192,7 +192,7 @@ const ChatPanel = forwardRef(function ChatPanel({
   const chipLabel = localContext
     ? localContext.label
     : contextText
-      ? `📎 Selected text (${contextText.length} chars)`
+      ? `Selected text (${contextText.length} chars)`
       : null
   const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > 3000)
   const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
@@ -219,9 +219,8 @@ const ChatPanel = forwardRef(function ChatPanel({
             {msg.role === 'user' ? (
               <div className="flex flex-col items-end max-w-[85%]">
                 {msg.context_label && (
-                  <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-                    <span>📎</span>
-                    <span>{msg.context_label}</span>
+                  <div className="text-xs text-gray-400 mb-1">
+                    {msg.context_label}
                   </div>
                 )}
                 <div className="rounded-lg px-3 py-2 text-sm bg-blue-600 text-white">
