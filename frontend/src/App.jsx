@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import ErrorBoundary from './components/ErrorBoundary'
 import Document from './pages/Document'
 import Evidence from './pages/Evidence'
 import Home from './pages/Home'
@@ -12,44 +13,46 @@ function RequireAuth({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <Home />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/document/:id"
-          element={
-            <RequireAuth>
-              <Document />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/document/:id/evidence"
-          element={
-            <RequireAuth>
-              <Evidence />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/document/:id/log"
-          element={
-            <RequireAuth>
-              <Log />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
+          <Route path="/register" element={<ErrorBoundary><Register /></ErrorBoundary>} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <ErrorBoundary><Home /></ErrorBoundary>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/document/:id"
+            element={
+              <RequireAuth>
+                <ErrorBoundary><Document /></ErrorBoundary>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/document/:id/evidence"
+            element={
+              <RequireAuth>
+                <ErrorBoundary><Evidence /></ErrorBoundary>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/document/:id/log"
+            element={
+              <RequireAuth>
+                <ErrorBoundary><Log /></ErrorBoundary>
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
