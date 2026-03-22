@@ -1,7 +1,7 @@
 import DocumentTree from './DocumentTree'
 import { parseHeadings } from './DocumentTree'
 
-export default function DocumentSidebar({ document, onHeadingClick, onSectionSelect, onSectionRewrite, protectedSections, onToggleProtection }) {
+export default function DocumentSidebar({ document, onHeadingClick, onSectionRewrite, protectedSections, onToggleProtection }) {
   const hasHeadings = document && parseHeadings(document.content).length > 0
 
   return (
@@ -11,7 +11,6 @@ export default function DocumentSidebar({ document, onHeadingClick, onSectionSel
           <DocumentTree
             content={document.content}
             onHeadingClick={onHeadingClick}
-            onSectionSelect={onSectionSelect}
             onSectionRewrite={onSectionRewrite}
             protectedSections={protectedSections}
             onToggleProtection={onToggleProtection}

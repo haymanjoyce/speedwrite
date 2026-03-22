@@ -10,6 +10,26 @@ import InstructionBar from '../components/InstructionBar'
 import SegmentedControl from '../components/SegmentedControl'
 import TopBar from '../components/TopBar'
 
+function parseHeadingsWithContent(content) {
+  const lines = (content || '').split('\n')
+  const headings = []
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^(#{1,3})\s+(.+)/)
+    if (match) {
+      const level = match[1].length
+      const text = match[2]
+      const sectionLines = [lines[i]]
+      for (let j = i + 1; j < lines.length; j++) {
+        const nextMatch = lines[j].match(/^(#{1,3})\s+/)
+        if (nextMatch && nextMatch[1].length <= level) break
+        sectionLines.push(lines[j])
+      }
+      headings.push({ text, level, content: sectionLines.join('\n') })
+    }
+  }
+  return headings
+}
+
 const ACTION_LABELS = {
   summarise: 'Summarise',
   extract_key_points: 'Extract key points',
@@ -204,7 +224,6 @@ export default function Document() {
         <DocumentSidebar
           document={doc}
           onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
-          onSectionSelect={(text) => setContextText(text)}
           onSectionRewrite={handleSectionRewrite}
           protectedSections={protectedSections}
           onToggleProtection={handleToggleProtection}
@@ -228,6 +247,8 @@ export default function Document() {
           onProposedChange={setPendingProposal}
           contextText={contextText}
           onClearContext={() => setContextText('')}
+          headings={parseHeadingsWithContent(doc?.content)}
+          evidenceSources={doc?.evidence || []}
         />
       </div>
     </div>

@@ -37,7 +37,7 @@ function extractSection(content, headings, index) {
   return lines.slice(lineIndex, endLine).join('\n').trim()
 }
 
-export default function DocumentTree({ content, onHeadingClick, onSectionSelect, onSectionRewrite, protectedSections = [], onToggleProtection }) {
+export default function DocumentTree({ content, onHeadingClick, onSectionRewrite, protectedSections = [], onToggleProtection }) {
   const [hoveredIndex, setHoveredIndex] = useState(null)
   const headings = parseHeadings(content)
   if (!headings.length) return null
@@ -88,30 +88,17 @@ export default function DocumentTree({ content, onHeadingClick, onSectionSelect,
               {h.text}
             </span>
 
-            {isHovered && (onSectionSelect || onSectionRewrite) && (
+            {isHovered && onSectionRewrite && !isProtected && (
               <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                {onSectionSelect && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onSectionSelect(extractSection(content, headings, i))
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
-                  >
-                    Add
-                  </button>
-                )}
-                {onSectionRewrite && !isProtected && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onSectionRewrite(extractSection(content, headings, i))
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
-                  >
-                    Rewrite
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSectionRewrite(extractSection(content, headings, i))
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                >
+                  Rewrite
+                </button>
               </div>
             )}
           </div>

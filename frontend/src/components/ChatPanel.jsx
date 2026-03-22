@@ -1,7 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
+import AttachmentPopup from './AttachmentPopup'
 
-const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedChange, contextText, onClearContext, provider }, ref) {
+const ChatPanel = forwardRef(function ChatPanel({
+  docId, document, onProposedChange, contextText, onClearContext, provider,
+  headings, evidenceSources,
+}, ref) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -9,9 +13,12 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
     () => localStorage.getItem('logbooklm_submit_on_enter') !== 'false'
   )
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const [localContext, setLocalContext] = useState(null) // { text, label }
+  const [showPopup, setShowPopup] = useState(false)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
+  const plusButtonRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
     appendMessages(userMsg, assistantMsg) {
@@ -38,6 +45,11 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
       messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
     }, 0)
   }, [document?.id])
+
+  // External context (e.g. "Add to chat" from editor) takes over — clear local attachment
+  useEffect(() => {
+    if (contextText) setLocalContext(null)
+  }, [contextText])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -89,21 +101,32 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
     }
   }
 
+  const handleAttach = (content, label) => {
+    setLocalContext({ text: content, label })
+    setShowPopup(false)
+  }
+
+  const handleClearContext = () => {
+    setLocalContext(null)
+    onClearContext()
+  }
+
   const handleSend = async () => {
     const text = input.trim()
     if (!text || loading) return
 
-    const attachedContext = contextText || null
+    const effectiveContext = localContext?.text || contextText || null
     setMessages((prev) => [...prev, { role: 'user', content: text }])
     setInput('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
+    setLocalContext(null)
     onClearContext()
     setLoading(true)
 
     try {
-      const res = await api.chatMessage(docId, text, attachedContext, false, provider)
+      const res = await api.chatMessage(docId, text, effectiveContext, false, provider)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)
@@ -117,6 +140,13 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
       setLoading(false)
     }
   }
+
+  const effectiveContext = localContext?.text || contextText
+  const chipLabel = localContext
+    ? localContext.label
+    : contextText
+      ? `📎 Selected text (${contextText.length} chars)`
+      : null
 
   const isMac = navigator.platform.toUpperCase().includes('MAC')
   const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
@@ -177,12 +207,12 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
       )}
 
       {/* Context attachment chip */}
-      {contextText && (
+      {effectiveContext && (
         <div className="px-4 pb-2 flex-shrink-0">
           <div className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs text-blue-700">
-            <span className="truncate">📎 Selected text ({contextText.length} chars)</span>
+            <span className="truncate">{chipLabel}</span>
             <button
-              onClick={onClearContext}
+              onClick={handleClearContext}
               className="ml-auto flex-shrink-0 text-blue-400 hover:text-blue-600 text-base leading-none pl-1"
             >
               ×
@@ -193,7 +223,24 @@ const ChatPanel = forwardRef(function ChatPanel({ docId, document, onProposedCha
 
       {/* Input */}
       <div className="px-4 pb-4 flex-shrink-0">
-        <div className="flex gap-2 bg-white border border-gray-200 rounded-lg p-2 focus-within:border-blue-300 transition-colors">
+        <div className="relative flex gap-2 bg-white border border-gray-200 rounded-lg p-2 focus-within:border-blue-300 transition-colors">
+          {showPopup && (
+            <AttachmentPopup
+              headings={headings || []}
+              evidenceSources={evidenceSources || []}
+              onAttach={handleAttach}
+              onClose={() => setShowPopup(false)}
+              anchorRef={plusButtonRef}
+            />
+          )}
+          <button
+            ref={plusButtonRef}
+            onClick={() => setShowPopup((v) => !v)}
+            className="self-end text-gray-400 hover:text-gray-600 cursor-pointer text-lg leading-none px-1 pb-0.5 flex-shrink-0"
+            title="Attach section or evidence"
+          >
+            +
+          </button>
           <textarea
             ref={textareaRef}
             value={input}
