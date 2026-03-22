@@ -36,6 +36,7 @@ const ChatPanel = forwardRef(function ChatPanel({
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
   const plusButtonRef = useRef(null)
+  const abortControllerRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
     appendMessages(userMsg, assistantMsg) {
@@ -148,22 +149,32 @@ const ChatPanel = forwardRef(function ChatPanel({
     }
     setLocalContext(null)
     onClearContext()
+    abortControllerRef.current = new AbortController()
     setLoading(true)
 
     try {
-      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel)
+      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)
       }
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: `Error: ${err.message}` },
-      ])
+      if (err.name !== 'AbortError') {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: `Error: ${err.message}` },
+        ])
+      }
     } finally {
+      abortControllerRef.current = null
       setLoading(false)
     }
+  }
+
+  const handleStop = () => {
+    abortControllerRef.current?.abort()
+    abortControllerRef.current = null
+    setLoading(false)
   }
 
   const effectiveContext = localContext?.text || contextText
@@ -303,13 +314,22 @@ const ChatPanel = forwardRef(function ChatPanel({
             style={{ maxHeight: '144px', overflowY: 'auto' }}
           />
           <div className="self-end flex flex-col items-end gap-1">
-            <button
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
-            >
-              Send
-            </button>
+            {loading ? (
+              <button
+                onClick={handleStop}
+                className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
+              >
+                ■ Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
+              >
+                Send
+              </button>
+            )}
             <button
               onClick={toggleSubmitOnEnter}
               className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer leading-none"

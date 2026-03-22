@@ -4,7 +4,7 @@ function getToken() {
   return localStorage.getItem('token')
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, signal) {
   const headers = { 'Content-Type': 'application/json' }
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
@@ -13,6 +13,7 @@ async function request(method, path, body) {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   })
 
   if (res.status === 401) {
@@ -48,8 +49,8 @@ export const api = {
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
 
   // Chat
-  chatMessage: (docId, message, context, ignoreHistory = false, provider = null, contextLabel = null) =>
-    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider, context_label: contextLabel }),
+  chatMessage: (docId, message, context, ignoreHistory = false, provider = null, contextLabel = null, signal = null) =>
+    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider, context_label: contextLabel }, signal),
   documentAction: (docId, action, instructions = '', provider = null) =>
     request('POST', `/documents/${docId}/action`, { action, instructions, provider }),
 
