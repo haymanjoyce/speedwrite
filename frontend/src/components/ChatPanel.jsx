@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
 import AttachmentPopup from './AttachmentPopup'
+import MarkdownPreview from './MarkdownPreview'
 
 function truncateContext(text) {
   const originalLength = text.length
@@ -198,7 +199,11 @@ const ChatPanel = forwardRef(function ChatPanel({
                   : 'bg-white border border-gray-200 text-gray-800'
               }`}
             >
-              {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
+              {msg.content && (
+                msg.role === 'user'
+                  ? <p className="whitespace-pre-wrap">{msg.content}</p>
+                  : <div className="[&>*]:!p-0 [&>*]:!max-w-none [&>*]:!overflow-visible [&>*]:!bg-transparent [&>*]:!flex-none"><MarkdownPreview content={msg.content} /></div>
+              )}
             </div>
           </div>
         ))}
