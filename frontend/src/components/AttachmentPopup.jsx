@@ -105,7 +105,7 @@ export default function AttachmentPopup({ headings, evidenceSources, onAttach, o
         {screen === 'evidence' && filteredSources.map((s, i) => (
           <button
             key={i}
-            onClick={() => { onAttach((s.content || '').slice(0, 3000), `📎 ${s.title}`); onClose() }}
+            onClick={() => { onAttach(s.content || '', `📎 ${s.title}`); onClose() }}
             className="text-sm text-gray-700 hover:bg-gray-50 rounded px-3 py-1.5 cursor-pointer w-full text-left flex items-center gap-2"
           >
             <span className="flex-shrink-0">{TYPE_ICONS[s.type] || '📄'}</span>

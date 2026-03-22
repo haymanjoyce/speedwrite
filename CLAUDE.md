@@ -41,6 +41,7 @@ speedwrite/
 │       │   ├── DiffView.jsx          # LCS-based inline diff renderer (replaces editor when proposal pending)
 │       │   ├── MarkdownPreview.jsx   # Custom markdown renderer for Preview mode (no external deps)
 │       │   ├── ChatPanel.jsx
+│       │   ├── AttachmentPopup.jsx   # Two-screen popup for attaching sections or evidence to chat
 │       │   ├── ActionsDropdown.jsx   # Actions pill + dropdown menu for document-level AI actions
 │       │   ├── InstructionBar.jsx    # Slim bar below context bar for optional action instructions
 │       │   ├── ProviderToggle.jsx    # Segmented pill to switch between Anthropic and Ollama
@@ -106,7 +107,7 @@ Every view has a two-tier navigation:
 ## Document Tree
 
 - Hovering a tree node highlights that node and all its child nodes (bg-blue-50).
-- Two buttons appear on hover: **Add** (sets section as chat context chip) and **Rewrite** (triggers an immediate AI rewrite of that section, bypassing chat history). Rewrite is hidden for protected headings.
+- One button appears on hover: **Rewrite** (triggers an immediate AI rewrite of that section, bypassing chat history). Hidden for protected headings. The former "Add" button was removed — section attachment is now handled via the + button in the chat input (see Chat Panel).
 - Protected headings shown with `bg-gray-100` background and a lock icon (🔒). Lock icon for unlocked headings shown faintly on hover only.
 - Clicking the heading text scrolls the editor to that heading (via `useImperativeHandle` on Editor).
 - When the document has no `##` headings, `DocumentSidebar.jsx` shows a placeholder: "No structure yet. Add ## headings to build a document tree." `parseHeadings` is exported from `DocumentTree.jsx` for use by the sidebar.
@@ -115,7 +116,10 @@ Every view has a two-tier navigation:
 ## Chat Panel
 
 - Single agent mode — no chat/agent toggle.
-- Context chip shows attached text; dismissed with ×.
+- **Attachment system**: A **+** button beside the textarea opens `AttachmentPopup.jsx` — a two-screen popup (type selector → section or evidence picker). Section picker lists document headings (H1–H3) parsed via `parseHeadingsWithContent` in `Document.jsx`; evidence picker lists all sources from `doc.evidence`. Selecting an item sets it as context (`localContext` state in `ChatPanel`) and closes the popup. The popup closes on outside click (anchor-ref-aware, so clicking + toggles cleanly) or Escape.
+- **Context chip**: shows the attachment label (e.g. `📄 Introduction`) or `📎 Selected text (N chars)` for editor selections. Displays character count as `{originalLength} / 3000 chars`. If the original content exceeded 3000 chars, the chip switches to amber styling (`bg-amber-50 border-amber-200`) and shows `⚠ {N} / 3000 chars (truncated)` with a tooltip. Dismissed with ×.
+- **Context truncation**: `truncateContext()` in `ChatPanel.jsx` truncates content to the last complete line before 3000 chars and appends `\n[truncated]`. Truncation happens in `handleAttach` (for popup attachments) and at send time (for `contextText` prop). `originalLength` is stored pre-truncation so the chip always shows the original size. `AttachmentPopup` passes raw untruncated content — all truncation is handled in `ChatPanel`.
+- **Context priority**: `localContext` (popup attachment) takes priority over `contextText` prop (editor selection / "Add to chat"). When `contextText` is set externally, `localContext` is cleared. On send, both are cleared.
 - Chat history is loaded (and reset) whenever `document?.id` changes. This fires once per document, so mid-conversation saves (which update the document prop without changing its ID) do not overwrite in-flight messages. On load, a `setTimeout(..., 0)` scrolls to the bottom after the DOM updates.
 - **Note on double fetches in development**: `React.StrictMode` is enabled in `main.jsx`. In React 18 development mode, this intentionally mounts → unmounts → remounts every component, causing each effect to fire twice. Two `GET /documents/:id` requests on page load is expected behaviour in dev and does not happen in production builds.
 - When the AI returns `<proposed_document>` tags, the extracted content is passed to `Document.jsx` via `onProposedChange`. The chat panel only ever shows the explanation text — proposed content is never rendered inside the chat.

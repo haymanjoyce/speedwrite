@@ -2,6 +2,22 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { api } from '../api'
 import AttachmentPopup from './AttachmentPopup'
 
+function truncateContext(text) {
+  const originalLength = text.length
+  const truncated = originalLength > 3000
+  if (!truncated) return { text, truncated: false, originalLength }
+
+  const slice = text.slice(0, 3000)
+  const lastNewline = slice.lastIndexOf('\n')
+  const cutText = lastNewline > 0 ? slice.slice(0, lastNewline) : slice
+
+  return {
+    text: cutText + '\n[truncated]',
+    truncated: true,
+    originalLength,
+  }
+}
+
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
   headings, evidenceSources,
@@ -13,7 +29,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     () => localStorage.getItem('logbooklm_submit_on_enter') !== 'false'
   )
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const [localContext, setLocalContext] = useState(null) // { text, label }
+  const [localContext, setLocalContext] = useState(null) // { text, label, truncated }
   const [showPopup, setShowPopup] = useState(false)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -102,7 +118,8 @@ const ChatPanel = forwardRef(function ChatPanel({
   }
 
   const handleAttach = (content, label) => {
-    setLocalContext({ text: content, label })
+    const { text, truncated } = truncateContext(content)
+    setLocalContext({ text, label, truncated, originalLength: content.length })
     setShowPopup(false)
   }
 
@@ -115,7 +132,11 @@ const ChatPanel = forwardRef(function ChatPanel({
     const text = input.trim()
     if (!text || loading) return
 
-    const context = localContext?.text || contextText || null
+    const context = localContext
+      ? localContext.text
+      : contextText
+        ? truncateContext(contextText).text
+        : null
     const hasContext = !!(localContext?.text || contextText)
     setMessages((prev) => [...prev, { role: 'user', content: text }])
     setInput('')
@@ -148,6 +169,8 @@ const ChatPanel = forwardRef(function ChatPanel({
     : contextText
       ? `📎 Selected text (${contextText.length} chars)`
       : null
+  const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > 3000)
+  const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
 
   const isMac = navigator.platform.toUpperCase().includes('MAC')
   const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
@@ -210,11 +233,24 @@ const ChatPanel = forwardRef(function ChatPanel({
       {/* Context attachment chip */}
       {effectiveContext && (
         <div className="px-4 pb-2 flex-shrink-0">
-          <div className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs text-blue-700">
+          <div
+            className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${
+              isTruncated
+                ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                : 'bg-blue-50 border border-blue-200 text-blue-700'
+            }`}
+            title={isTruncated ? 'Content exceeded 3000 characters and was truncated' : undefined}
+          >
             <span className="truncate">{chipLabel}</span>
+            <span className={`flex-shrink-0 ml-1 ${isTruncated ? '' : 'text-gray-400'}`}>
+              {'• '}
+              {isTruncated ? `⚠ ${actualChars} / 3000 chars (truncated)` : `${actualChars} / 3000 chars`}
+            </span>
             <button
               onClick={handleClearContext}
-              className="ml-auto flex-shrink-0 text-blue-400 hover:text-blue-600 text-base leading-none pl-1"
+              className={`ml-auto flex-shrink-0 text-base leading-none pl-1 ${
+                isTruncated ? 'text-amber-400 hover:text-amber-600' : 'text-blue-400 hover:text-blue-600'
+              }`}
             >
               ×
             </button>
