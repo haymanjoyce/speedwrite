@@ -140,7 +140,6 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-
     doc.setdefault("chat_history", [])
 
     context_block = ""
@@ -177,23 +176,24 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
         system=system_prompt,
         messages=api_messages,
         provider=data.provider,
-        max_tokens=2048,
+        max_tokens=4096,
     )
 
     proposed_content: Optional[str] = None
     clean_message = raw_text
     match = re.search(
-        r"<proposed_document>(.*?)</proposed_document>", raw_text, re.DOTALL
+        r"<proposed_document[^>]*>(.*?)</proposed_document>",
+        raw_text,
+        re.DOTALL,
     )
     if match:
         proposed_content = match.group(1).strip()
         clean_message = re.sub(
-            r"<proposed_document>.*?</proposed_document>",
+            r"<proposed_document[^>]*>.*?</proposed_document>",
             "",
             raw_text,
             flags=re.DOTALL,
         ).strip()
-
     now = datetime.utcnow().isoformat()
     doc["chat_history"].append(
         {"role": "user", "content": data.message, "timestamp": now}

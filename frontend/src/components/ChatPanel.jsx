@@ -115,7 +115,8 @@ const ChatPanel = forwardRef(function ChatPanel({
     const text = input.trim()
     if (!text || loading) return
 
-    const effectiveContext = localContext?.text || contextText || null
+    const context = localContext?.text || contextText || null
+    const hasContext = !!(localContext?.text || contextText)
     setMessages((prev) => [...prev, { role: 'user', content: text }])
     setInput('')
     if (textareaRef.current) {
@@ -126,7 +127,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     setLoading(true)
 
     try {
-      const res = await api.chatMessage(docId, text, effectiveContext, false, provider)
+      const res = await api.chatMessage(docId, text, context, hasContext, provider)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)
