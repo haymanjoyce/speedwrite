@@ -46,6 +46,17 @@ const ChatPanel = forwardRef(function ChatPanel({
         { role: 'assistant', content: assistantMsg },
       ])
     },
+    prefillRewrite(sectionContent, headingText) {
+      const { text, truncated } = truncateContext(sectionContent)
+      setLocalContext({ text, label: headingText, truncated, originalLength: sectionContent.length })
+      setInput('Rewrite this section.')
+      setTimeout(() => {
+        if (textareaRef.current) {
+          resizeTextarea(textareaRef.current)
+          textareaRef.current.focus()
+        }
+      }, 0)
+    },
   }))
 
   useEffect(() => {

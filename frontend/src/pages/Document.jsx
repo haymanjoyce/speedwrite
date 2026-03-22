@@ -105,27 +105,8 @@ export default function Document() {
     setSelectedText('')
   }
 
-  const handleSectionRewrite = async (sectionContent, headingText) => {
-    setSaveStatus('Rewriting…')
-    try {
-      const res = await api.chatMessage(id, 'Rewrite this section.', sectionContent, true, null, headingText || null)
-      if (res.proposed_content) {
-        setPendingProposal(res.proposed_content)
-      }
-      chatPanelRef.current?.appendMessages(
-        'Rewrite this section.',
-        res.message || 'Proposed changes ready — accept or reject above.'
-      )
-    } catch (err) {
-      console.error('Rewrite failed', err)
-      chatPanelRef.current?.appendMessages(
-        null,
-        `Rewrite failed: ${err.message || 'Unknown error'}`
-      )
-    } finally {
-      setSaveStatus('')
-      setContextText('')
-    }
+  const handleSectionRewritePrefill = (sectionContent, headingText) => {
+    chatPanelRef.current?.prefillRewrite(sectionContent, headingText)
   }
 
   const handleAccept = () => {
@@ -224,7 +205,7 @@ export default function Document() {
         <DocumentSidebar
           document={doc}
           onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
-          onSectionRewrite={handleSectionRewrite}
+          onSectionRewrite={handleSectionRewritePrefill}
           protectedSections={protectedSections}
           onToggleProtection={handleToggleProtection}
         />
