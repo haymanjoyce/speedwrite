@@ -81,7 +81,11 @@ export default function Home() {
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {documents.length === 0 && (
-              <p className="text-gray-400 text-xs px-4 py-2">No documents yet.</p>
+              <div className="flex flex-col items-center justify-center h-full px-4 py-8 text-center">
+                <span className="text-3xl mb-3">📄</span>
+                <p className="text-sm font-medium text-gray-700 mb-1">No documents yet</p>
+                <p className="text-xs text-gray-400">Create your first document to get started.</p>
+              </div>
             )}
             {documents.map((doc) => (
               <div
@@ -102,9 +106,26 @@ export default function Home() {
         {/* Right panel */}
         <main className="flex-1 bg-white overflow-y-auto">
           {!selectedDoc ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-              Select a document to view it
-            </div>
+            documents.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center max-w-sm px-6">
+                  <h1 className="text-xl font-semibold text-gray-800 mb-3">Welcome to SpeedWrite</h1>
+                  <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                    SpeedWrite is an AI-assisted document authoring platform. Create a document, attach evidence sources, and let AI help you write, rewrite, and refine your content.
+                  </p>
+                  <button
+                    onClick={handleNewDocument}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded px-4 py-2 transition-colors"
+                  >
+                    Create your first document
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                Select a document to view it
+              </div>
+            )
           ) : (
             <div className="p-10 max-w-2xl">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedDoc.title}</h1>

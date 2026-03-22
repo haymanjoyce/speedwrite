@@ -112,7 +112,7 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
           onSelect={handleSelect}
           onMouseUp={handleSelect}
           onKeyUp={handleSelect}
-          placeholder="Start writing in Markdown…"
+          placeholder={"Start writing here...\n\nUse ## headings to structure your document — they'll appear in the document tree on the left."}
           spellCheck={false}
         />
       )}
