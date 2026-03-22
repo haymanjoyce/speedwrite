@@ -3,6 +3,8 @@ import { api } from '../api'
 import AttachmentPopup from './AttachmentPopup'
 import MarkdownPreview from './MarkdownPreview'
 
+const isMac = navigator.platform.toUpperCase().includes('MAC')
+
 function truncateContext(text) {
   const originalLength = text.length
   const truncated = originalLength > 3000
@@ -197,7 +199,6 @@ const ChatPanel = forwardRef(function ChatPanel({
   const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > 3000)
   const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
 
-  const isMac = navigator.platform.toUpperCase().includes('MAC')
   const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
 
   return (

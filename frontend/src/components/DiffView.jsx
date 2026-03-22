@@ -56,18 +56,25 @@ function getProtectedLineSet(content, protectedSections) {
   return protectedSet
 }
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 export default function DiffView({ originalContent, proposedContent, protectedSections = [] }) {
-  const oldLines = (originalContent ?? '').split('\n')
-  const newLines = (proposedContent ?? '').split('\n')
-  const diff = diffLines(oldLines, newLines)
-  const protectedLineSet = getProtectedLineSet(originalContent ?? '', protectedSections)
+  const diff = useMemo(() => {
+    const oldLines = (originalContent ?? '').split('\n')
+    const newLines = (proposedContent ?? '').split('\n')
+    return diffLines(oldLines, newLines)
+  }, [originalContent, proposedContent])
+
+  const protectedLineSet = useMemo(
+    () => getProtectedLineSet(originalContent ?? '', protectedSections),
+    [originalContent, protectedSections]
+  )
+
   const firstChangeRef = useRef(null)
 
   useEffect(() => {
     firstChangeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [])
+  }, [proposedContent])
 
   let firstChangeSeen = false
   let prevType = null
