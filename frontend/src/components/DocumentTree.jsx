@@ -93,7 +93,7 @@ export default function DocumentTree({ content, onHeadingClick, onSectionRewrite
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    onSectionRewrite(extractSection(content, headings, i))
+                    onSectionRewrite(extractSection(content, headings, i), h.text)
                   }}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
                 >

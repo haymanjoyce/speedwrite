@@ -105,10 +105,10 @@ export default function Document() {
     setSelectedText('')
   }
 
-  const handleSectionRewrite = async (sectionContent) => {
+  const handleSectionRewrite = async (sectionContent, headingText) => {
     setSaveStatus('Rewriting…')
     try {
-      const res = await api.chatMessage(id, 'Rewrite this section.', sectionContent, true)
+      const res = await api.chatMessage(id, 'Rewrite this section.', sectionContent, true, null, headingText || null)
       if (res.proposed_content) {
         setPendingProposal(res.proposed_content)
       }

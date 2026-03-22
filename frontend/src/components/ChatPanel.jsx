@@ -53,6 +53,7 @@ const ChatPanel = forwardRef(function ChatPanel({
       history.map((entry) => ({
         role: entry.role,
         content: entry.content,
+        context_label: entry.context_label ?? null,
         proposed_content: null,
         accepted: undefined,
         rejected: undefined,
@@ -139,7 +140,8 @@ const ChatPanel = forwardRef(function ChatPanel({
         ? truncateContext(contextText).text
         : null
     const hasContext = !!(localContext?.text || contextText)
-    setMessages((prev) => [...prev, { role: 'user', content: text }])
+    const contextLabel = localContext ? localContext.label : contextText ? 'Selected text' : null
+    setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])
     setInput('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -149,7 +151,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     setLoading(true)
 
     try {
-      const res = await api.chatMessage(docId, text, context, hasContext, provider)
+      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)
@@ -192,19 +194,25 @@ const ChatPanel = forwardRef(function ChatPanel({
 
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                msg.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-800'
-              }`}
-            >
-              {msg.content && (
-                msg.role === 'user'
-                  ? <p className="whitespace-pre-wrap">{msg.content}</p>
-                  : <div className="[&>*]:!p-0 [&>*]:!max-w-none [&>*]:!overflow-visible [&>*]:!bg-transparent [&>*]:!flex-none"><MarkdownPreview content={msg.content} /></div>
-              )}
-            </div>
+            {msg.role === 'user' ? (
+              <div className="flex flex-col items-end max-w-[85%]">
+                {msg.context_label && (
+                  <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                    <span>📎</span>
+                    <span>{msg.context_label}</span>
+                  </div>
+                )}
+                <div className="rounded-lg px-3 py-2 text-sm bg-blue-600 text-white">
+                  {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-white border border-gray-200 text-gray-800">
+                {msg.content && (
+                  <div className="[&>*]:!p-0 [&>*]:!max-w-none [&>*]:!overflow-visible [&>*]:!bg-transparent [&>*]:!flex-none"><MarkdownPreview content={msg.content} /></div>
+                )}
+              </div>
+            )}
           </div>
         ))}
 

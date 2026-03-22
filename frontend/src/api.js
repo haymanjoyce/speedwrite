@@ -48,8 +48,8 @@ export const api = {
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
 
   // Chat
-  chatMessage: (docId, message, context, ignoreHistory = false, provider = null) =>
-    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider }),
+  chatMessage: (docId, message, context, ignoreHistory = false, provider = null, contextLabel = null) =>
+    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider, context_label: contextLabel }),
   documentAction: (docId, action, instructions = '', provider = null) =>
     request('POST', `/documents/${docId}/action`, { action, instructions, provider }),
 

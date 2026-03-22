@@ -18,6 +18,7 @@ class ChatRequest(BaseModel):
     context: Optional[str] = None
     ignore_history: bool = False
     provider: Optional[str] = None
+    context_label: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -196,7 +197,7 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
         ).strip()
     now = datetime.utcnow().isoformat()
     doc["chat_history"].append(
-        {"role": "user", "content": data.message, "timestamp": now}
+        {"role": "user", "content": data.message, "context_label": data.context_label, "timestamp": now}
     )
     doc["chat_history"].append(
         {
