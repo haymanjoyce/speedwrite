@@ -30,16 +30,30 @@ function parseHeadingsWithContent(content) {
   return headings
 }
 
-const ACTION_LABELS = {
-  summarise: 'Summarise',
-  extract_key_points: 'Extract key points',
+const REDRAFT_LABELS = {
   rewrite: 'Rewrite',
   restructure: 'Restructure',
   expand: 'Expand',
   condense: 'Condense',
+  simplify: 'Simplify',
+  formalise: 'Formalise',
 }
 
-const DIFF_ACTIONS = new Set(['rewrite', 'restructure', 'expand', 'condense'])
+const REDRAFT_PROMPTS = {
+  rewrite: 'Rewrite this entire document.',
+  restructure: 'Restructure this document for better organisation and flow.',
+  expand: 'Expand this document by fleshing out thin sections and adding more detail throughout.',
+  condense: 'Condense this document by removing redundancy while preserving all key information.',
+  simplify: 'Rewrite this document in simpler language. Reduce jargon, shorten sentences, and make it accessible to a non-specialist audience while preserving all key information.',
+  formalise: 'Rewrite this document in a more formal, professional tone. Remove casual language, tighten the writing, and ensure it is appropriate for a professional or academic audience.',
+}
+
+const INSIGHTS_PROMPTS = {
+  summarise: 'Summarise this document in 3-4 sentences.',
+  extract_key_points: 'Extract the key points from this document as a bullet list.',
+  critique: 'Critically review this document. Identify weaknesses, gaps, inconsistencies, unsupported claims, or areas that need more development. Be specific and constructive.',
+  suggest_improvements: 'Review this document and suggest specific improvements. Consider structure, clarity, completeness, tone, and persuasiveness. Provide actionable recommendations.',
+}
 
 export default function Document() {
   const navigate = useNavigate()
@@ -54,7 +68,6 @@ export default function Document() {
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
   const [pendingAction, setPendingAction] = useState(null)
-  const [isActionRunning, setIsActionRunning] = useState(false)
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -121,38 +134,20 @@ export default function Document() {
     api.addLogEntry(id, 'rewrite_rejected', 'AI rewrite rejected')
   }
 
-  // Called by ActionsDropdown: instructions=null means show instruction bar (diff actions)
   const handleActionSelect = (action, instructions) => {
     if (instructions === null) {
       setPendingAction(action)
     } else {
-      runAction(action, instructions)
+      // Insights: fire immediately via chat panel
+      chatPanelRef.current?.fireInsight(INSIGHTS_PROMPTS[action])
     }
   }
 
-  const runAction = async (action, instructions) => {
+  const runAction = (action, instructions) => {
     setPendingAction(null)
-    setIsActionRunning(true)
-    setSaveStatus('Running…')
-    try {
-      const res = await api.documentAction(id, action, instructions)
-      if (DIFF_ACTIONS.has(action)) {
-        if (res.proposed_content) {
-          setPendingProposal(res.proposed_content)
-        }
-        chatPanelRef.current?.appendMessages(
-          ACTION_LABELS[action],
-          res.result || 'Proposed changes ready — accept or reject above.'
-        )
-      } else {
-        chatPanelRef.current?.appendMessages(ACTION_LABELS[action], res.result)
-      }
-    } catch (err) {
-      console.error('Action failed', err)
-    } finally {
-      setIsActionRunning(false)
-      setSaveStatus('')
-    }
+    const base = REDRAFT_PROMPTS[action]
+    const prompt = instructions.trim() ? `${base} ${instructions.trim()}` : base
+    chatPanelRef.current?.fireInsight(prompt)
   }
 
   const handleRename = async () => {
@@ -190,8 +185,32 @@ export default function Document() {
     />
   )
 
-  const actionsControl = !pendingProposal && (
-    <ActionsDropdown onAction={handleActionSelect} disabled={isActionRunning} />
+  const redraftControl = !pendingProposal && (
+    <ActionsDropdown
+      title="Redraft"
+      actions={[
+        { label: 'Rewrite', action: 'rewrite' },
+        { label: 'Restructure', action: 'restructure' },
+        { label: 'Expand', action: 'expand' },
+        { label: 'Condense', action: 'condense' },
+        { label: 'Simplify', action: 'simplify' },
+        { label: 'Formalise', action: 'formalise' },
+      ]}
+      onAction={(action) => handleActionSelect(action, null)}
+    />
+  )
+
+  const insightsControl = !pendingProposal && (
+    <ActionsDropdown
+      title="Insights"
+      actions={[
+        { label: 'Summarise', action: 'summarise' },
+        { label: 'Extract key points', action: 'extract_key_points' },
+        { label: 'Critique', action: 'critique' },
+        { label: 'Suggest improvements', action: 'suggest_improvements' },
+      ]}
+      onAction={(action) => handleActionSelect(action, '')}
+    />
   )
 
   return (
@@ -201,14 +220,14 @@ export default function Document() {
         actions={contextBarActions}
         statusText={pendingProposal ? 'Reviewing changes…' : saveStatus}
         controls={
-          (actionsControl || editPreviewControl)
-            ? <div className="flex items-center gap-2">{actionsControl}{editPreviewControl}</div>
+          (redraftControl || insightsControl || editPreviewControl)
+            ? <div className="flex items-center gap-2">{redraftControl}{insightsControl}{editPreviewControl}</div>
             : null
         }
       />
       {pendingAction && (
         <InstructionBar
-          action={ACTION_LABELS[pendingAction]}
+          action={REDRAFT_LABELS[pendingAction]}
           onRun={(instructions) => runAction(pendingAction, instructions)}
           onCancel={() => setPendingAction(null)}
         />

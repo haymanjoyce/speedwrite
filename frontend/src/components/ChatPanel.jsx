@@ -59,6 +59,10 @@ const ChatPanel = forwardRef(function ChatPanel({
         }
       }, 0)
     },
+    fireInsight(promptText) {
+      setInput(promptText)
+      setTimeout(() => handleSend(promptText), 0)
+    },
   }))
 
   useEffect(() => {
@@ -144,8 +148,8 @@ const ChatPanel = forwardRef(function ChatPanel({
     onClearContext()
   }
 
-  const handleSend = async () => {
-    const text = input.trim()
+  const handleSend = async (textOverride) => {
+    const text = (textOverride !== undefined ? textOverride : input).trim()
     if (!text || loading) return
 
     const context = localContext
