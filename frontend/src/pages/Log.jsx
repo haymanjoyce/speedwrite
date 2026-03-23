@@ -59,12 +59,17 @@ export default function Log() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} docId={id} subPageLabel="Log" />
-      <ContextBar actions={[
-        { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
-        { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
-        { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
-      ]} />
+      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
+      <ContextBar
+        tabs={[
+          { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
+          { label: 'Evidence', active: false, onClick: () => navigate(`/document/${id}/evidence`) },
+          { label: 'Log', active: true, onClick: () => {} },
+        ]}
+        actions={[
+          { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
+        ]}
+      />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
         <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">

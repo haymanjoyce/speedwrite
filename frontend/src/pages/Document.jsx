@@ -146,6 +146,12 @@ export default function Document() {
     }
   }
 
+  const contextBarTabs = [
+    { label: 'Document', active: true, onClick: () => {} },
+    { label: 'Evidence', active: false, onClick: () => navigate(`/document/${id}/evidence`) },
+    { label: 'Log', active: false, onClick: () => navigate(`/document/${id}/log`) },
+  ]
+
   const contextBarActions = pendingProposal
     ? [
         { label: 'Accept', onClick: handleAccept, variant: 'default' },
@@ -155,8 +161,6 @@ export default function Document() {
         ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }] : []),
         { label: 'Rename', onClick: handleRename, variant: 'default' },
         { label: 'Save as template', onClick: handleSaveAsTemplate, variant: 'default' },
-        { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
-        { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]
 
@@ -172,6 +176,7 @@ export default function Document() {
         onRenameCancel={handleRenameCancel}
       />
       <ContextBar
+        tabs={pendingProposal ? [] : contextBarTabs}
         actions={contextBarActions}
         statusText={(() => {
           const primary = pendingProposal ? 'Reviewing changes…' : saveStatus

@@ -128,13 +128,16 @@ export default function Evidence() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} docId={id} subPageLabel="Evidence" />
+      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
       <ContextBar
+        tabs={[
+          { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
+          { label: 'Evidence', active: true, onClick: () => {} },
+          { label: 'Log', active: false, onClick: () => navigate(`/document/${id}/log`) },
+        ]}
         statusText={reindexStatus}
         actions={[
-          { label: 'Document', onClick: () => navigate(`/document/${id}`), variant: 'default' },
-          { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
-          { label: 'Reindex', onClick: handleReindex, variant: 'default' },
+          ...(items.length > 0 ? [{ label: 'Reindex', onClick: handleReindex, variant: 'default' }] : []),
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
           ...(selectedItem ? [{ label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' }] : []),
           { label: 'Close', onClick: () => navigate('/'), variant: 'default' },

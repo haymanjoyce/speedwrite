@@ -4,7 +4,7 @@ import { useSearch } from '../context/SearchContext'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
-export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel, isRenaming, onRenameSave, onRenameCancel }) {
+export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel }) {
   const { open: openSearch } = useSearch()
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef(null)
@@ -13,11 +13,7 @@ export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel, 
     if (isRenaming) setInputValue(docTitle || '')
   }, [isRenaming])
 
-  const breadcrumbTitle = docTitle
-    ? subPageLabel
-      ? `SpeedWrite / ${docTitle} / ${subPageLabel}`
-      : `SpeedWrite / ${docTitle}`
-    : 'SpeedWrite'
+  const breadcrumbTitle = docTitle ? `SpeedWrite / ${docTitle}` : 'SpeedWrite'
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); onRenameSave?.(inputValue.trim()) }
@@ -32,12 +28,8 @@ export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel, 
             <Link to="/" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
               SpeedWrite
             </Link>
-            <span className="text-gray-200 mx-2 flex-shrink-0">/</span>
-            {docId && subPageLabel ? (
-              <Link to={`/document/${docId}`} className="text-gray-400 hover:text-gray-700 truncate max-w-xs transition-colors">
-                {docTitle}
-              </Link>
-            ) : isRenaming ? (
+            <span className="mx-2 flex-shrink-0" />
+            {isRenaming ? (
               <input
                 ref={inputRef}
                 autoFocus
@@ -51,12 +43,6 @@ export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel, 
               />
             ) : (
               <span className="text-gray-900 truncate max-w-xs">{docTitle}</span>
-            )}
-            {subPageLabel && (
-              <>
-                <span className="text-gray-200 mx-2 flex-shrink-0">/</span>
-                <span className="text-gray-900">{subPageLabel}</span>
-              </>
             )}
           </>
         ) : (

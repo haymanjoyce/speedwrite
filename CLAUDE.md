@@ -26,19 +26,19 @@ The app uses three tiers of navigation and controls:
 
 **Tier 1 — Global bar (TopBar)**
 - Always visible at the top of every page
-- Contains: app name/logo, breadcrumb navigation, user email, logout
-- No page-specific actions here
+- Contains: app name/logo, breadcrumb navigation, search icon, user email, logout
+- Breadcrumb shows "SpeedWrite" (links to /) and, when a document is open, a spacer gap then the document title (plain text or editable input when renaming). No sub-page labels (Evidence, Log) in the breadcrumb — those are shown as tabs in the context bar instead. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`.
 
 **Tier 2 — Page context bar (ContextBar)**
 - Sits below the global bar
-- Contains page-level navigation and actions
-- Actions vary by view and selection state:
-  - Library (doc selected): Open · Rename · Delete
-  - Document: Rename · Save as template · Evidence · Log · Close (+ Add to chat / Accept · Reject when relevant)
-  - Evidence: Document · Log · Close (+ Sync/Delete when source selected)
-  - Log: Document · Evidence · Close
-- All actions styled as pills (rounded-full, gray-100 background)
-- Primary navigation actions (Open) use blue pill styling
+- Left side: tab navigation (Document / Evidence / Log) for document sub-views; active tab has `border-b-2 border-blue-600 text-gray-900 font-medium`, inactive tabs are `text-gray-400 hover:text-gray-700`. Status text (save status, source count) trails after tabs separated by " · ".
+- Right side: page-specific action pills (rounded-full, gray-100 background)
+- Layout per view:
+  - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
+  - Document: tabs (Document active) · right: Add to chat (conditional) · Rename · Save as template · Close; tabs hidden and replaced with Accept · Reject when a proposal is pending
+  - Evidence: tabs (Evidence active) · right: Reindex (conditional, hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close
+  - Log: tabs (Log active) · right: Close
+- ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`
 
 **Tier 3 — Panel headers**
 - Each panel has a slim header (h-9, bg-white, border-b border-gray-200)
@@ -185,7 +185,7 @@ Three main views:
 ### Navigation
 
 Every view has a two-tier navigation:
-- **TopBar** — global: logo/breadcrumb, user email, logout. The breadcrumb container has `min-w-0 overflow-hidden whitespace-nowrap` so it truncates cleanly; the full path (e.g. `SpeedWrite / My Document / Evidence`) is shown as a native `title` tooltip on hover. In Document view, clicking Rename activates inline editing: the title span in the breadcrumb is replaced by an `<input>` (border-b border-blue-400, auto-sized via `size` attribute); Enter/blur saves, Escape cancels. `TopBar` accepts `isRenaming`, `onRenameSave`, `onRenameCancel` props for this. In Library view, the title in the Document Detail panel uses the same pattern with ✓/✕ confirm buttons.
+- **TopBar** — global: logo/breadcrumb, search icon, user email, logout. The breadcrumb shows "SpeedWrite" (links to /) and the document title when present — no sub-page labels. Container has `min-w-0 overflow-hidden whitespace-nowrap`; full path shown as native `title` tooltip on hover. In Document view, clicking Rename activates inline editing: the title span is replaced by an `<input>` (border-b border-blue-400, auto-sized via `size` attribute); Enter/blur saves, Escape cancels. `TopBar` accepts `isRenaming`, `onRenameSave`, `onRenameCancel` props. In Library view, the Document Detail panel title uses the same pattern with ✓/✕ confirm buttons. Sub-page navigation (Evidence, Log) is handled by tabs in the ContextBar, not the TopBar breadcrumb.
 - **ContextBar** — context-specific: action pills (rounded-full) right-aligned, save status left-aligned. Default pills are gray (`bg-gray-100`). Actions can set `variant: 'primary'` for a blue pill (`bg-blue-600 text-white`). Primary sidebar actions (New Document, Add Source) are blue buttons inside sidebar headers. "Open" in the library view and "Add to chat" in the document view use `variant: 'primary'`.
 
 ## AI Features
