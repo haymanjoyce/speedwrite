@@ -18,6 +18,72 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 **Implication:** Do not add Rewrite to the context bar for text selections. If sentence-level rewriting is needed in future, it should be implemented via backend text substitution (AI rewrites only the selected text, backend does the replacement) rather than asking the AI to return a full document with the replacement embedded.
 
+## UI Conventions
+
+### Three-tier navigation hierarchy
+
+The app uses three tiers of navigation and controls:
+
+**Tier 1 — Global bar (TopBar)**
+- Always visible at the top of every page
+- Contains: app name/logo, breadcrumb navigation, user email, logout
+- No page-specific actions here
+
+**Tier 2 — Page context bar (ContextBar)**
+- Sits below the global bar
+- Contains page-level navigation and actions
+- Actions vary by view and selection state:
+  - Library (doc selected): Rename · Open · Evidence · Log · Delete
+  - Document: Rename · Evidence · Log · Close (+ Add to chat / Accept · Reject when relevant)
+  - Evidence: Document · Log · Close (+ Sync/Delete when source selected)
+  - Log: Document · Evidence · Close
+- All actions styled as pills (rounded-full, gray-100 background)
+- Primary navigation actions (Open) use blue pill styling
+
+**Tier 3 — Panel headers**
+- Each panel has a slim header (h-9, bg-white, border-b border-gray-200)
+- Label: text-xs font-semibold text-gray-500 uppercase tracking-wide (left-aligned)
+- Panel-specific actions sit in the panel header or below it
+- Current panel headers:
+  - Structure (document tree, no actions)
+  - Editor (Edit/Preview segmented control right-aligned in header)
+  - AI Chat (Redraft and Insights dropdowns right-aligned in header)
+  - Sources (full-width Add button + Reindex below header)
+  - Source Detail (no actions)
+  - Documents (full-width New Document button below header)
+  - Document Detail (no actions)
+  - Log (no actions)
+  - Entry Detail (no actions)
+
+### Control type rules
+
+**Pills** (rounded-full, in ContextBar tier 2):
+- Navigation actions: move to another page or close current view
+- Page-level actions: Rename, Delete, Open
+- Toggle states: Accept/Reject during diff review, Add to chat
+
+**Buttons** (rounded, in panel headers or below them):
+- Panel-specific CRUD actions: Add Source, New Document
+- Full-width when they are the primary action for a panel
+- Use Button.jsx component with variant='primary' or 'secondary'
+
+**Segmented controls** (SegmentedControl.jsx):
+- Mutually exclusive mode switches within a panel
+- Examples: Edit/Preview in Editor panel
+- Always in panel header, right-aligned
+
+**Dropdowns** (ActionsDropdown.jsx):
+- Grouped sets of AI or transform actions
+- Examples: Redraft, Insights in AI Chat panel header
+- Always in panel header, right-aligned
+- Open downward with right-alignment to avoid off-screen overflow
+
+### General principles
+- Labels and primary actions never compete for attention — label left, actions right
+- Destructive actions (Delete) always styled as danger/red
+- Primary actions (Add, New) always blue
+- The further down the tier hierarchy, the more specific the action scope — global bar affects everything, panel header affects only that panel
+
 ## Repository Structure
 
 ```
@@ -93,7 +159,7 @@ The nginx `/api/` location block sets `proxy_read_timeout 300s`, `proxy_send_tim
 Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Rename, Evidence, Log, and Delete action pills when a document is selected.
-2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Rename, Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected; Edit/Preview segmented control in `controls`. **Redraft** and **Insights** dropdowns live in the ChatPanel header (not the context bar). When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
+2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Rename, Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected. **Redraft** and **Insights** dropdowns live in the ChatPanel header (not the context bar). Edit/Preview segmented control lives in the Editor panel header (right-aligned). When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
 3. **Evidence view** (`/document/:id/evidence`) — three-panel layout: source list (260px) on the left, source detail (flex-1) in the middle, `EvidenceChatPanel` (380px) always visible on the right. Context bar shows Document, Log, Reindex, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
 4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows Document, Evidence, and Close pills.
 
@@ -104,20 +170,20 @@ Three main views:
 ### Navigation
 
 Every view has a two-tier navigation:
-- **TopBar** — global: logo/breadcrumb, user email, logout. The breadcrumb container has `min-w-0 overflow-hidden whitespace-nowrap` so it truncates cleanly; the full path (e.g. `SpeedWrite / My Document / Evidence`) is shown as a native `title` tooltip on hover.
+- **TopBar** — global: logo/breadcrumb, user email, logout. The breadcrumb container has `min-w-0 overflow-hidden whitespace-nowrap` so it truncates cleanly; the full path (e.g. `SpeedWrite / My Document / Evidence`) is shown as a native `title` tooltip on hover. In Document view, clicking Rename activates inline editing: the title span in the breadcrumb is replaced by an `<input>` (border-b border-blue-400, auto-sized via `size` attribute); Enter/blur saves, Escape cancels. `TopBar` accepts `isRenaming`, `onRenameSave`, `onRenameCancel` props for this. In Library view, the title in the Document Detail panel uses the same pattern with ✓/✕ confirm buttons.
 - **ContextBar** — context-specific: action pills (rounded-full) right-aligned, save status left-aligned. Default pills are gray (`bg-gray-100`). Actions can set `variant: 'primary'` for a blue pill (`bg-blue-600 text-white`). Primary sidebar actions (New Document, Add Source) are blue buttons inside sidebar headers. "Open" in the library view and "Add to chat" in the document view use `variant: 'primary'`.
 
 ## AI Features
 
 - **Agent panel**: Always-on agent mode — the AI can propose document changes in response to any message. When the AI returns a `<proposed_document>` block, the editor is replaced by an inline diff view (via `DiffView.jsx`). The context bar switches to Accept/Reject pills with "Reviewing changes…" status. Accepting applies the change to the editor and triggers auto-save; rejecting discards it and appends "Changes rejected." to the chat.
 - **Inline diff view**: LCS-based line diff rendered in `DiffView.jsx`. Removed lines shown in red with strikethrough; added lines in green. Equal lines shown in muted gray (`text-gray-500`) to visually de-emphasise unchanged content. Blank lines rendered with `min-h-[1rem]`. A subtle `border-t border-gray-100` separator appears when returning from a changed block to unchanged text. All lines have `py-0.5` spacing. Gutter symbols (`+`/`-`/space) are `w-4 font-mono text-xs`. On mount, `DiffView` auto-scrolls to the first changed line (`scrollIntoView({ behavior: 'smooth', block: 'center' })`). The diff occupies the same flex slot as the editor.
-- **Edit/Preview toggle**: Segmented pill control in the context bar switches between the raw markdown textarea (`edit`) and `MarkdownPreview.jsx` (`preview`). When a diff is pending, the toggle is hidden and DiffView always shows regardless of mode.
+- **Edit/Preview toggle**: Segmented control in the Editor panel header (right-aligned) switches between the raw markdown textarea (`edit`) and `MarkdownPreview.jsx` (`preview`). Hidden when a diff is pending; DiffView always shows in that case regardless of mode. `Editor.jsx` accepts `editorMode` and `onEditorModeChange` props.
 - **Markdown preview**: `MarkdownPreview.jsx` is a custom renderer (no external deps) supporting h1–h3, bold, italic, inline code, fenced code blocks, unordered lists, paragraphs, and URLs.
 - **Rewrite button**: Each document tree node shows a "Rewrite" button on hover. Clicking it calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` in `Document.jsx`, which pre-fills the chat input with "Rewrite this section.", sets the section as `localContext` (with the heading as label), and focuses the textarea. The user can edit the instruction before sending. The send flow then handles the API call, stop button, context label, and diff view exactly as a normal message with context.
 - **Context scoping**: When context is attached (selected editor text, a section from the attachment popup, or an evidence source), the AI is instructed to change only that section and return the complete document with only that part replaced. When no context is attached, the AI can propose changes to the whole document. `ignore_history: bool` on `ChatRequest` is set to `true` whenever context is attached (ensuring a fresh response uninfluenced by prior conversation).
 - **Evidence base**: Supports file uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, and other documents as sources. All evidence is injected into AI context automatically. Document-type sources have a sync toggle: sync=on fetches live content from the source document at chat time; sync=off uses a stored snapshot. "Sync now" (context bar) manually refreshes the snapshot (only available when sync=off).
 - **Embeddings and RAG**: Evidence sources are chunked (2000 chars, 200 overlap) and embedded via Ollama (`nomic-embed-text`) in background threads. Embeddings stored at `{DATA_DIR}/embeddings/{user_id}/{doc_id}.json`. At chat/action time, if total non-live evidence content exceeds 8000 characters and embeddings exist, top-5 semantically relevant chunks are retrieved (cosine similarity, no threshold) instead of the full dump. Live sync-on document sources are always included directly. If Ollama is unavailable, falls back to full truncated dump silently. `POST /documents/{doc_id}/evidence/reindex` triggers a fire-and-forget reindex of all eligible sources. Implemented in `backend/embeddings.py` (pure Python, no numpy). Per-document threading locks prevent race conditions during concurrent indexing. `OLLAMA_HOST` env var configures the Ollama endpoint.
-- **Document actions**: Whole-document AI actions in two dropdowns inside the **ChatPanel header** (not the context bar). **Redraft** actions (Rewrite, Restructure, Expand, Condense, Simplify, Formalise) show a compact inline instruction bar below the header for optional instructions, then fire via `fireInsightInternal(prompt)`. **Insights** actions (Summarise, Extract key points, Critique, Suggest improvements) fire immediately. Both are self-contained inside `ChatPanel.jsx` — `REDRAFT_PROMPTS`, `INSIGHTS_PROMPTS`, `REDRAFT_LABELS`, `handleActionSelect`, and `runAction` all live in `ChatPanel.jsx`. Both dropdowns are disabled when `pendingProposal` is truthy. `Home.jsx` description generation still calls `api.documentAction` directly. Both `ChatPanel` and `EvidenceChatPanel` share identical header styling (`text-sm font-medium text-gray-700`, "AI Chat" label).
+- **Document actions**: Whole-document AI actions in two dropdowns inside the **ChatPanel header** (not the context bar). **Redraft** actions (Rewrite, Restructure, Expand, Condense, Simplify, Formalise) show a compact inline instruction bar below the header for optional instructions, then fire via `fireInsightInternal(prompt)`. **Insights** actions (Summarise, Extract key points, Critique, Suggest improvements) fire immediately. Both are self-contained inside `ChatPanel.jsx` — `REDRAFT_PROMPTS`, `INSIGHTS_PROMPTS`, `REDRAFT_LABELS`, `handleActionSelect`, and `runAction` all live in `ChatPanel.jsx`. Both dropdowns are disabled when `pendingProposal` is truthy. `Home.jsx` description generation still calls `api.documentAction` directly. Both `ChatPanel` and `EvidenceChatPanel` share identical header styling (`h-9 bg-white border-b border-gray-200`, label `text-xs font-semibold text-gray-500 uppercase tracking-wide`, "AI Chat").
 - **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. After `Editor.jsx` applies it, `onContentOverrideApplied` fires immediately to clear it back to `null`, preventing re-application on subsequent renders.
 - **LLM abstraction layer**: All LLM calls are routed through `backend/llm.py` (`complete()` → `_complete_anthropic` or `_complete_ollama`). The active provider is controlled by the `LLM_PROVIDER` env var (default: `anthropic`). Ollama is fully supported as an alternative provider. `_complete_ollama` uses `httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)` and raises `HTTPException` on `ConnectError` (503), `ReadTimeout` (504), and other errors (500) with descriptive messages. The `provider` field in chat/action request bodies can override the env var per-request.
 - **Provider toggle UI**: `ProviderToggle.jsx` exists and uses `SegmentedControl` to switch between Anthropic and Ollama. It is not currently exposed in the Document view — reserved for a future enterprise/self-hosted tier. The underlying backend and `api.js` plumbing remains intact.
@@ -132,7 +198,7 @@ Every view has a two-tier navigation:
 - Protected headings shown with `bg-gray-100` background and a lock icon (🔒). Lock icon for unlocked headings shown faintly on hover only.
 - Clicking the heading text scrolls the editor to that heading (via `useImperativeHandle` on Editor).
 - When the document has no `##` headings, `DocumentSidebar.jsx` shows a placeholder: "No structure yet. Add ## headings to build a document tree." `parseHeadings` is exported from `DocumentTree.jsx` for use by the sidebar.
-- `SegmentedControl.jsx` is used for the Edit/Preview toggle in `Document.jsx` and internally by `ProviderToggle.jsx`. Styling matches `ContextBar` action pills exactly (text-xs, px-3 py-0.5, rounded-full).
+- `SegmentedControl.jsx` is used for the Edit/Preview toggle in `Editor.jsx` (panel header) and internally by `ProviderToggle.jsx`. Styling matches `ContextBar` action pills exactly (text-xs, px-3 py-0.5, rounded-full).
 
 ## Chat Panel
 

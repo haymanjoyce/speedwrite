@@ -294,8 +294,8 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
   return (
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 flex-shrink-0">
-        <span className="text-sm font-medium text-gray-700">AI Chat</span>
+      <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
         <InsightsDropdown
           disabled={!localContext}
           onAction={(prompt) => {

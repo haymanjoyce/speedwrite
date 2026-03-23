@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import Button from '../components/Button'
@@ -11,6 +11,9 @@ export default function Home() {
   const [documents, setDocuments] = useState([])
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [generatingDescription, setGeneratingDescription] = useState(false)
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [renameValue, setRenameValue] = useState('')
+  const renameInputRef = useRef(null)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -35,17 +38,27 @@ export default function Home() {
     }
   }
 
-  const handleRename = async () => {
-    const newName = window.prompt('Rename document:', selectedDoc.title)
-    if (!newName || !newName.trim()) return
+  useEffect(() => { setIsRenaming(false) }, [selectedDoc?.id])
+
+  const handleRename = () => {
+    setRenameValue(selectedDoc.title)
+    setIsRenaming(true)
+  }
+
+  const handleRenameSave = async () => {
+    const trimmed = renameValue.trim()
+    setIsRenaming(false)
+    if (!trimmed || trimmed === selectedDoc.title) return
     try {
-      const updated = await api.updateDocument(selectedDoc.id, { title: newName.trim() })
+      const updated = await api.updateDocument(selectedDoc.id, { title: trimmed })
       setSelectedDoc(updated)
       setDocuments((prev) => prev.map((d) => d.id === updated.id ? updated : d))
     } catch (err) {
       console.error('Rename failed', err)
     }
   }
+
+  const handleRenameCancel = () => setIsRenaming(false)
 
   const handleDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete "${selectedDoc.title}"? This cannot be undone.`)) return
@@ -87,7 +100,10 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
         <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
-          <div className="px-4 pt-4 pb-3 border-b border-gray-200">
+          <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Documents</span>
+          </div>
+          <div className="px-4 pt-3 pb-3 border-b border-gray-200">
             <Button variant="primary" size="md" onClick={handleNewDocument} className="w-full">
               + New Document
             </Button>
@@ -117,7 +133,11 @@ export default function Home() {
         </div>
 
         {/* Right panel */}
-        <main className="flex-1 bg-white overflow-y-auto">
+        <main className="flex-1 bg-white flex flex-col overflow-hidden">
+          <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Document Detail</span>
+          </div>
+          <div className="flex-1 overflow-y-auto">
           {!selectedDoc ? (
             documents.length === 0 ? (
               <div className="h-full flex items-center justify-center">
@@ -135,7 +155,35 @@ export default function Home() {
             )
           ) : (
             <div className="p-10 max-w-2xl">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedDoc.title}</h1>
+              {isRenaming ? (
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    ref={renameInputRef}
+                    autoFocus
+                    onFocus={(e) => e.target.select()}
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRenameSave()
+                      if (e.key === 'Escape') handleRenameCancel()
+                    }}
+                    onBlur={handleRenameSave}
+                    className="text-3xl font-bold text-gray-900 border-b-2 border-blue-400 outline-none bg-transparent flex-1 min-w-0"
+                  />
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleRenameSave}
+                    className="text-green-600 hover:text-green-800 text-lg flex-shrink-0"
+                  >✓</button>
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleRenameCancel}
+                    className="text-red-500 hover:text-red-700 text-lg flex-shrink-0"
+                  >✕</button>
+                </div>
+              ) : (
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedDoc.title}</h1>
+              )}
               <p className="text-sm text-gray-400 mb-6">
                 Last updated {new Date(selectedDoc.updated_at).toLocaleString()}
               </p>
@@ -149,6 +197,7 @@ export default function Home() {
               </Button>
             </div>
           )}
+          </div>
         </main>
       </div>
     </div>

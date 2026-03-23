@@ -5,7 +5,6 @@ import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
-import SegmentedControl from '../components/SegmentedControl'
 import TopBar from '../components/TopBar'
 
 function parseHeadingsWithContent(content) {
@@ -41,6 +40,7 @@ export default function Document() {
   const [pendingProposal, setPendingProposal] = useState(null)
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
+  const [isRenaming, setIsRenaming] = useState(false)
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -108,16 +108,21 @@ export default function Document() {
   }
 
 
-  const handleRename = async () => {
-    const newName = window.prompt('Rename document:', doc?.title)
-    if (!newName || !newName.trim()) return
+  const handleRename = () => setIsRenaming(true)
+
+  const handleRenameSave = async (newTitle) => {
+    setIsRenaming(false)
+    if (!newTitle || newTitle === doc?.title) return
     try {
-      const updated = await api.updateDocument(id, { title: newName.trim() })
+      const updated = await api.updateDocument(id, { title: newTitle })
       setDoc(updated)
+      api.addLogEntry(id, 'document_renamed', `Renamed to "${newTitle}"`)
     } catch (err) {
       console.error('Rename failed', err)
     }
   }
+
+  const handleRenameCancel = () => setIsRenaming(false)
 
   const contextBarActions = pendingProposal
     ? [
@@ -132,25 +137,20 @@ export default function Document() {
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]
 
-  const editPreviewControl = !pendingProposal && (
-    <SegmentedControl
-      options={[
-        { value: 'edit', label: 'Edit' },
-        { value: 'preview', label: 'Preview' },
-      ]}
-      value={editorMode}
-      onChange={setEditorMode}
-    />
-  )
-
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
+      <TopBar
+        user={user}
+        onLogout={handleLogout}
+        docTitle={doc?.title}
+        isRenaming={isRenaming}
+        onRenameSave={handleRenameSave}
+        onRenameCancel={handleRenameCancel}
+      />
       <ContextBar
         actions={contextBarActions}
         statusText={pendingProposal ? 'Reviewing changes…' : saveStatus}
-        controls={editPreviewControl || null}
       />
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar
@@ -170,6 +170,7 @@ export default function Document() {
           onContentOverrideApplied={() => setEditorContentOverride(null)}
           pendingProposal={pendingProposal}
           editorMode={editorMode}
+          onEditorModeChange={setEditorMode}
           protectedSections={protectedSections}
         />
         <ChatPanel

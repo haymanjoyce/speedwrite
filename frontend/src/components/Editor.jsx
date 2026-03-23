@@ -2,8 +2,9 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { api } from '../api'
 import DiffView from './DiffView'
 import MarkdownPreview from './MarkdownPreview'
+import SegmentedControl from './SegmentedControl'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, protectedSections = [] }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, onEditorModeChange, protectedSections = [] }, ref) {
   const [content, setContent] = useState('')
   const saveTimer = useRef(null)
   const textareaRef = useRef(null)
@@ -99,6 +100,19 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
+      <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editor</span>
+        {!pendingProposal && onEditorModeChange && (
+          <SegmentedControl
+            options={[
+              { value: 'edit', label: 'Edit' },
+              { value: 'preview', label: 'Preview' },
+            ]}
+            value={editorMode}
+            onChange={onEditorModeChange}
+          />
+        )}
+      </div>
       {pendingProposal ? (
         <DiffView originalContent={content} proposedContent={pendingProposal} protectedSections={protectedSections} />
       ) : editorMode === 'preview' ? (
