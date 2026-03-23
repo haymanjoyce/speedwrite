@@ -109,6 +109,18 @@ function SourcePickerPopup({ sources, onSelect, onClose, anchorRef }) {
         {(!sources || sources.length === 0) && (
           <p className="text-xs text-gray-400 px-3 py-2">No sources available.</p>
         )}
+        {sources && sources.length > 0 && (
+          <>
+            <button
+              onClick={() => onSelect({ __allSources: true })}
+              className="text-sm font-medium text-gray-700 hover:bg-gray-50 rounded px-3 py-1.5 cursor-pointer w-full text-left flex items-center gap-2"
+            >
+              <span className="flex-shrink-0">📚</span>
+              <span>All sources</span>
+            </button>
+            <div className="border-t border-gray-100 my-1" />
+          </>
+        )}
         {(sources || []).map((s, i) => (
           <button
             key={i}
@@ -205,10 +217,28 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
   const handleSelectSource = async (source) => {
     setShowPopup(false)
     try {
-      const full = await api.getEvidence(docId, source.id)
-      const content = full.content || ''
-      const { text, truncated } = truncateContext(content)
-      setLocalContext({ text, label: source.title, truncated, originalLength: content.length })
+      if (source.__allSources) {
+        const sources = evidenceSources || []
+        const parts = await Promise.all(
+          sources.map(async (s) => {
+            const full = await api.getEvidence(docId, s.id)
+            return `--- Source: ${s.title} (${s.type}) ---\n${full.content || ''}\n\n`
+          })
+        )
+        const combined = parts.join('')
+        const { text, truncated } = truncateContext(combined)
+        setLocalContext({
+          text,
+          label: `All sources (${sources.length} source${sources.length === 1 ? '' : 's'})`,
+          truncated,
+          originalLength: combined.length,
+        })
+      } else {
+        const full = await api.getEvidence(docId, source.id)
+        const content = full.content || ''
+        const { text, truncated } = truncateContext(content)
+        setLocalContext({ text, label: source.title, truncated, originalLength: content.length })
+      }
     } catch (err) {
       console.error('Failed to load evidence content', err)
     }
