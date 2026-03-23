@@ -18,6 +18,7 @@ export default function Evidence() {
   const [selectedItem, setSelectedItem] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [reindexStatus, setReindexStatus] = useState('')
+  const [pendingDelete, setPendingDelete] = useState(false)
   const initialSelectDoneRef = useRef(false)
 
   useEffect(() => {
@@ -28,6 +29,15 @@ export default function Evidence() {
     api.getDocument(id).then(setDoc).catch(() => navigate('/'))
     api.listEvidence(id).then(setItems).catch(console.error)
   }, [id])
+
+  useEffect(() => { setPendingDelete(false) }, [selectedItem?.id])
+
+  useEffect(() => {
+    if (!pendingDelete) return
+    const handler = (e) => { if (e.key === 'Escape') setPendingDelete(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [pendingDelete])
 
   // Pre-select a source when navigated here from search results
   useEffect(() => {
@@ -106,11 +116,11 @@ export default function Evidence() {
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${selectedItem.title}"? This cannot be undone.`)) return
     try {
       await api.deleteEvidence(id, selectedItem.id)
       setItems((prev) => prev.filter((i) => i.id !== selectedItem.id))
       setSelectedItem(null)
+      setPendingDelete(false)
     } catch (err) {
       console.error('Delete failed', err)
     }
@@ -126,10 +136,27 @@ export default function Evidence() {
           { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
           { label: 'Reindex', onClick: handleReindex, variant: 'default' },
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
-          ...(selectedItem ? [{ label: 'Delete', onClick: handleDelete, variant: 'default' }] : []),
+          ...(selectedItem ? [{ label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' }] : []),
           { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
         ]}
       />
+      {pendingDelete && selectedItem && (
+        <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex items-center gap-3 flex-shrink-0">
+          <span className="text-sm text-red-700 flex-1">Delete "{selectedItem.title}"? This cannot be undone.</span>
+          <button
+            onClick={handleDelete}
+            className="text-xs bg-red-600 hover:bg-red-700 text-white rounded px-3 py-1 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => setPendingDelete(false)}
+            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       <div className="flex flex-1 overflow-hidden">
         <EvidenceSidebar
           items={items}

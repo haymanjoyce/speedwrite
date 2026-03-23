@@ -14,6 +14,7 @@ export default function Home() {
   const [generatingDescription, setGeneratingDescription] = useState(false)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
+  const [pendingDelete, setPendingDelete] = useState(false)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const renameInputRef = useRef(null)
 
@@ -40,7 +41,14 @@ export default function Home() {
     }
   }
 
-  useEffect(() => { setIsRenaming(false) }, [selectedDoc?.id])
+  useEffect(() => { setIsRenaming(false); setPendingDelete(false) }, [selectedDoc?.id])
+
+  useEffect(() => {
+    if (!pendingDelete) return
+    const handler = (e) => { if (e.key === 'Escape') setPendingDelete(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [pendingDelete])
 
   const handleRename = () => {
     setRenameValue(selectedDoc.title)
@@ -63,11 +71,11 @@ export default function Home() {
   const handleRenameCancel = () => setIsRenaming(false)
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete "${selectedDoc.title}"? This cannot be undone.`)) return
     try {
       await api.deleteDocument(selectedDoc.id)
       setDocuments((prev) => prev.filter((d) => d.id !== selectedDoc.id))
       setSelectedDoc(null)
+      setPendingDelete(false)
     } catch (err) {
       console.error('Delete failed', err)
     }
@@ -95,10 +103,25 @@ export default function Home() {
       <ContextBar actions={selectedDoc ? [
         { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: 'primary' },
         { label: 'Rename', onClick: handleRename, variant: 'default' },
-        { label: 'Evidence', onClick: () => navigate(`/document/${selectedDoc.id}/evidence`), variant: 'default' },
-        { label: 'Log', onClick: () => navigate(`/document/${selectedDoc.id}/log`), variant: 'default' },
-        { label: 'Delete', onClick: handleDelete, variant: 'default' },
+        { label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' },
       ] : []} />
+      {pendingDelete && selectedDoc && (
+        <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex items-center gap-3 flex-shrink-0">
+          <span className="text-sm text-red-700 flex-1">Delete "{selectedDoc.title}"? This cannot be undone.</span>
+          <button
+            onClick={handleDelete}
+            className="text-xs bg-red-600 hover:bg-red-700 text-white rounded px-3 py-1 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => setPendingDelete(false)}
+            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
         <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">

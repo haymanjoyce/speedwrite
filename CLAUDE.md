@@ -33,7 +33,7 @@ The app uses three tiers of navigation and controls:
 - Sits below the global bar
 - Contains page-level navigation and actions
 - Actions vary by view and selection state:
-  - Library (doc selected): Rename · Open · Evidence · Log · Delete
+  - Library (doc selected): Open · Rename · Delete
   - Document: Rename · Save as template · Evidence · Log · Close (+ Add to chat / Accept · Reject when relevant)
   - Evidence: Document · Log · Close (+ Sync/Delete when source selected)
   - Log: Document · Evidence · Close
@@ -86,6 +86,9 @@ The app uses three tiers of navigation and controls:
 
 ### No-modal rule and intentional exception
 The app avoids modals as a general rule — actions happen inline or in panels. The **one intentional exception** is the global search overlay (`SearchOverlay.jsx`). Search is a transient, context-preserving interaction: the user needs to find something without losing their current place, and a full-screen dimmed overlay communicates "temporary mode" clearly. Do not add further modals without a similarly strong justification.
+
+### Delete confirmations
+Destructive delete actions use an inline confirmation bar below the context bar instead of `window.confirm()`. The bar has a red (`bg-red-50 border-red-100`) background, a plain-text warning message on the left, and red Delete + gray Cancel buttons on the right. Escape or Cancel dismisses without deleting. Applies to: document delete (Home.jsx) and evidence source delete (Evidence.jsx). `pendingDelete` boolean state controls bar visibility; it is cleared on selection change and on successful deletion.
 
 ## Repository Structure
 
