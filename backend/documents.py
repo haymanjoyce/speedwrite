@@ -1,4 +1,5 @@
 import re
+import shutil
 import uuid
 from datetime import datetime
 
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 
 from auth import get_current_user
 from models import Document, DocumentCreate, DocumentUpdate
-from storage import append_audit_log, delete_document, list_documents, load_document, save_document
+from storage import DOCS_DIR, append_audit_log, delete_document, list_documents, load_document, save_document
 
 router = APIRouter(prefix="/documents")
 
@@ -80,8 +81,14 @@ def delete_doc(doc_id: str, user=Depends(get_current_user)):
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    append_audit_log(doc, "document_deleted", f"Document deleted: {doc.get('title', 'Untitled')}")
-    save_document(doc)
+    evidence_dir = DOCS_DIR / user["id"] / "evidence" / doc_id
+    if evidence_dir.exists():
+        shutil.rmtree(evidence_dir)
+
+    embeddings_file = DOCS_DIR.parent / "embeddings" / user["id"] / f"{doc_id}.json"
+    if embeddings_file.exists():
+        embeddings_file.unlink()
+
     delete_document(user["id"], doc_id)
 
 

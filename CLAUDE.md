@@ -236,7 +236,8 @@ Every view has a two-tier navigation:
 
 - Append-only log stored as `audit_log` array on each document JSON.
 - `append_audit_log(doc, event, detail)` helper in `storage.py` creates a UUID entry and appends it.
-- Events: `document_created`, `document_edited`, `rewrite_accepted`, `rewrite_rejected`, `evidence_added`, `evidence_deleted`, `document_deleted`.
+- Events: `document_created`, `document_edited`, `rewrite_accepted`, `rewrite_rejected`, `evidence_added`, `evidence_deleted`. Note: `document_deleted` was removed — writing a log entry to a file that is immediately deleted served no purpose.
+- **Document deletion cleanup**: `DELETE /documents/{doc_id}` removes the evidence directory (`DOCS_DIR/{user_id}/evidence/{doc_id}/`, via `shutil.rmtree`), the embeddings file (`embeddings/{user_id}/{doc_id}.json`), and the document JSON. All three are cleaned up atomically in the endpoint; `storage.delete_document()` only removes the document JSON.
 - `GET /documents/{doc_id}/log` returns entries newest-first. `POST /documents/{doc_id}/log` appends a manual entry.
 - Log view (`/document/:id/log`) in `Log.jsx` — left panel lists entries, right panel shows selected entry detail.
 
