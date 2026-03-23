@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
-import ActionsDropdown from '../components/ActionsDropdown'
 import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
-import InstructionBar from '../components/InstructionBar'
 import SegmentedControl from '../components/SegmentedControl'
 import TopBar from '../components/TopBar'
 
@@ -30,30 +28,6 @@ function parseHeadingsWithContent(content) {
   return headings
 }
 
-const REDRAFT_LABELS = {
-  rewrite: 'Rewrite',
-  restructure: 'Restructure',
-  expand: 'Expand',
-  condense: 'Condense',
-  simplify: 'Simplify',
-  formalise: 'Formalise',
-}
-
-const REDRAFT_PROMPTS = {
-  rewrite: 'Rewrite this entire document.',
-  restructure: 'Restructure this document for better organisation and flow.',
-  expand: 'Expand this document by fleshing out thin sections and adding more detail throughout.',
-  condense: 'Condense this document by removing redundancy while preserving all key information.',
-  simplify: 'Rewrite this document in simpler language. Reduce jargon, shorten sentences, and make it accessible to a non-specialist audience while preserving all key information.',
-  formalise: 'Rewrite this document in a more formal, professional tone. Remove casual language, tighten the writing, and ensure it is appropriate for a professional or academic audience.',
-}
-
-const INSIGHTS_PROMPTS = {
-  summarise: 'Summarise this document in 3-4 sentences.',
-  extract_key_points: 'Extract the key points from this document as a bullet list.',
-  critique: 'Critically review this document. Identify weaknesses, gaps, inconsistencies, unsupported claims, or areas that need more development. Be specific and constructive.',
-  suggest_improvements: 'Review this document and suggest specific improvements. Consider structure, clarity, completeness, tone, and persuasiveness. Provide actionable recommendations.',
-}
 
 export default function Document() {
   const navigate = useNavigate()
@@ -67,7 +41,6 @@ export default function Document() {
   const [pendingProposal, setPendingProposal] = useState(null)
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
-  const [pendingAction, setPendingAction] = useState(null)
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -134,21 +107,6 @@ export default function Document() {
     api.addLogEntry(id, 'rewrite_rejected', 'AI rewrite rejected')
   }
 
-  const handleActionSelect = (action, instructions) => {
-    if (instructions === null) {
-      setPendingAction(action)
-    } else {
-      // Insights: fire immediately via chat panel
-      chatPanelRef.current?.fireInsight(INSIGHTS_PROMPTS[action])
-    }
-  }
-
-  const runAction = (action, instructions) => {
-    setPendingAction(null)
-    const base = REDRAFT_PROMPTS[action]
-    const prompt = instructions.trim() ? `${base} ${instructions.trim()}` : base
-    chatPanelRef.current?.fireInsight(prompt)
-  }
 
   const handleRename = async () => {
     const newName = window.prompt('Rename document:', doc?.title)
@@ -185,33 +143,6 @@ export default function Document() {
     />
   )
 
-  const redraftControl = !pendingProposal && (
-    <ActionsDropdown
-      title="Redraft"
-      actions={[
-        { label: 'Rewrite', action: 'rewrite' },
-        { label: 'Restructure', action: 'restructure' },
-        { label: 'Expand', action: 'expand' },
-        { label: 'Condense', action: 'condense' },
-        { label: 'Simplify', action: 'simplify' },
-        { label: 'Formalise', action: 'formalise' },
-      ]}
-      onAction={(action) => handleActionSelect(action, null)}
-    />
-  )
-
-  const insightsControl = !pendingProposal && (
-    <ActionsDropdown
-      title="Insights"
-      actions={[
-        { label: 'Summarise', action: 'summarise' },
-        { label: 'Extract key points', action: 'extract_key_points' },
-        { label: 'Critique', action: 'critique' },
-        { label: 'Suggest improvements', action: 'suggest_improvements' },
-      ]}
-      onAction={(action) => handleActionSelect(action, '')}
-    />
-  )
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -219,19 +150,8 @@ export default function Document() {
       <ContextBar
         actions={contextBarActions}
         statusText={pendingProposal ? 'Reviewing changes…' : saveStatus}
-        controls={
-          (redraftControl || insightsControl || editPreviewControl)
-            ? <div className="flex items-center gap-2">{redraftControl}{insightsControl}{editPreviewControl}</div>
-            : null
-        }
+        controls={editPreviewControl || null}
       />
-      {pendingAction && (
-        <InstructionBar
-          action={REDRAFT_LABELS[pendingAction]}
-          onRun={(instructions) => runAction(pendingAction, instructions)}
-          onCancel={() => setPendingAction(null)}
-        />
-      )}
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar
           document={doc}
@@ -261,6 +181,7 @@ export default function Document() {
           onClearContext={() => setContextText('')}
           headings={parseHeadingsWithContent(doc?.content)}
           evidenceSources={doc?.evidence || []}
+          pendingProposal={pendingProposal}
         />
       </div>
     </div>

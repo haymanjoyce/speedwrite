@@ -25,7 +25,7 @@ export default function ActionsDropdown({ title, actions, onAction, disabled }) 
         {title}
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-md py-1 z-50 min-w-40">
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-md py-1 z-50 min-w-40">
           {actions.map((a) => (
             <button
               key={a.action}

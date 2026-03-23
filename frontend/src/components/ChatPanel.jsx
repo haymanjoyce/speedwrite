@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
+import ActionsDropdown from './ActionsDropdown'
 import AttachmentPopup from './AttachmentPopup'
 import MarkdownPreview from './MarkdownPreview'
 
@@ -21,9 +22,34 @@ function truncateContext(text) {
   }
 }
 
+const REDRAFT_LABELS = {
+  rewrite: 'Rewrite',
+  restructure: 'Restructure',
+  expand: 'Expand',
+  condense: 'Condense',
+  simplify: 'Simplify',
+  formalise: 'Formalise',
+}
+
+const REDRAFT_PROMPTS = {
+  rewrite: 'Rewrite this entire document.',
+  restructure: 'Restructure this document for better organisation and flow.',
+  expand: 'Expand this document by fleshing out thin sections and adding more detail throughout.',
+  condense: 'Condense this document by removing redundancy while preserving all key information.',
+  simplify: 'Rewrite this document in simpler language. Reduce jargon, shorten sentences, and make it accessible to a non-specialist audience while preserving all key information.',
+  formalise: 'Rewrite this document in a more formal, professional tone. Remove casual language, tighten the writing, and ensure it is appropriate for a professional or academic audience.',
+}
+
+const INSIGHTS_PROMPTS = {
+  summarise: 'Summarise this document in 3-4 sentences.',
+  extract_key_points: 'Extract the key points from this document as a bullet list.',
+  critique: 'Critically review this document. Identify weaknesses, gaps, inconsistencies, unsupported claims, or areas that need more development. Be specific and constructive.',
+  suggest_improvements: 'Review this document and suggest specific improvements. Consider structure, clarity, completeness, tone, and persuasiveness. Provide actionable recommendations.',
+}
+
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
-  headings, evidenceSources,
+  headings, evidenceSources, pendingProposal,
 }, ref) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -34,11 +60,13 @@ const ChatPanel = forwardRef(function ChatPanel({
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [localContext, setLocalContext] = useState(null) // { text, label, truncated }
   const [showPopup, setShowPopup] = useState(false)
+  const [pendingAction, setPendingAction] = useState(null)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
   const plusButtonRef = useRef(null)
   const abortControllerRef = useRef(null)
+  const instructionInputRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
     appendMessages(userMsg, assistantMsg) {
@@ -60,8 +88,7 @@ const ChatPanel = forwardRef(function ChatPanel({
       }, 0)
     },
     fireInsight(promptText) {
-      setInput(promptText)
-      setTimeout(() => handleSend(promptText), 0)
+      fireInsightInternal(promptText)
     },
   }))
 
@@ -194,6 +221,26 @@ const ChatPanel = forwardRef(function ChatPanel({
     setLoading(false)
   }
 
+  const handleActionSelect = (action, instructions) => {
+    if (instructions === null) {
+      setPendingAction(action)
+    } else {
+      fireInsightInternal(INSIGHTS_PROMPTS[action])
+    }
+  }
+
+  const runAction = (action, instructions) => {
+    setPendingAction(null)
+    const base = REDRAFT_PROMPTS[action]
+    const prompt = instructions.trim() ? `${base} ${instructions.trim()}` : base
+    fireInsightInternal(prompt)
+  }
+
+  const fireInsightInternal = (promptText) => {
+    setInput(promptText)
+    setTimeout(() => handleSend(promptText), 0)
+  }
+
   const effectiveContext = localContext?.text || contextText
   const chipLabel = localContext
     ? localContext.label
@@ -207,6 +254,64 @@ const ChatPanel = forwardRef(function ChatPanel({
 
   return (
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 flex-shrink-0">
+        <span className="text-sm font-medium text-gray-700">AI Chat</span>
+        <div className="flex items-center gap-2">
+        <ActionsDropdown
+          title="Redraft"
+          actions={[
+            { label: 'Rewrite', action: 'rewrite' },
+            { label: 'Restructure', action: 'restructure' },
+            { label: 'Expand', action: 'expand' },
+            { label: 'Condense', action: 'condense' },
+            { label: 'Simplify', action: 'simplify' },
+            { label: 'Formalise', action: 'formalise' },
+          ]}
+          onAction={(action) => handleActionSelect(action, null)}
+          disabled={!!pendingProposal}
+        />
+        <ActionsDropdown
+          title="Insights"
+          actions={[
+            { label: 'Summarise', action: 'summarise' },
+            { label: 'Extract key points', action: 'extract_key_points' },
+            { label: 'Critique', action: 'critique' },
+            { label: 'Suggest improvements', action: 'suggest_improvements' },
+          ]}
+          onAction={(action) => handleActionSelect(action, '')}
+          disabled={!!pendingProposal}
+        />
+        </div>
+      </div>
+      {pendingAction && (
+        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs font-medium text-gray-600 capitalize flex-shrink-0">{REDRAFT_LABELS[pendingAction]}</span>
+          <input
+            type="text"
+            placeholder="Additional instructions (optional)"
+            autoFocus
+            ref={instructionInputRef}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); runAction(pendingAction, instructionInputRef.current?.value ?? '') }
+              if (e.key === 'Escape') setPendingAction(null)
+            }}
+            className="flex-1 min-w-0 border border-gray-200 rounded px-2 py-0.5 text-xs text-gray-800 outline-none focus:border-blue-400 transition-colors bg-white"
+          />
+          <button
+            onClick={() => runAction(pendingAction, instructionInputRef.current?.value ?? '')}
+            className="flex-shrink-0 rounded px-2 py-0.5 text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer"
+          >
+            Run
+          </button>
+          <button
+            onClick={() => setPendingAction(null)}
+            className="flex-shrink-0 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       {/* Messages */}
       <div
         ref={messagesContainerRef}
