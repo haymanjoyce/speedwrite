@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from auth import get_current_user
-from embeddings import index_evidence_background, remove_evidence_chunks
+from embeddings import index_evidence_background, remove_evidence_chunks, retrieve_relevant_chunks
 from storage import DOCS_DIR, append_audit_log, load_document, save_document
 
 router = APIRouter(prefix="/documents")
@@ -101,6 +101,10 @@ class AddDocumentRequest(BaseModel):
 
 class UpdateEvidenceRequest(BaseModel):
     sync: Optional[bool] = None
+
+
+class RagQueryRequest(BaseModel):
+    query: str
 
 
 # --- Endpoints ---
@@ -312,6 +316,23 @@ def sync_evidence_item(doc_id: str, evidence_id: str, user=Depends(get_current_u
     item["synced_at"] = datetime.utcnow().isoformat()
     save_document(doc)
     return item
+
+
+@router.post("/{doc_id}/evidence/{evidence_id}/rag-query")
+def rag_query(doc_id: str, evidence_id: str, data: RagQueryRequest, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    items = doc.get("evidence", [])
+    if not any(i["id"] == evidence_id for i in items):
+        raise HTTPException(status_code=404, detail="Evidence item not found")
+    chunks = retrieve_relevant_chunks(user["id"], doc_id, data.query, k=5, evidence_id=evidence_id)
+    if not chunks:
+        return {"chunks": [], "used_rag": False}
+    return {
+        "chunks": [{"text": c["text"], "chunk_index": c["chunk_index"]} for c in chunks],
+        "used_rag": True,
+    }
 
 
 @router.delete("/{doc_id}/evidence/{evidence_id}", status_code=204)

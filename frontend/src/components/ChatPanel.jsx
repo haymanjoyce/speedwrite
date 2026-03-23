@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
+import { SHARED_INSIGHT_ACTIONS } from '../insightPrompts'
 import ActionsDropdown from './ActionsDropdown'
 import AttachmentPopup from './AttachmentPopup'
 import MarkdownPreview from './MarkdownPreview'
@@ -8,10 +9,10 @@ const isMac = navigator.platform.toUpperCase().includes('MAC')
 
 function truncateContext(text) {
   const originalLength = text.length
-  const truncated = originalLength > 3000
+  const truncated = originalLength > 6000
   if (!truncated) return { text, truncated: false, originalLength }
 
-  const slice = text.slice(0, 3000)
+  const slice = text.slice(0, 6000)
   const lastNewline = slice.lastIndexOf('\n')
   const cutText = lastNewline > 0 ? slice.slice(0, lastNewline) : slice
 
@@ -40,12 +41,7 @@ const REDRAFT_PROMPTS = {
   formalise: 'Rewrite this document in a more formal, professional tone. Remove casual language, tighten the writing, and ensure it is appropriate for a professional or academic audience.',
 }
 
-const INSIGHTS_PROMPTS = {
-  summarise: 'Summarise this document in 3-4 sentences.',
-  extract_key_points: 'Extract the key points from this document as a bullet list.',
-  critique: 'Critically review this document. Identify weaknesses, gaps, inconsistencies, unsupported claims, or areas that need more development. Be specific and constructive.',
-  suggest_improvements: 'Review this document and suggest specific improvements. Consider structure, clarity, completeness, tone, and persuasiveness. Provide actionable recommendations.',
-}
+const INSIGHTS_PROMPTS = Object.fromEntries(SHARED_INSIGHT_ACTIONS.map((a) => [a.action, a.prompt]))
 
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
@@ -58,7 +54,8 @@ const ChatPanel = forwardRef(function ChatPanel({
     () => localStorage.getItem('logbooklm_submit_on_enter') !== 'false'
   )
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const [localContext, setLocalContext] = useState(null) // { text, label, truncated }
+  const [localContext, setLocalContext] = useState(null) // { text, label, truncated, originalLength, evidenceId }
+  const [ragActive, setRagActive] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const messagesEndRef = useRef(null)
@@ -78,7 +75,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     },
     prefillRewrite(sectionContent, headingText) {
       const { text, truncated } = truncateContext(sectionContent)
-      setLocalContext({ text, label: headingText, truncated, originalLength: sectionContent.length })
+      setLocalContext({ text, label: headingText, truncated, originalLength: sectionContent.length, evidenceId: null })
       setInput('Rewrite this section.')
       setTimeout(() => {
         if (textareaRef.current) {
@@ -164,9 +161,9 @@ const ChatPanel = forwardRef(function ChatPanel({
     }
   }
 
-  const handleAttach = (content, label) => {
+  const handleAttach = (content, label, evidenceId) => {
     const { text, truncated } = truncateContext(content)
-    setLocalContext({ text, label, truncated, originalLength: content.length })
+    setLocalContext({ text, label, truncated, originalLength: content.length, evidenceId: evidenceId ?? null })
     setShowPopup(false)
   }
 
@@ -179,13 +176,9 @@ const ChatPanel = forwardRef(function ChatPanel({
     const text = (textOverride !== undefined ? textOverride : input).trim()
     if (!text || loading) return
 
-    const context = localContext
-      ? localContext.text
-      : contextText
-        ? truncateContext(contextText).text
-        : null
-    const hasContext = !!(localContext?.text || contextText)
-    const contextLabel = localContext ? localContext.label : contextText ? 'Selected text' : null
+    const contextSnapshot = localContext
+    const hasContext = !!(contextSnapshot?.text || contextText)
+    const contextLabel = contextSnapshot ? contextSnapshot.label : contextText ? 'Selected text' : null
     setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])
     setInput('')
     if (textareaRef.current) {
@@ -197,6 +190,25 @@ const ChatPanel = forwardRef(function ChatPanel({
     setLoading(true)
 
     try {
+      let context = contextSnapshot
+        ? contextSnapshot.text
+        : contextText
+          ? truncateContext(contextText).text
+          : null
+
+      if (contextSnapshot?.evidenceId) {
+        try {
+          const ragRes = await api.ragQuery(docId, contextSnapshot.evidenceId, text, abortControllerRef.current.signal)
+          if (ragRes?.used_rag && ragRes.chunks?.length > 0) {
+            context = ragRes.chunks.map((c) => c.text).join('\n---\n')
+            setRagActive(true)
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') throw err
+          // RAG unavailable — fall back to contextSnapshot.text silently
+        }
+      }
+
       const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
@@ -212,6 +224,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     } finally {
       abortControllerRef.current = null
       setLoading(false)
+      setRagActive(false)
     }
   }
 
@@ -219,6 +232,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
     setLoading(false)
+    setRagActive(false)
   }
 
   const handleActionSelect = (action, instructions) => {
@@ -247,9 +261,9 @@ const ChatPanel = forwardRef(function ChatPanel({
     : contextText
       ? `Selected text (${contextText.length} chars)`
       : null
-  const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > 3000)
+  const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > 6000)
+  const isAmber = (localContext?.originalLength ?? 0) > 3000 || (!localContext && contextText && contextText.length > 3000)
   const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
-
   const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
 
   return (
@@ -273,12 +287,7 @@ const ChatPanel = forwardRef(function ChatPanel({
         />
         <ActionsDropdown
           title="Insights"
-          actions={[
-            { label: 'Summarise', action: 'summarise' },
-            { label: 'Extract key points', action: 'extract_key_points' },
-            { label: 'Critique', action: 'critique' },
-            { label: 'Suggest improvements', action: 'suggest_improvements' },
-          ]}
+          actions={SHARED_INSIGHT_ACTIONS.map((a) => ({ label: a.label, action: a.action }))}
           onAction={(action) => handleActionSelect(action, '')}
           disabled={!!pendingProposal}
         />
@@ -379,21 +388,21 @@ const ChatPanel = forwardRef(function ChatPanel({
         <div className="px-4 pb-2 flex-shrink-0">
           <div
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${
-              isTruncated
+              isAmber
                 ? 'bg-amber-50 border border-amber-200 text-amber-700'
                 : 'bg-blue-50 border border-blue-200 text-blue-700'
             }`}
-            title={isTruncated ? 'Content exceeded 3000 characters and was truncated' : undefined}
+            title={isTruncated ? 'Content exceeded 6000 characters and was truncated' : undefined}
           >
             <span className="truncate">{chipLabel}</span>
-            <span className={`flex-shrink-0 ml-1 ${isTruncated ? '' : 'text-gray-400'}`}>
+            <span className={`flex-shrink-0 ml-1 ${isAmber ? '' : 'text-gray-400'}`}>
               {'• '}
-              {isTruncated ? `⚠ ${actualChars} / 3000 chars (truncated)` : `${actualChars} / 3000 chars`}
+              {isAmber ? `⚠ ${actualChars} / 6000 chars${isTruncated ? ' (truncated)' : ''}` : `${actualChars} / 6000 chars`}
             </span>
             <button
               onClick={handleClearContext}
               className={`ml-auto flex-shrink-0 text-base leading-none pl-1 ${
-                isTruncated ? 'text-amber-400 hover:text-amber-600' : 'text-blue-400 hover:text-blue-600'
+                isAmber ? 'text-amber-400 hover:text-amber-600' : 'text-blue-400 hover:text-blue-600'
               }`}
             >
               ×
@@ -434,6 +443,7 @@ const ChatPanel = forwardRef(function ChatPanel({
             style={{ maxHeight: '144px', overflowY: 'auto' }}
           />
           <div className="self-end flex flex-col items-end gap-1">
+            {ragActive && <span className="text-xs text-green-600 font-medium">✦ RAG</span>}
             {loading ? (
               <button
                 onClick={handleStop}

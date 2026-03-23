@@ -1,31 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
+import { SHARED_INSIGHT_ACTIONS } from '../insightPrompts'
 import MarkdownPreview from './MarkdownPreview'
 
 const isMac = navigator.platform.toUpperCase().includes('MAC')
 
 const TYPE_ICONS = { url: '🔗', file: '📄', text: '📝', document: '📋' }
 
-const INSIGHTS_ACTIONS = [
-  {
-    label: 'Summarise',
-    prompt: 'Summarise the key points from the attached evidence source. What are the main findings, arguments, or facts?',
-  },
-  {
-    label: 'Find contradictions',
-    prompt: 'Identify any contradictions, inconsistencies, or conflicting information in the attached evidence source.',
-  },
-  {
-    label: 'Extract themes',
-    prompt: 'Extract the common themes, topics, and patterns from the attached evidence source.',
-  },
-]
 
 function truncateContext(text) {
   const originalLength = text.length
-  const truncated = originalLength > 3000
+  const truncated = originalLength > 6000
   if (!truncated) return { text, truncated: false, originalLength }
-  const slice = text.slice(0, 3000)
+  const slice = text.slice(0, 6000)
   const lastNewline = slice.lastIndexOf('\n')
   const cutText = lastNewline > 0 ? slice.slice(0, lastNewline) : slice
   return { text: cutText + '\n[truncated]', truncated: true, originalLength }
@@ -62,7 +49,7 @@ function InsightsDropdown({ disabled, onAction }) {
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-md py-1 z-50 min-w-44">
-          {INSIGHTS_ACTIONS.map((a) => (
+          {SHARED_INSIGHT_ACTIONS.map((a) => (
             <button
               key={a.label}
               onClick={() => { setOpen(false); onAction(a.prompt) }}
@@ -145,6 +132,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
   )
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [localContext, setLocalContext] = useState(null)
+  const [ragActive, setRagActive] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -232,12 +220,13 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
           label: `All sources (${sources.length} source${sources.length === 1 ? '' : 's'})`,
           truncated,
           originalLength: combined.length,
+          evidenceId: null,
         })
       } else {
         const full = await api.getEvidence(docId, source.id)
         const content = full.content || ''
         const { text, truncated } = truncateContext(content)
-        setLocalContext({ text, label: source.title, truncated, originalLength: content.length })
+        setLocalContext({ text, label: source.title, truncated, originalLength: content.length, evidenceId: source.id })
       }
     } catch (err) {
       console.error('Failed to load evidence content', err)
@@ -252,9 +241,9 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
     const text = (textOverride !== undefined ? textOverride : input).trim()
     if (!text || loading) return
 
-    const context = localContext?.text ?? null
-    const contextLabel = localContext?.label ?? null
-    const hasContext = !!context
+    const contextSnapshot = localContext
+    const contextLabel = contextSnapshot?.label ?? null
+    const hasContext = !!contextSnapshot?.text
 
     setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])
     setInput('')
@@ -264,6 +253,21 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
     setLoading(true)
 
     try {
+      let context = contextSnapshot?.text ?? null
+
+      if (contextSnapshot?.evidenceId) {
+        try {
+          const ragRes = await api.ragQuery(docId, contextSnapshot.evidenceId, text, abortControllerRef.current.signal)
+          if (ragRes?.used_rag && ragRes.chunks?.length > 0) {
+            context = ragRes.chunks.map((c) => c.text).join('\n---\n')
+            setRagActive(true)
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') throw err
+          // RAG unavailable — fall back to contextSnapshot.text silently
+        }
+      }
+
       const res = await api.evidenceChat(
         docId, text, context, contextLabel, hasContext, abortControllerRef.current.signal
       )
@@ -278,6 +282,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
     } finally {
       abortControllerRef.current = null
       setLoading(false)
+      setRagActive(false)
     }
   }
 
@@ -285,9 +290,11 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
     setLoading(false)
+    setRagActive(false)
   }
 
   const isTruncated = localContext?.truncated ?? false
+  const isAmber = (localContext?.originalLength ?? 0) > 3000
   const actualChars = localContext?.originalLength ?? 0
   const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
 
@@ -370,21 +377,21 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
         <div className="px-4 pb-2 flex-shrink-0">
           <div
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${
-              isTruncated
+              isAmber
                 ? 'bg-amber-50 border border-amber-200 text-amber-700'
                 : 'bg-blue-50 border border-blue-200 text-blue-700'
             }`}
-            title={isTruncated ? 'Content exceeded 3000 characters and was truncated' : undefined}
+            title={isTruncated ? 'Content exceeded 6000 characters and was truncated' : undefined}
           >
             <span className="truncate">{localContext.label}</span>
-            <span className={`flex-shrink-0 ml-1 ${isTruncated ? '' : 'text-gray-400'}`}>
+            <span className={`flex-shrink-0 ml-1 ${isAmber ? '' : 'text-gray-400'}`}>
               {'• '}
-              {isTruncated ? `⚠ ${actualChars} / 3000 chars (truncated)` : `${actualChars} / 3000 chars`}
+              {isAmber ? `⚠ ${actualChars} / 6000 chars${isTruncated ? ' (truncated)' : ''}` : `${actualChars} / 6000 chars`}
             </span>
             <button
               onClick={handleClearContext}
               className={`ml-auto flex-shrink-0 text-base leading-none pl-1 ${
-                isTruncated ? 'text-amber-400 hover:text-amber-600' : 'text-blue-400 hover:text-blue-600'
+                isAmber ? 'text-amber-400 hover:text-amber-600' : 'text-blue-400 hover:text-blue-600'
               }`}
             >
               ×
@@ -424,6 +431,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
             style={{ maxHeight: '144px', overflowY: 'auto' }}
           />
           <div className="self-end flex flex-col items-end gap-1">
+            {ragActive && <span className="text-xs text-green-600 font-medium">✦ RAG</span>}
             {loading ? (
               <button
                 onClick={handleStop}
