@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
+import TemplatePickerOverlay from '../components/TemplatePickerOverlay'
 import TopBar from '../components/TopBar'
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
   const [generatingDescription, setGeneratingDescription] = useState(false)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const renameInputRef = useRef(null)
 
   useEffect(() => {
@@ -103,9 +105,12 @@ export default function Home() {
           <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Documents</span>
           </div>
-          <div className="px-4 pt-3 pb-3 border-b border-gray-200">
+          <div className="px-4 pt-3 pb-3 border-b border-gray-200 flex flex-col gap-2">
             <Button variant="primary" size="md" onClick={handleNewDocument} className="w-full">
               + New Document
+            </Button>
+            <Button variant="secondary" size="md" onClick={() => setShowTemplatePicker(true)} className="w-full">
+              From template…
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto py-2">
@@ -200,6 +205,9 @@ export default function Home() {
           </div>
         </main>
       </div>
+      {showTemplatePicker && (
+        <TemplatePickerOverlay onClose={() => setShowTemplatePicker(false)} />
+      )}
     </div>
   )
 }

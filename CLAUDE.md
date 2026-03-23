@@ -34,7 +34,7 @@ The app uses three tiers of navigation and controls:
 - Contains page-level navigation and actions
 - Actions vary by view and selection state:
   - Library (doc selected): Rename · Open · Evidence · Log · Delete
-  - Document: Rename · Evidence · Log · Close (+ Add to chat / Accept · Reject when relevant)
+  - Document: Rename · Save as template · Evidence · Log · Close (+ Add to chat / Accept · Reject when relevant)
   - Evidence: Document · Log · Close (+ Sync/Delete when source selected)
   - Log: Document · Evidence · Close
 - All actions styled as pills (rounded-full, gray-100 background)
@@ -102,6 +102,7 @@ speedwrite/
 │   ├── llm.py           # Unified LLM abstraction (Anthropic + Ollama)
 │   ├── config.py        # GET /config endpoint (exposes server-side defaults)
 │   ├── search.py        # POST /search — cross-document full-text search
+│   ├── templates.py     # CRUD + AI prefill for document templates
 │   ├── log.py
 │   ├── models.py
 │   └── storage.py
@@ -134,11 +135,14 @@ speedwrite/
 │       │   ├── SegmentedControl.jsx  # Reusable segmented pill control (options, value, onChange)
 │       │   ├── ErrorBoundary.jsx     # Class component error boundary; catches render crashes
 │       │   ├── SearchOverlay.jsx     # Global search overlay — grouped results, keyboard nav, inline highlighting
+│       │   ├── TemplatePickerOverlay.jsx  # Two-screen overlay: template grid picker → AI pre-fill step
 │       │   ├── EvidenceChatPanel.jsx # Three-panel evidence chat — source picker, Insights dropdown, stop button
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
 │       │   └── AddSourceModal.jsx
 │       ├── insightPrompts.js             # Shared SHARED_INSIGHT_ACTIONS array (Summarise · Find contradictions · Extract themes)
+│       ├── data/
+│       │   └── templates.js              # BUILT_IN_TEMPLATES constant (5 built-in templates)
 │       └── api.js
 ├── nginx/
 │   ├── local_app.conf
@@ -198,6 +202,7 @@ Every view has a two-tier navigation:
 - **Backend model**: Anthropic path uses `claude-sonnet-4-20250514`. Ollama path uses `OLLAMA_CHAT_MODEL` env var (default: `llama3.2`). Anthropic API key stored in `.env` as `ANTHROPIC_API_KEY`.
 - **Evidence chat**: `EvidenceChatPanel.jsx` is a persistent chat panel on the Evidence page for interrogating individual sources. The `+` button opens a `SourcePickerPopup` (evidence sources only — no section option); the first item is "📚 All sources" which fetches all sources in parallel, concatenates them with `--- Source: {title} ({type}) ---` separators, and sets label to "All sources (N sources)"; individual sources call `api.getEvidence(docId, evidenceId)` to fetch full content. All attached content is truncated to 6000 chars (amber chip shown if original exceeded 3000 chars). An **Insights** dropdown in the panel header (Summarise · Find contradictions · Extract themes, shared with ChatPanel via `insightPrompts.js`) is disabled when no source is attached; clicking an item fires the prompt automatically. History is stored as `evidence_chat_history` on the document JSON and loaded/reset on `document.id` change. `ignore_history` is set to `true` when context is attached (fresh response per source). Backend endpoint: `POST /documents/{doc_id}/evidence-chat` in `backend/evidence_chat.py`. Never modifies the document — returns `{ message }` only.
 - **Token limits**: `chat.py` and `actions.py` both use `max_tokens=4096` to prevent truncated `<proposed_document>` responses. Known limitation: very large attachments (sections or evidence sources) can still cause truncation if the combined prompt + response exceeds the model's context window. Workaround: attach smaller sections rather than entire large documents. Future fix: streaming responses or context summarisation.
+- **Document templates**: Users can create documents from built-in templates or their own saved templates. Built-in templates (Meeting Notes, Research Report, Project Brief, Weekly Update, Decision Log) are defined as `BUILT_IN_TEMPLATES` in `frontend/src/data/templates.js`. User templates are stored at `/var/speedwrite/templates/{user_id}/{template_id}.json` and managed via `backend/templates.py` (GET /templates, GET /templates/{id}, POST /templates, DELETE /templates/{id}). The Library view Documents panel has two stacked full-width buttons: `+ New Document` (primary, existing behaviour) and `From template…` (secondary) which opens `TemplatePickerOverlay.jsx`. The overlay has two screens: (1) template grid (two tabs: Built-in / My Templates, 2-column card grid; My Templates cards have an instant-delete × button); (2) AI pre-fill step — template name in header, optional description textarea, "Create without AI" and "Create with AI" buttons. Built-in template content comes from the frontend constant; user template content is fetched via `GET /templates/{id}` on card select. "Create with AI" is disabled when description is empty; both buttons show "Creating…" and are disabled while the request is in flight. `POST /templates/prefill` calls `llm.complete()` (respects `LLM_PROVIDER`, max_tokens=2048) and returns `{ content }`. Both creation paths navigate to `/document/:id` on success. Document view context bar order: Rename · Save as template · Evidence · Log · Close. "Save as template" opens an inline bar below the context bar (same slot as `activeBar` state: `null | 'save-template'`), with title input (pre-filled from doc title), description input, Save/Cancel buttons; on save shows "Template saved" status for 3 seconds.
 - **Global search**: `POST /search` (`backend/search.py`) performs case-insensitive substring search across all of the user's documents — document titles and content, evidence source titles and content, and `chat_history` messages (not `evidence_chat_history`). Returns up to 5 results per group (documents, evidence, chat). Excerpt helper extracts ~200 chars around the first match, padded with `…`. Frontend: `SearchOverlay.jsx` is an overlay (fixed inset-0 z-50, bg-black bg-opacity-40) with a centered panel (max-w-2xl mt-24). Triggered by Cmd/Ctrl+K or the search icon in TopBar. State managed via `SearchContext.jsx` (`SearchProvider` + `useSearch()` hook); `AppRoutes` in `App.jsx` registers the keyboard listener and renders the overlay. Search-as-you-type with 300ms debounce. Idle state ("Start typing…") shown when query < 2 chars; "Searching…" while loading; "No results found" on empty results. Match terms highlighted inline in the frontend (split on match, wrap in `<strong>`). Evidence results navigate to `/document/:id/evidence` with `{ state: { evidenceId } }`; `Evidence.jsx` reads `location.state.evidenceId` on items-load to pre-select the source (one-shot via `initialSelectDoneRef`). **Known performance limitation**: search does full in-memory substring scan across all documents, evidence content, and chat history on every debounced keystroke — fine for typical dataset sizes but will slow down with very large evidence corpora. Future fix: index-based search or SQLite FTS.
 
 ## Document Tree
@@ -253,6 +258,7 @@ JSON files on disk — no database.
 | `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, audit log, and protected sections |
 | `/var/speedwrite/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources in a document |
+| `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved document templates |
 
 > **Note**: The canonical data directory is `/var/speedwrite`. The existing VPS deployment and local dev Docker volume (`dev_logbooklm_data`) still mount to `/var/logbooklm` — migrate by updating the volume mount and `DATA_DIR` env var when provisioning a fresh VPS.
 

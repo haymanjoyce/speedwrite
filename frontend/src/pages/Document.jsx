@@ -41,6 +41,9 @@ export default function Document() {
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
   const [isRenaming, setIsRenaming] = useState(false)
+  const [activeBar, setActiveBar] = useState(null) // null | 'save-template'
+  const [saveTemplateTitle, setSaveTemplateTitle] = useState('')
+  const [saveTemplateDesc, setSaveTemplateDesc] = useState('')
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -124,6 +127,25 @@ export default function Document() {
 
   const handleRenameCancel = () => setIsRenaming(false)
 
+  const handleSaveAsTemplate = () => {
+    setSaveTemplateTitle(doc?.title || '')
+    setSaveTemplateDesc('')
+    setActiveBar('save-template')
+  }
+
+  const handleSaveTemplateDone = async () => {
+    const title = saveTemplateTitle.trim()
+    if (!title) return
+    try {
+      await api.createTemplate({ title, description: saveTemplateDesc.trim(), content: doc?.content || '' })
+      setActiveBar(null)
+      setSaveStatus('Template saved')
+      setTimeout(() => setSaveStatus(''), 3000)
+    } catch (err) {
+      console.error('Save template failed', err)
+    }
+  }
+
   const contextBarActions = pendingProposal
     ? [
         { label: 'Accept', onClick: handleAccept, variant: 'default' },
@@ -132,6 +154,7 @@ export default function Document() {
     : [
         ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }] : []),
         { label: 'Rename', onClick: handleRename, variant: 'default' },
+        { label: 'Save as template', onClick: handleSaveAsTemplate, variant: 'default' },
         { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
         { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
@@ -152,6 +175,38 @@ export default function Document() {
         actions={contextBarActions}
         statusText={pendingProposal ? 'Reviewing changes…' : saveStatus}
       />
+      {activeBar === 'save-template' && (
+        <div className="bg-gray-50 border-b border-gray-200 px-6 py-2 flex items-center gap-3 flex-shrink-0">
+          <span className="text-sm font-medium text-gray-600 flex-shrink-0">Save as template</span>
+          <input
+            autoFocus
+            value={saveTemplateTitle}
+            onChange={(e) => setSaveTemplateTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTemplateDone(); if (e.key === 'Escape') setActiveBar(null) }}
+            placeholder="Template title"
+            className="border border-gray-200 rounded px-3 py-1 text-sm text-gray-800 outline-none focus:border-blue-400 transition-colors bg-white w-48"
+          />
+          <input
+            value={saveTemplateDesc}
+            onChange={(e) => setSaveTemplateDesc(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTemplateDone(); if (e.key === 'Escape') setActiveBar(null) }}
+            placeholder="Brief description (optional)"
+            className="flex-1 border border-gray-200 rounded px-3 py-1 text-sm text-gray-800 outline-none focus:border-blue-400 transition-colors bg-white"
+          />
+          <button
+            onClick={handleSaveTemplateDone}
+            className="rounded px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => setActiveBar(null)}
+            className="rounded px-3 py-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar
           document={doc}

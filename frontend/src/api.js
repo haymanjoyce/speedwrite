@@ -108,6 +108,13 @@ export const api = {
   // Search
   search: (query) => request('POST', '/search', { query }),
 
+  // Templates
+  listTemplates: () => request('GET', '/templates'),
+  getTemplate: (id) => request('GET', `/templates/${id}`),
+  createTemplate: (data) => request('POST', '/templates', data),
+  deleteTemplate: (id) => request('DELETE', `/templates/${id}`),
+  prefillTemplate: (data) => request('POST', '/templates/prefill', data),
+
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
   addLogEntry: (docId, event, detail) =>
