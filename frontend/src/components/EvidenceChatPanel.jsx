@@ -39,10 +39,10 @@ function InsightsDropdown({ disabled, onAction }) {
         onClick={() => { if (!disabled) setOpen((v) => !v) }}
         disabled={disabled}
         title={disabled ? 'Attach a source first' : undefined}
-        className={`text-xs rounded-full px-3 py-0.5 transition-colors ${
+        className={`text-xs border rounded px-3 py-1 transition-colors ${
           disabled
-            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer'
+            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+            : 'text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer'
         }`}
       >
         Insights
@@ -301,7 +301,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
   return (
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
       {/* Header */}
-      <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
+      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
         <InsightsDropdown
           disabled={!localContext}

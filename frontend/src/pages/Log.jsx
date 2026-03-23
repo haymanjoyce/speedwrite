@@ -73,7 +73,7 @@ export default function Log() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel */}
         <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
-          <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+          <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Log</span>
           </div>
           <div className="flex-1 overflow-y-auto py-2">
@@ -103,7 +103,7 @@ export default function Log() {
 
         {/* Right panel */}
         <main className="flex-1 bg-white flex flex-col overflow-hidden">
-          <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+          <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Entry Detail</span>
           </div>
           <div className="flex-1 overflow-y-auto">

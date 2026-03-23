@@ -21,7 +21,7 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
   }
 
   return (
-    <div className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
+    <div className="h-11 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
       <div className="flex items-center text-sm min-w-0 overflow-hidden whitespace-nowrap" title={breadcrumbTitle}>
         {docTitle ? (
           <>
@@ -59,10 +59,10 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </button>
-        <span className="text-gray-500 text-sm">{user?.email}</span>
+        <span className="text-xs text-gray-500">{user?.email}</span>
         <button
           onClick={onLogout}
-          className="text-gray-500 hover:text-gray-900 text-sm transition-colors"
+          className="text-xs text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
         >
           Logout
         </button>

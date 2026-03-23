@@ -5,7 +5,7 @@ const TYPE_ICON = { file: '📄', url: '🔗', text: '📝' }
 export default function EvidenceSidebar({ items, selectedId, onSelect, onAdd }) {
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
-      <div className="h-9 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sources</span>
       </div>
       <div className="px-4 pt-3 pb-3 border-b border-gray-200">

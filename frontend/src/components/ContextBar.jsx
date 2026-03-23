@@ -6,10 +6,10 @@ export default function ContextBar({ actions = [], controls, statusText, tabs = 
           <button
             key={i}
             onClick={tab.onClick}
-            className={`text-sm px-1 cursor-pointer transition-colors border-b-2 ${
+            className={`text-sm px-1 cursor-pointer ${
               tab.active
-                ? 'text-gray-900 font-medium border-blue-600'
-                : 'text-gray-400 hover:text-gray-700 border-transparent'
+                ? 'text-gray-900 font-semibold'
+                : 'text-gray-400 hover:text-gray-700 transition-colors'
             }`}
           >
             {tab.label}
@@ -17,7 +17,7 @@ export default function ContextBar({ actions = [], controls, statusText, tabs = 
         ))}
         {statusText && (
           <span className="text-xs text-gray-400">
-            {tabs.length > 0 ? `· ${statusText}` : statusText}
+            {statusText}
           </span>
         )}
       </div>
@@ -26,11 +26,13 @@ export default function ContextBar({ actions = [], controls, statusText, tabs = 
           <button
             key={i}
             onClick={action.onClick}
-            className={`text-xs rounded-full px-3 py-0.5 transition-colors cursor-pointer ${
-            action.variant === 'primary'
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
-          }`}
+            className={`text-xs rounded px-3 py-1 transition-colors cursor-pointer ${
+              action.variant === 'primary'
+                ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
+                : action.variant === 'danger'
+                ? 'text-red-600 border border-red-200 hover:bg-red-50'
+                : 'text-gray-600 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+            }`}
           >
             {action.label}
           </button>
