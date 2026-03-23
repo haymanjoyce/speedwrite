@@ -13,6 +13,20 @@ from storage import DOCS_DIR, append_audit_log, delete_document, list_documents,
 router = APIRouter(prefix="/documents")
 
 
+def add_snapshot(doc: dict, trigger: str, label: str) -> None:
+    entry = {
+        "id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow().isoformat(),
+        "trigger": trigger,
+        "label": label,
+        "content": doc.get("content", ""),
+    }
+    history = doc.setdefault("history", [])
+    history.append(entry)
+    if len(history) > 50:
+        doc["history"] = history[-50:]
+
+
 def extract_title(content: str) -> str:
     match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
     return match.group(1).strip() if match else ""
@@ -36,6 +50,8 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
         "shared_with": [],
         "protected_sections": [],
         "evidence_chat_history": [],
+        "history": [],
+        "save_count": 0,
     }
     append_audit_log(doc, "document_created", "Document created")
     save_document(doc)
@@ -72,6 +88,9 @@ def update_document(doc_id: str, data: DocumentUpdate, user=Depends(get_current_
     doc["updated_at"] = datetime.utcnow().isoformat()
     word_count = len(doc["content"].split()) if doc.get("content") else 0
     append_audit_log(doc, "document_edited", f"Document saved ({word_count} words)")
+    doc["save_count"] = doc.get("save_count", 0) + 1
+    if doc["save_count"] % 10 == 0:
+        add_snapshot(doc, "auto", "Auto save")
     save_document(doc)
     return doc
 
@@ -90,6 +109,46 @@ def delete_doc(doc_id: str, user=Depends(get_current_user)):
         embeddings_file.unlink()
 
     delete_document(user["id"], doc_id)
+
+
+class SnapshotRequest(BaseModel):
+    label: str = ""
+
+
+@router.post("/{doc_id}/snapshot")
+def create_snapshot(doc_id: str, data: SnapshotRequest, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    label = data.label.strip() or "Manual checkpoint"
+    trigger = "rewrite" if label == "AI rewrite" else "manual"
+    add_snapshot(doc, trigger, label)
+    save_document(doc)
+    return doc["history"][-1]
+
+
+@router.get("/{doc_id}/history")
+def list_history(doc_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    history = doc.get("history", [])
+    stripped = [
+        {"id": e["id"], "timestamp": e["timestamp"], "trigger": e["trigger"], "label": e["label"]}
+        for e in reversed(history)
+    ]
+    return stripped
+
+
+@router.get("/{doc_id}/history/{snapshot_id}")
+def get_snapshot(doc_id: str, snapshot_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    for entry in doc.get("history", []):
+        if entry["id"] == snapshot_id:
+            return entry
+    raise HTTPException(status_code=404, detail="Snapshot not found")
 
 
 class ProtectRequest(BaseModel):

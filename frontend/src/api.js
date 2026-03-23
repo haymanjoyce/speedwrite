@@ -115,6 +115,14 @@ export const api = {
   deleteTemplate: (id) => request('DELETE', `/templates/${id}`),
   prefillTemplate: (data) => request('POST', '/templates/prefill', data),
 
+  // Document history
+  listHistory: (docId) =>
+    request('GET', `/documents/${docId}/history`),
+  getSnapshot: (docId, snapshotId) =>
+    request('GET', `/documents/${docId}/history/${snapshotId}`),
+  createSnapshot: (docId, label = '') =>
+    request('POST', `/documents/${docId}/snapshot`, { label }),
+
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
   addLogEntry: (docId, event, detail) =>

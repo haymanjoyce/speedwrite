@@ -134,8 +134,8 @@ export default function Evidence() {
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
           { label: 'Evidence', active: true, onClick: () => {} },
           { label: 'Log', active: false, onClick: () => navigate(`/document/${id}/log`) },
+          { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
         ]}
-        statusText={reindexStatus}
         actions={[
           ...(items.length > 0 ? [{ label: 'Reindex', onClick: handleReindex, variant: 'default' }] : []),
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),

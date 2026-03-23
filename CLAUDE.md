@@ -121,6 +121,7 @@ speedwrite/
 │       │   ├── Document.jsx
 │       │   ├── Evidence.jsx
 │       │   ├── Log.jsx
+│       │   ├── History.jsx
 │       │   ├── Login.jsx
 │       │   └── Register.jsx
 │       ├── components/
@@ -146,6 +147,8 @@ speedwrite/
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
 │       │   └── AddSourceModal.jsx
+│       ├── constants/
+│       │   └── attachmentLimits.js       # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
 │       ├── insightPrompts.js             # Shared SHARED_INSIGHT_ACTIONS array (Summarise · Find contradictions · Extract themes)
 │       ├── data/
 │       │   └── templates.js              # BUILT_IN_TEMPLATES constant (5 built-in templates)
@@ -177,9 +180,10 @@ The nginx `/api/` location block sets `proxy_read_timeout 300s`, `proxy_send_tim
 Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Rename, and Delete action buttons when a document is selected.
-2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows tabs (Document active) + Rename · Save as template · Close buttons; "Add to chat" appears when editor text is selected. **Redraft** and **Insights** dropdowns live in the ChatPanel header (not the context bar). Edit/Preview segmented control lives in the Editor panel header (right-aligned). When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject buttons.
+2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows tabs (Document active) + Save version · Rename · Save as template · Close buttons; "Add to chat" appears when editor text is selected. **Redraft** and **Insights** dropdowns live in the ChatPanel header (not the context bar). Edit/Preview segmented control lives in the Editor panel header (right-aligned). When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject buttons.
 3. **Evidence view** (`/document/:id/evidence`) — three-panel layout: source list (260px) on the left, source detail (flex-1) in the middle, `EvidenceChatPanel` (380px) always visible on the right. Context bar shows tabs (Evidence active) + Reindex (hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close buttons.
 4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows tabs (Log active) + Close button.
+5. **History view** (`/document/:id/history`) — version snapshot list on the left, snapshot detail + MarkdownPreview on the right. Context bar shows tabs (History active) + Close button.
 
 ### Error Boundaries
 
@@ -248,6 +252,22 @@ Every view has a two-tier navigation:
 - `GET /documents/{doc_id}/log` returns entries newest-first. `POST /documents/{doc_id}/log` appends a manual entry.
 - Log view (`/document/:id/log`) in `Log.jsx` — left panel lists entries, right panel shows selected entry detail.
 
+## Document History
+
+- Version snapshots stored as `history: list` on each document JSON; max 50 entries (oldest dropped when limit exceeded).
+- `save_count: int` on each document tracks auto-saves and is incremented on every PUT — a snapshot is taken when `save_count % 10 == 0`.
+- `add_snapshot(doc, trigger, label)` helper in `documents.py` appends a `{ id, timestamp, trigger, label, content }` entry.
+- Three snapshot triggers: **auto** (every 10 saves, label "Auto save"), **rewrite** (after accepting AI rewrite, fired from frontend as explicit POST), **manual** (user clicks "Save version" in context bar, label "Manual checkpoint").
+- `POST /documents/{doc_id}/snapshot` — body `{ label: string }`. Empty/missing label defaults to "Manual checkpoint"; label "AI rewrite" sets trigger to "rewrite". Returns new entry.
+- `GET /documents/{doc_id}/history` — returns list newest-first, **without** `content` field for performance.
+- `GET /documents/{doc_id}/history/{snapshot_id}` — returns full snapshot including content.
+- Frontend: `History.jsx` at `/document/:id/history`. Left panel lists snapshots with trigger icons (💾 auto / 🤖 rewrite / 📌 manual) and `timeAgo()` relative timestamps. Right panel shows metadata + MarkdownPreview + "Restore this version" button.
+- **Restore flow**: clicking "Restore this version" navigates to `/document/:id` with `{ state: { restoreContent } }`. `Document.jsx` reads this on doc load, sets it as `pendingProposal` (triggers diff view), then clears location state via `window.history.replaceState`. Accept → document restored; Reject → current content unchanged.
+- **After accepting a rewrite**: `Document.jsx` fires `api.createSnapshot(id, 'AI rewrite')` fire-and-forget in `handleAccept`.
+- **`flashStatus` prop on `Editor.jsx`**: passed from `Document.jsx` to show brief messages ("Version saved", "Template saved") in the Editor panel header, overriding save status for 3 seconds.
+- `api.js` methods: `listHistory(docId)`, `getSnapshot(docId, snapshotId)`, `createSnapshot(docId, label = '')`.
+- Context bar tabs updated in all four document sub-views (Document / Evidence / Log / History) to include the History tab.
+
 ## Section Locking
 
 - `protected_sections: list` on each document stores locked heading texts.
@@ -263,7 +283,7 @@ JSON files on disk — no database.
 | Path | Purpose |
 |------|---------|
 | `/var/speedwrite/users.json` | All user accounts |
-| `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, audit log, and protected sections |
+| `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, audit log, protected sections, version history, and save_count |
 | `/var/speedwrite/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources in a document |
 | `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved document templates |

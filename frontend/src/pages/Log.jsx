@@ -65,6 +65,7 @@ export default function Log() {
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
           { label: 'Evidence', active: false, onClick: () => navigate(`/document/${id}/evidence`) },
           { label: 'Log', active: true, onClick: () => {} },
+          { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
         ]}
         actions={[
           { label: 'Close', onClick: () => navigate('/'), variant: 'default' },

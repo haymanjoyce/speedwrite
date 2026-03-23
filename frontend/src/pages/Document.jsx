@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
@@ -30,6 +30,7 @@ function parseHeadingsWithContent(content) {
 
 export default function Document() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { id } = useParams()
   const [user, setUser] = useState(null)
   const [doc, setDoc] = useState(null)
@@ -43,6 +44,7 @@ export default function Document() {
   const [activeBar, setActiveBar] = useState(null) // null | 'save-template'
   const [saveTemplateTitle, setSaveTemplateTitle] = useState('')
   const [saveTemplateDesc, setSaveTemplateDesc] = useState('')
+  const [flashStatus, setFlashStatus] = useState('')
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -58,6 +60,10 @@ export default function Document() {
     api.getDocument(id).then((data) => {
       setDoc(data)
       setProtectedSections(data.protected_sections ?? [])
+      if (location.state?.restoreContent) {
+        setPendingProposal(location.state.restoreContent)
+        window.history.replaceState({}, '', window.location.pathname)
+      }
     }).catch(() => navigate('/'))
   }, [id])
 
@@ -101,6 +107,7 @@ export default function Document() {
     setEditorContentOverride(pendingProposal)
     setPendingProposal(null)
     api.addLogEntry(id, 'rewrite_accepted', 'AI rewrite accepted')
+    api.createSnapshot(id, 'AI rewrite').catch(() => {})
   }
 
   const handleReject = () => {
@@ -138,10 +145,20 @@ export default function Document() {
     try {
       await api.createTemplate({ title, description: saveTemplateDesc.trim(), content: doc?.content || '' })
       setActiveBar(null)
-      setSaveStatus('Template saved')
-      setTimeout(() => setSaveStatus(''), 3000)
+      setFlashStatus('Template saved')
+      setTimeout(() => setFlashStatus(''), 3000)
     } catch (err) {
       console.error('Save template failed', err)
+    }
+  }
+
+  const handleSaveVersion = async () => {
+    try {
+      await api.createSnapshot(id)
+      setFlashStatus('Version saved')
+      setTimeout(() => setFlashStatus(''), 3000)
+    } catch (err) {
+      console.error('Save version failed', err)
     }
   }
 
@@ -149,6 +166,7 @@ export default function Document() {
     { label: 'Document', active: true, onClick: () => {} },
     { label: 'Evidence', active: false, onClick: () => navigate(`/document/${id}/evidence`) },
     { label: 'Log', active: false, onClick: () => navigate(`/document/${id}/log`) },
+    { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
   ]
 
   const contextBarActions = pendingProposal
@@ -158,6 +176,7 @@ export default function Document() {
       ]
     : [
         ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }] : []),
+        { label: 'Save version', onClick: handleSaveVersion, variant: 'default' },
         { label: 'Rename', onClick: handleRename, variant: 'default' },
         { label: 'Save as template', onClick: handleSaveAsTemplate, variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
@@ -229,6 +248,7 @@ export default function Document() {
           editorMode={editorMode}
           onEditorModeChange={setEditorMode}
           protectedSections={protectedSections}
+          flashStatus={flashStatus}
         />
         <ChatPanel
           ref={chatPanelRef}
