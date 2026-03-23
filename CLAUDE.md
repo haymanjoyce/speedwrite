@@ -4,6 +4,20 @@
 
 SpeedWrite is an AI-assisted document authoring platform. The core unit is a document — each document has its own evidence base, AI agent chat, and markdown content.
 
+## Design Decisions
+
+### Rewrite operates at section level, not selected-text level
+
+The Rewrite button lives on tree node hover and operates on the full section under a heading, not on arbitrary selected text.
+
+**Why:** We experimented with adding a Rewrite pill to the context bar that fired when the user selected text in the editor. This was reverted because:
+
+1. LLMs are unreliable at precise mid-paragraph text substitution — asking the model to find and replace an exact sentence within a larger document produces inconsistent results
+2. Section-level rewrites work reliably because the heading provides an unambiguous boundary — the AI knows exactly what to replace
+3. For sentence-level edits, the chat panel (attach text as context, ask for suggestions) is a better workflow — the user sees the suggestion in chat and applies it manually
+
+**Implication:** Do not add Rewrite to the context bar for text selections. If sentence-level rewriting is needed in future, it should be implemented via backend text substitution (AI rewrites only the selected text, backend does the replacement) rather than asking the AI to return a full document with the replacement embedded.
+
 ## Repository Structure
 
 ```
