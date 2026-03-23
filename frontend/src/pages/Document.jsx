@@ -173,7 +173,13 @@ export default function Document() {
       />
       <ContextBar
         actions={contextBarActions}
-        statusText={pendingProposal ? 'Reviewing changes…' : saveStatus}
+        statusText={(() => {
+          const primary = pendingProposal ? 'Reviewing changes…' : saveStatus
+          const evCount = doc?.evidence?.length ?? 0
+          const evText = evCount > 0 ? `${evCount} source${evCount !== 1 ? 's' : ''}` : ''
+          if (primary && evText) return `${primary} · ${evText}`
+          return primary || evText
+        })()}
       />
       {activeBar === 'save-template' && (
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-2 flex items-center gap-3 flex-shrink-0">
