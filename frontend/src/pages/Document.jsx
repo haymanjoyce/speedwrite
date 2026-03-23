@@ -155,6 +155,17 @@ export default function Document() {
     }
   }
 
+  const handleRename = async () => {
+    const newName = window.prompt('Rename document:', doc?.title)
+    if (!newName || !newName.trim()) return
+    try {
+      const updated = await api.updateDocument(id, { title: newName.trim() })
+      setDoc(updated)
+    } catch (err) {
+      console.error('Rename failed', err)
+    }
+  }
+
   const contextBarActions = pendingProposal
     ? [
         { label: 'Accept', onClick: handleAccept, variant: 'default' },
@@ -162,6 +173,7 @@ export default function Document() {
       ]
     : [
         ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }] : []),
+        { label: 'Rename', onClick: handleRename, variant: 'default' },
         { label: 'Evidence', onClick: () => navigate(`/document/${id}/evidence`), variant: 'default' },
         { label: 'Log', onClick: () => navigate(`/document/${id}/log`), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },

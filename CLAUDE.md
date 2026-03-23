@@ -77,8 +77,8 @@ The nginx `/api/` location block sets `proxy_read_timeout 300s`, `proxy_send_tim
 
 Three main views:
 
-1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Evidence, and Delete action pills when a document is selected.
-2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Actions (dropdown), Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected. An Actions dropdown and Edit/Preview segmented control are rendered as `controls` on the right of the context bar. When a diff action is selected, an InstructionBar appears below the context bar. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
+1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Rename, Evidence, Log, and Delete action pills when a document is selected.
+2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Actions (dropdown), Rename, Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected. An Actions dropdown and Edit/Preview segmented control are rendered as `controls` on the right of the context bar. When a diff action is selected, an InstructionBar appears below the context bar. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
 3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Log, Reindex, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
 4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows Document, Evidence, and Close pills.
 

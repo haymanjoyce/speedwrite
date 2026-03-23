@@ -35,6 +35,18 @@ export default function Home() {
     }
   }
 
+  const handleRename = async () => {
+    const newName = window.prompt('Rename document:', selectedDoc.title)
+    if (!newName || !newName.trim()) return
+    try {
+      const updated = await api.updateDocument(selectedDoc.id, { title: newName.trim() })
+      setSelectedDoc(updated)
+      setDocuments((prev) => prev.map((d) => d.id === updated.id ? updated : d))
+    } catch (err) {
+      console.error('Rename failed', err)
+    }
+  }
+
   const handleDelete = async () => {
     if (!window.confirm(`Are you sure you want to delete "${selectedDoc.title}"? This cannot be undone.`)) return
     try {
@@ -67,6 +79,7 @@ export default function Home() {
       <TopBar user={user} onLogout={handleLogout} />
       <ContextBar actions={selectedDoc ? [
         { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: 'primary' },
+        { label: 'Rename', onClick: handleRename, variant: 'default' },
         { label: 'Evidence', onClick: () => navigate(`/document/${selectedDoc.id}/evidence`), variant: 'default' },
         { label: 'Log', onClick: () => navigate(`/document/${selectedDoc.id}/log`), variant: 'default' },
         { label: 'Delete', onClick: handleDelete, variant: 'default' },
