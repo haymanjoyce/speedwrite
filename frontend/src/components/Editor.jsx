@@ -6,6 +6,7 @@ import SegmentedControl from './SegmentedControl'
 
 const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, onEditorModeChange, protectedSections = [] }, ref) {
   const [content, setContent] = useState('')
+  const [saveStatus, setSaveStatus] = useState('')
   const saveTimer = useRef(null)
   const textareaRef = useRef(null)
 
@@ -56,6 +57,7 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
     if (contentOverride != null) {
       setContent(contentOverride)
       if (document?.id) {
+        setSaveStatus('Saving…')
         onSaveStatus?.('Saving…')
         scheduleSave(document.id, contentOverride)
       }
@@ -66,13 +68,17 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
   const scheduleSave = (docId, newContent) => {
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
+      setSaveStatus('Saving…')
       if (onSaveStatus) onSaveStatus('Saving…')
       try {
         const updated = await api.updateDocument(docId, { content: newContent })
-        if (onSaveStatus) onSaveStatus(`Saved ${new Date().toLocaleTimeString()}`)
+        const ts = `Saved ${new Date().toLocaleTimeString()}`
+        setSaveStatus(ts)
+        if (onSaveStatus) onSaveStatus(ts)
         onUpdate(updated)
       } catch (err) {
         console.error('Auto-save failed', err)
+        setSaveStatus('')
         if (onSaveStatus) onSaveStatus('')
       }
     }, 1000)
@@ -102,16 +108,19 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
     <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editor</span>
-        {!pendingProposal && onEditorModeChange && (
-          <SegmentedControl
-            options={[
-              { value: 'edit', label: 'Edit' },
-              { value: 'preview', label: 'Preview' },
-            ]}
-            value={editorMode}
-            onChange={onEditorModeChange}
-          />
-        )}
+        <div className="flex items-center gap-3">
+          {saveStatus && <span className="text-xs text-gray-400">{saveStatus}</span>}
+          {!pendingProposal && onEditorModeChange && (
+            <SegmentedControl
+              options={[
+                { value: 'edit', label: 'Edit' },
+                { value: 'preview', label: 'Preview' },
+              ]}
+              value={editorMode}
+              onChange={onEditorModeChange}
+            />
+          )}
+        </div>
       </div>
       {pendingProposal ? (
         <DiffView originalContent={content} proposedContent={pendingProposal} protectedSections={protectedSections} />

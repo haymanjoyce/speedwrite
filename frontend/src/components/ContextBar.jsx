@@ -1,4 +1,4 @@
-export default function ContextBar({ actions = [], controls, statusText, tabs = [] }) {
+export default function ContextBar({ actions = [], controls, tabs = [] }) {
   return (
     <div className="h-11 bg-white border-b border-gray-200 flex items-center px-6 flex-shrink-0">
       <div className="flex items-center gap-4">
@@ -15,11 +15,6 @@ export default function ContextBar({ actions = [], controls, statusText, tabs = 
             {tab.label}
           </button>
         ))}
-        {statusText && (
-          <span className="text-xs text-gray-400">
-            {statusText}
-          </span>
-        )}
       </div>
       <div className="ml-auto flex items-center gap-3">
         {actions.map((action, i) => (

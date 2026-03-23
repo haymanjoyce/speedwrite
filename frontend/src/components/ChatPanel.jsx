@@ -45,7 +45,7 @@ const INSIGHTS_PROMPTS = Object.fromEntries(SHARED_INSIGHT_ACTIONS.map((a) => [a
 
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
-  headings, evidenceSources, pendingProposal,
+  headings, evidenceSources, pendingProposal, evidenceCount = 0,
 }, ref) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -270,7 +270,12 @@ const ChatPanel = forwardRef(function ChatPanel({
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
       {/* Header */}
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
+          {evidenceCount > 0 && (
+            <span className="text-xs text-gray-400">{evidenceCount} source{evidenceCount !== 1 ? 's' : ''}</span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
         <ActionsDropdown
           title="Redraft"

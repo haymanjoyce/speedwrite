@@ -31,7 +31,7 @@ The app uses three tiers of navigation and controls:
 
 **Tier 2 — Page context bar (ContextBar)**
 - Sits below the global bar
-- Left side: tab navigation (Document / Evidence / Log) for document sub-views; active tab is `text-gray-900 font-semibold`, inactive tabs are `text-gray-400 hover:text-gray-700 transition-colors`. Status text (save status, source count) trails after tabs with no separator.
+- Left side: tab navigation (Document / Evidence / Log) for document sub-views; active tab is `text-gray-900 font-semibold`, inactive tabs are `text-gray-400 hover:text-gray-700 transition-colors`. No status text in the context bar — save status lives in the Editor panel header, source count lives in the AI Chat panel header.
 - Right side: page-specific action buttons (outlined, `text-xs rounded px-3 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300`)
 - Layout per view:
   - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
@@ -46,8 +46,8 @@ The app uses three tiers of navigation and controls:
 - Panel-specific actions sit in the panel header or below it
 - Current panel headers:
   - Structure (document tree, no actions)
-  - Editor (Edit/Preview segmented control right-aligned in header)
-  - AI Chat (Redraft and Insights dropdowns right-aligned in header)
+  - Editor (save status `text-xs text-gray-400` + Edit/Preview segmented control right-aligned in header; save status managed as local state inside `Editor.jsx`)
+  - AI Chat (source count `text-xs text-gray-400` beside label left-aligned when `evidenceCount > 0`; Redraft and Insights dropdowns right-aligned in header)
   - Sources (full-width Add button + Reindex below header)
   - Source Detail (no actions)
   - Documents (full-width New Document button below header)
@@ -189,7 +189,7 @@ Three main views:
 
 Every view has a two-tier navigation:
 - **TopBar** — global: logo/breadcrumb, search icon, user email, logout. The breadcrumb shows "SpeedWrite" (links to /) and the document title when present — no sub-page labels. Container has `min-w-0 overflow-hidden whitespace-nowrap`; full path shown as native `title` tooltip on hover. In Document view, clicking Rename activates inline editing: the title span is replaced by an `<input>` (border-b border-blue-400, auto-sized via `size` attribute); Enter/blur saves, Escape cancels. `TopBar` accepts `isRenaming`, `onRenameSave`, `onRenameCancel` props. In Library view, the Document Detail panel title uses the same pattern with ✓/✕ confirm buttons. Sub-page navigation (Evidence, Log) is handled by tabs in the ContextBar, not the TopBar breadcrumb.
-- **ContextBar** — context-specific: outlined action buttons right-aligned, save status / tab navigation left-aligned. Default buttons are `border border-gray-200 rounded`. Actions can set `variant: 'primary'` for a blue button (`bg-blue-600 border border-blue-600 text-white`). Primary sidebar actions (New Document, Add Source) are blue buttons inside sidebar headers. "Open" in the library view and "Add to chat" in the document view use `variant: 'primary'`.
+- **ContextBar** — context-specific: outlined action buttons right-aligned, tab navigation left-aligned. Default buttons are `border border-gray-200 rounded`. Actions can set `variant: 'primary'` for a blue button (`bg-blue-600 border border-blue-600 text-white`). Primary sidebar actions (New Document, Add Source) are blue buttons inside sidebar headers. "Open" in the library view and "Add to chat" in the document view use `variant: 'primary'`.
 
 ## AI Features
 

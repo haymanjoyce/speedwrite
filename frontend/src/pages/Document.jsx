@@ -35,7 +35,6 @@ export default function Document() {
   const [doc, setDoc] = useState(null)
   const [contextText, setContextText] = useState('')
   const [selectedText, setSelectedText] = useState('')
-  const [saveStatus, setSaveStatus] = useState('')
   const [editorContentOverride, setEditorContentOverride] = useState(null)
   const [pendingProposal, setPendingProposal] = useState(null)
   const [editorMode, setEditorMode] = useState('edit')
@@ -178,13 +177,6 @@ export default function Document() {
       <ContextBar
         tabs={pendingProposal ? [] : contextBarTabs}
         actions={contextBarActions}
-        statusText={(() => {
-          const primary = pendingProposal ? 'Reviewing changes…' : saveStatus
-          const evCount = doc?.evidence?.length ?? 0
-          const evText = evCount > 0 ? `${evCount} source${evCount !== 1 ? 's' : ''}` : ''
-          if (primary && evText) return `${primary} · ${evText}`
-          return primary || evText
-        })()}
       />
       {activeBar === 'save-template' && (
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-2 flex items-center gap-3 flex-shrink-0">
@@ -231,7 +223,6 @@ export default function Document() {
           document={doc}
           onUpdate={handleUpdate}
           onSelectText={setSelectedText}
-          onSaveStatus={setSaveStatus}
           contentOverride={editorContentOverride}
           onContentOverrideApplied={() => setEditorContentOverride(null)}
           pendingProposal={pendingProposal}
@@ -248,6 +239,7 @@ export default function Document() {
           onClearContext={() => setContextText('')}
           headings={parseHeadingsWithContent(doc?.content)}
           evidenceSources={doc?.evidence || []}
+          evidenceCount={doc?.evidence?.length ?? 0}
           pendingProposal={pendingProposal}
         />
       </div>
