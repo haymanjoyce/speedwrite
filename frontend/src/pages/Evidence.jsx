@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import AddSourceModal from '../components/AddSourceModal'
+import EvidenceChatPanel from '../components/EvidenceChatPanel'
 import EvidenceSidebar from '../components/EvidenceSidebar'
 import SourceDetail from '../components/SourceDetail'
 import ContextBar from '../components/ContextBar'
@@ -124,6 +125,7 @@ export default function Evidence() {
           onAdd={() => setShowModal(true)}
         />
         <SourceDetail item={selectedItem} onToggleSync={handleToggleSync} onFetchLiveContent={handleFetchLiveContent} />
+        <EvidenceChatPanel docId={id} evidenceSources={items} document={doc} />
       </div>
       {showModal && (
         <AddSourceModal onAdd={handleAdd} onClose={() => setShowModal(false)} docId={id} />

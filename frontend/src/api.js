@@ -94,6 +94,15 @@ export const api = {
   reindexEvidence: (docId) =>
     request('POST', `/documents/${docId}/evidence/reindex`),
 
+  // Evidence chat
+  evidenceChat: (docId, message, context, contextLabel, ignoreHistory = false, signal = null) =>
+    request('POST', `/documents/${docId}/evidence-chat`, {
+      message,
+      context,
+      context_label: contextLabel,
+      ignore_history: ignoreHistory,
+    }, signal),
+
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
   addLogEntry: (docId, event, detail) =>

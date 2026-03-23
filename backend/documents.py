@@ -34,6 +34,7 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
         "audit_log": [],
         "shared_with": [],
         "protected_sections": [],
+        "evidence_chat_history": [],
     }
     append_audit_log(doc, "document_created", "Document created")
     save_document(doc)

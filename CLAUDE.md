@@ -61,6 +61,7 @@ speedwrite/
 │       │   ├── ProviderToggle.jsx    # Segmented pill to switch between Anthropic and Ollama
 │       │   ├── SegmentedControl.jsx  # Reusable segmented pill control (options, value, onChange)
 │       │   ├── ErrorBoundary.jsx     # Class component error boundary; catches render crashes
+│       │   ├── EvidenceChatPanel.jsx # Three-panel evidence chat — source picker, Insights dropdown, stop button
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
 │       │   └── AddSourceModal.jsx
@@ -93,7 +94,7 @@ Three main views:
 
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Rename, Evidence, Log, and Delete action pills when a document is selected.
 2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows Rename, Evidence, Log, and Close pills; "Add to chat" appears when editor text is selected. Two dropdowns — **Redraft** (Rewrite, Restructure, Expand, Condense, Simplify, Formalise) and **Insights** (Summarise, Extract key points, Critique, Suggest improvements) — and an Edit/Preview segmented control are rendered as `controls` on the right of the context bar. When a Redraft action is selected, an InstructionBar appears below the context bar for optional instructions. When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject pills.
-3. **Evidence view** (`/document/:id/evidence`) — source list on the left, source detail on the right. Context bar shows Document, Log, Reindex, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
+3. **Evidence view** (`/document/:id/evidence`) — three-panel layout: source list (260px) on the left, source detail (flex-1) in the middle, `EvidenceChatPanel` (380px) always visible on the right. Context bar shows Document, Log, Reindex, Sync now (when a document-type source is selected and sync=off), Delete (when a source is selected), and Close pills.
 4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows Document, Evidence, and Close pills.
 
 ### Error Boundaries
@@ -121,6 +122,7 @@ Every view has a two-tier navigation:
 - **LLM abstraction layer**: All LLM calls are routed through `backend/llm.py` (`complete()` → `_complete_anthropic` or `_complete_ollama`). The active provider is controlled by the `LLM_PROVIDER` env var (default: `anthropic`). Ollama is fully supported as an alternative provider. `_complete_ollama` uses `httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)` and raises `HTTPException` on `ConnectError` (503), `ReadTimeout` (504), and other errors (500) with descriptive messages. The `provider` field in chat/action request bodies can override the env var per-request.
 - **Provider toggle UI**: `ProviderToggle.jsx` exists and uses `SegmentedControl` to switch between Anthropic and Ollama. It is not currently exposed in the Document view — reserved for a future enterprise/self-hosted tier. The underlying backend and `api.js` plumbing remains intact.
 - **Backend model**: Anthropic path uses `claude-sonnet-4-20250514`. Ollama path uses `OLLAMA_CHAT_MODEL` env var (default: `llama3.2`). Anthropic API key stored in `.env` as `ANTHROPIC_API_KEY`.
+- **Evidence chat**: `EvidenceChatPanel.jsx` is a persistent chat panel on the Evidence page for interrogating individual sources. The `+` button opens a `SourcePickerPopup` (evidence sources only — no section option); selecting a source calls `api.getEvidence(docId, evidenceId)` to fetch full content, then truncates to 3000 chars (same logic as ChatPanel). An **Insights** dropdown in the panel header (Summarise · Find contradictions · Extract themes) is disabled when no source is attached; clicking an item fires the prompt automatically. History is stored as `evidence_chat_history` on the document JSON and loaded/reset on `document.id` change. `ignore_history` is set to `true` when context is attached (fresh response per source). Backend endpoint: `POST /documents/{doc_id}/evidence-chat` in `backend/evidence_chat.py`. Never modifies the document — returns `{ message }` only.
 - **Token limits**: `chat.py` and `actions.py` both use `max_tokens=4096` to prevent truncated `<proposed_document>` responses. Known limitation: very large attachments (sections or evidence sources) can still cause truncation if the combined prompt + response exceeds the model's context window. Workaround: attach smaller sections rather than entire large documents. Future fix: streaming responses or context summarisation.
 
 ## Document Tree
