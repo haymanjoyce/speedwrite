@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { api } from '../api'
+import { ATTACHMENT_TRUNCATION_LIMIT, ATTACHMENT_WARNING_THRESHOLD } from '../constants/attachmentLimits'
 import { SHARED_INSIGHT_ACTIONS } from '../insightPrompts'
 import ActionsDropdown from './ActionsDropdown'
 import AttachmentPopup from './AttachmentPopup'
@@ -9,10 +10,10 @@ const isMac = navigator.platform.toUpperCase().includes('MAC')
 
 function truncateContext(text) {
   const originalLength = text.length
-  const truncated = originalLength > 6000
+  const truncated = originalLength > ATTACHMENT_TRUNCATION_LIMIT
   if (!truncated) return { text, truncated: false, originalLength }
 
-  const slice = text.slice(0, 6000)
+  const slice = text.slice(0, ATTACHMENT_TRUNCATION_LIMIT)
   const lastNewline = slice.lastIndexOf('\n')
   const cutText = lastNewline > 0 ? slice.slice(0, lastNewline) : slice
 
@@ -261,8 +262,8 @@ const ChatPanel = forwardRef(function ChatPanel({
     : contextText
       ? `Selected text (${contextText.length} chars)`
       : null
-  const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > 6000)
-  const isAmber = (localContext?.originalLength ?? 0) > 3000 || (!localContext && contextText && contextText.length > 3000)
+  const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > ATTACHMENT_TRUNCATION_LIMIT)
+  const isAmber = (localContext?.originalLength ?? 0) > ATTACHMENT_WARNING_THRESHOLD || (!localContext && contextText && contextText.length > ATTACHMENT_WARNING_THRESHOLD)
   const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
   const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
 
@@ -397,12 +398,12 @@ const ChatPanel = forwardRef(function ChatPanel({
                 ? 'bg-amber-50 border border-amber-200 text-amber-700'
                 : 'bg-blue-50 border border-blue-200 text-blue-700'
             }`}
-            title={isTruncated ? 'Content exceeded 6000 characters and was truncated' : undefined}
+            title={isTruncated ? `Content exceeded ${ATTACHMENT_TRUNCATION_LIMIT} characters and was truncated` : undefined}
           >
             <span className="truncate">{chipLabel}</span>
             <span className={`flex-shrink-0 ml-1 ${isAmber ? '' : 'text-gray-400'}`}>
               {'• '}
-              {isAmber ? `⚠ ${actualChars} / 6000 chars${isTruncated ? ' (truncated)' : ''}` : `${actualChars} / 6000 chars`}
+              {isAmber ? `⚠ ${actualChars} / ${ATTACHMENT_TRUNCATION_LIMIT} chars${isTruncated ? ' (truncated)' : ''}` : `${actualChars} / ${ATTACHMENT_TRUNCATION_LIMIT} chars`}
             </span>
             <button
               onClick={handleClearContext}
