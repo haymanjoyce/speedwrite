@@ -105,6 +105,9 @@ export const api = {
       ignore_history: ignoreHistory,
     }, signal),
 
+  // Search
+  search: (query) => request('POST', '/search', { query }),
+
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
   addLogEntry: (docId, event, detail) =>

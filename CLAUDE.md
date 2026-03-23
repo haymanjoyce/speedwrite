@@ -84,6 +84,9 @@ The app uses three tiers of navigation and controls:
 - Primary actions (Add, New) always blue
 - The further down the tier hierarchy, the more specific the action scope — global bar affects everything, panel header affects only that panel
 
+### No-modal rule and intentional exception
+The app avoids modals as a general rule — actions happen inline or in panels. The **one intentional exception** is the global search overlay (`SearchOverlay.jsx`). Search is a transient, context-preserving interaction: the user needs to find something without losing their current place, and a full-screen dimmed overlay communicates "temporary mode" clearly. Do not add further modals without a similarly strong justification.
+
 ## Repository Structure
 
 ```
@@ -98,11 +101,14 @@ speedwrite/
 │   ├── embeddings.py
 │   ├── llm.py           # Unified LLM abstraction (Anthropic + Ollama)
 │   ├── config.py        # GET /config endpoint (exposes server-side defaults)
+│   ├── search.py        # POST /search — cross-document full-text search
 │   ├── log.py
 │   ├── models.py
 │   └── storage.py
 ├── frontend/                         # React 18 + Vite + Tailwind CSS
 │   └── src/
+│       ├── context/
+│       │   └── SearchContext.jsx         # SearchProvider + useSearch() hook — global search overlay state
 │       ├── pages/
 │       │   ├── Home.jsx
 │       │   ├── Document.jsx
@@ -127,6 +133,7 @@ speedwrite/
 │       │   ├── ProviderToggle.jsx    # Segmented pill to switch between Anthropic and Ollama
 │       │   ├── SegmentedControl.jsx  # Reusable segmented pill control (options, value, onChange)
 │       │   ├── ErrorBoundary.jsx     # Class component error boundary; catches render crashes
+│       │   ├── SearchOverlay.jsx     # Global search overlay — grouped results, keyboard nav, inline highlighting
 │       │   ├── EvidenceChatPanel.jsx # Three-panel evidence chat — source picker, Insights dropdown, stop button
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
@@ -191,6 +198,7 @@ Every view has a two-tier navigation:
 - **Backend model**: Anthropic path uses `claude-sonnet-4-20250514`. Ollama path uses `OLLAMA_CHAT_MODEL` env var (default: `llama3.2`). Anthropic API key stored in `.env` as `ANTHROPIC_API_KEY`.
 - **Evidence chat**: `EvidenceChatPanel.jsx` is a persistent chat panel on the Evidence page for interrogating individual sources. The `+` button opens a `SourcePickerPopup` (evidence sources only — no section option); the first item is "📚 All sources" which fetches all sources in parallel, concatenates them with `--- Source: {title} ({type}) ---` separators, and sets label to "All sources (N sources)"; individual sources call `api.getEvidence(docId, evidenceId)` to fetch full content. All attached content is truncated to 6000 chars (amber chip shown if original exceeded 3000 chars). An **Insights** dropdown in the panel header (Summarise · Find contradictions · Extract themes, shared with ChatPanel via `insightPrompts.js`) is disabled when no source is attached; clicking an item fires the prompt automatically. History is stored as `evidence_chat_history` on the document JSON and loaded/reset on `document.id` change. `ignore_history` is set to `true` when context is attached (fresh response per source). Backend endpoint: `POST /documents/{doc_id}/evidence-chat` in `backend/evidence_chat.py`. Never modifies the document — returns `{ message }` only.
 - **Token limits**: `chat.py` and `actions.py` both use `max_tokens=4096` to prevent truncated `<proposed_document>` responses. Known limitation: very large attachments (sections or evidence sources) can still cause truncation if the combined prompt + response exceeds the model's context window. Workaround: attach smaller sections rather than entire large documents. Future fix: streaming responses or context summarisation.
+- **Global search**: `POST /search` (`backend/search.py`) performs case-insensitive substring search across all of the user's documents — document titles and content, evidence source titles and content, and `chat_history` messages (not `evidence_chat_history`). Returns up to 5 results per group (documents, evidence, chat). Excerpt helper extracts ~200 chars around the first match, padded with `…`. Frontend: `SearchOverlay.jsx` is an overlay (fixed inset-0 z-50, bg-black bg-opacity-40) with a centered panel (max-w-2xl mt-24). Triggered by Cmd/Ctrl+K or the search icon in TopBar. State managed via `SearchContext.jsx` (`SearchProvider` + `useSearch()` hook); `AppRoutes` in `App.jsx` registers the keyboard listener and renders the overlay. Search-as-you-type with 300ms debounce. Idle state ("Start typing…") shown when query < 2 chars; "Searching…" while loading; "No results found" on empty results. Match terms highlighted inline in the frontend (split on match, wrap in `<strong>`). Evidence results navigate to `/document/:id/evidence` with `{ state: { evidenceId } }`; `Evidence.jsx` reads `location.state.evidenceId` on items-load to pre-select the source (one-shot via `initialSelectDoneRef`). **Known performance limitation**: search does full in-memory substring scan across all documents, evidence content, and chat history on every debounced keystroke — fine for typical dataset sizes but will slow down with very large evidence corpora. Future fix: index-based search or SQLite FTS.
 
 ## Document Tree
 

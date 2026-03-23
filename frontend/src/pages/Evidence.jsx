@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import AddSourceModal from '../components/AddSourceModal'
 import EvidenceChatPanel from '../components/EvidenceChatPanel'
@@ -10,6 +10,7 @@ import TopBar from '../components/TopBar'
 
 export default function Evidence() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { id } = useParams()
   const [user, setUser] = useState(null)
   const [doc, setDoc] = useState(null)
@@ -17,6 +18,7 @@ export default function Evidence() {
   const [selectedItem, setSelectedItem] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [reindexStatus, setReindexStatus] = useState('')
+  const initialSelectDoneRef = useRef(false)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -26,6 +28,17 @@ export default function Evidence() {
     api.getDocument(id).then(setDoc).catch(() => navigate('/'))
     api.listEvidence(id).then(setItems).catch(console.error)
   }, [id])
+
+  // Pre-select a source when navigated here from search results
+  useEffect(() => {
+    if (!initialSelectDoneRef.current && location.state?.evidenceId && items.length > 0) {
+      const target = items.find((i) => i.id === location.state.evidenceId)
+      if (target) {
+        initialSelectDoneRef.current = true
+        handleSelect(target)
+      }
+    }
+  }, [items])
 
   const handleLogout = () => {
     localStorage.removeItem('token')

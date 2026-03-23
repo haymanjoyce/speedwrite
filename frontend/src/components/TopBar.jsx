@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSearch } from '../context/SearchContext'
+
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel, isRenaming, onRenameSave, onRenameCancel }) {
+  const { open: openSearch } = useSearch()
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef(null)
 
@@ -60,6 +64,16 @@ export default function TopBar({ user, onLogout, docTitle, docId, subPageLabel, 
         )}
       </div>
       <div className="flex items-center gap-3">
+        <button
+          onClick={openSearch}
+          title={`Search (${isMac ? '⌘K' : 'Ctrl+K'})`}
+          className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <span className="text-xs text-gray-300">{isMac ? '⌘K' : 'Ctrl+K'}</span>
+        </button>
         <span className="text-gray-500 text-sm">{user?.email}</span>
         <button
           onClick={onLogout}

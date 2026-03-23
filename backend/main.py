@@ -9,6 +9,7 @@ from documents import router as documents_router
 from evidence import router as evidence_router
 from evidence_chat import router as evidence_chat_router
 from log import router as log_router
+from search import router as search_router
 
 app = FastAPI(title="SpeedWrite API")
 
@@ -21,6 +22,7 @@ app.include_router(chat_router)
 app.include_router(evidence_router)
 app.include_router(evidence_chat_router)
 app.include_router(log_router)
+app.include_router(search_router)
 
 
 @app.get("/health")
