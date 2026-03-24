@@ -67,7 +67,13 @@ export default function History() {
   }
 
   const handleRestore = () => {
-    navigate(`/document/${id}`, { state: { restoreContent: snapshotContent } })
+    navigate(`/document/${id}`, {
+      state: {
+        restoreContent: snapshotContent,
+        restoreSnapshotId: selectedSnapshot.id,
+        restoreSnapshotLabel: selectedSnapshot.label,
+      },
+    })
   }
 
   return (

@@ -246,11 +246,12 @@ Every view has a two-tier navigation:
 ## Audit Log
 
 - Append-only log stored as `audit_log` array on each document JSON.
-- `append_audit_log(doc, event, detail)` helper in `storage.py` creates a UUID entry and appends it.
-- Events: `document_created`, `document_edited`, `rewrite_accepted`, `rewrite_rejected`, `evidence_added`, `evidence_deleted`. Note: `document_deleted` was removed — writing a log entry to a file that is immediately deleted served no purpose.
+- `append_audit_log(doc, event, summary, metadata=None)` helper in `storage.py` creates a UUID entry `{ id, event, timestamp, summary, metadata: {} }` and appends it. **Backward compat**: old entries that only have `detail` display gracefully in `Log.jsx` via `entry.summary || entry.detail` fallback.
+- Events fired from the **backend**: `document_created` (with `{ title }`), `document_edited` (with `{ word_count }`), `manual_checkpoint` (with `{ label }`, fired from `create_snapshot` when `trigger=="manual"`), `version_restored` (with `{ source_snapshot_id, source_snapshot_label }`, fired from `create_snapshot` when `trigger=="restore"`), `evidence_added` (with `{ source_type, title, ... }`), `evidence_deleted` (with `{ source_type, title }`).
+- Events fired from the **frontend** via `api.addLogEntry`: `rewrite_accepted`, `rewrite_rejected`, `document_renamed` (with `{ from, to }`), `section_locked` (with `{ heading }`), `section_unlocked` (with `{ heading }`), `structure_locked`, `structure_unlocked`, `template_created` (with `{ template_title }`). Note: `document_deleted` was removed — writing a log entry to a file that is immediately deleted served no purpose.
 - **Document deletion cleanup**: `DELETE /documents/{doc_id}` removes the evidence directory (`DOCS_DIR/{user_id}/evidence/{doc_id}/`, via `shutil.rmtree`), the embeddings file (`embeddings/{user_id}/{doc_id}.json`), and the document JSON. All three are cleaned up atomically in the endpoint; `storage.delete_document()` only removes the document JSON.
-- `GET /documents/{doc_id}/log` returns entries newest-first. `POST /documents/{doc_id}/log` appends a manual entry.
-- Log view (`/document/:id/log`) in `Log.jsx` — left panel lists entries, right panel shows selected entry detail.
+- `GET /documents/{doc_id}/log` returns entries newest-first. `POST /documents/{doc_id}/log` body: `{ event, summary, metadata }`.
+- Log view (`/document/:id/log`) in `Log.jsx` — left panel lists entries with event label + summary snippet + relative timestamp; right panel shows event label, full timestamp, summary, and metadata as labelled key-value rows. `METADATA_LABELS` maps raw keys to human-readable labels.
 
 ## Document History
 
@@ -262,11 +263,11 @@ Every view has a two-tier navigation:
 - `GET /documents/{doc_id}/history` — returns list newest-first, **without** `content` field for performance.
 - `GET /documents/{doc_id}/history/{snapshot_id}` — returns full snapshot including content.
 - Frontend: `History.jsx` at `/document/:id/history`. Left panel lists snapshots with trigger icons (💾 auto / 🤖 rewrite / 📌 manual / 🔄 restore) and `timeAgo()` relative timestamps. Right panel shows metadata + MarkdownPreview + "Restore this version" button.
-- **Restore flow**: clicking "Restore this version" navigates to `/document/:id` with `{ state: { restoreContent } }`. `Document.jsx` reads this on doc load, sets it as `pendingProposal` (triggers diff view) and sets `pendingProposalReason` to `'restore'`, then clears location state via `window.history.replaceState`. Accept → document restored; Reject → current content unchanged.
-- **`pendingProposalReason` state**: `'ai_rewrite'` (default) or `'restore'`. Controls what `handleAccept` does: restore path logs `version_restored` and creates a `trigger='restore'` snapshot; AI rewrite path logs `rewrite_accepted` and creates a `trigger='rewrite'` snapshot. Reset to `'ai_rewrite'` after accept.
+- **Restore flow**: clicking "Restore this version" navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on doc load, sets it as `pendingProposal` (triggers diff view), stores `restoreSnapshotId`/`restoreSnapshotLabel` in state, sets `pendingProposalReason` to `'restore'`, then clears location state via `window.history.replaceState`. Accept → document restored; Reject → current content unchanged.
+- **`pendingProposalReason` state**: `'ai_rewrite'` (default) or `'restore'`. Controls what `handleAccept` does: restore path creates a `trigger='restore'` snapshot (with `source_snapshot_id`/`source_snapshot_label` — backend fires `version_restored` log entry); AI rewrite path logs `rewrite_accepted` and creates a `trigger='rewrite'` snapshot. Reset to `'ai_rewrite'` after accept.
 - **After accepting a rewrite**: `Document.jsx` fires `api.createSnapshot(id, 'AI rewrite', 'rewrite')` fire-and-forget in `handleAccept`.
 - **`flashStatus` prop on `Editor.jsx`**: passed from `Document.jsx` to show brief messages ("Version saved", "Template saved") in the Editor panel header, overriding save status for 3 seconds.
-- `api.js` methods: `listHistory(docId)`, `getSnapshot(docId, snapshotId)`, `createSnapshot(docId, label = '', trigger = 'manual')`.
+- `api.js` methods: `listHistory(docId)`, `getSnapshot(docId, snapshotId)`, `createSnapshot(docId, label = '', trigger = 'manual', sourceSnapshotId = null, sourceSnapshotLabel = null)`. Snapshot body: `{ label, trigger, source_snapshot_id, source_snapshot_label }`.
 - Context bar tabs updated in all four document sub-views (Document / Evidence / Log / History) to include the History tab.
 
 ## Section Locking

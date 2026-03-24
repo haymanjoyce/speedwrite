@@ -42,6 +42,8 @@ export default function Document() {
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
   const [structureLocked, setStructureLocked] = useState(false)
+  const [restoreSnapshotId, setRestoreSnapshotId] = useState(null)
+  const [restoreSnapshotLabel, setRestoreSnapshotLabel] = useState(null)
   const [isRenaming, setIsRenaming] = useState(false)
   const [activeBar, setActiveBar] = useState(null) // null | 'save-template'
   const [saveTemplateTitle, setSaveTemplateTitle] = useState('')
@@ -66,6 +68,8 @@ export default function Document() {
       if (location.state?.restoreContent) {
         setPendingProposal(location.state.restoreContent)
         setPendingProposalReason('restore')
+        setRestoreSnapshotId(location.state.restoreSnapshotId ?? null)
+        setRestoreSnapshotLabel(location.state.restoreSnapshotLabel ?? null)
         window.history.replaceState({}, '', window.location.pathname)
       }
     }).catch(() => navigate('/'))
@@ -89,8 +93,10 @@ export default function Document() {
     try {
       if (isProtected) {
         await api.unprotectSection(id, headingText)
+        api.addLogEntry(id, 'section_unlocked', `Section unlocked: "${headingText}"`, { heading: headingText })
       } else {
         await api.protectSection(id, headingText)
+        api.addLogEntry(id, 'section_locked', `Section locked: "${headingText}"`, { heading: headingText })
       }
     } catch (err) {
       console.error('Toggle protection failed', err)
@@ -104,8 +110,10 @@ export default function Document() {
     try {
       if (newLocked) {
         await api.lockStructure(id)
+        api.addLogEntry(id, 'structure_locked', 'Structure locked', {})
       } else {
         await api.unlockStructure(id)
+        api.addLogEntry(id, 'structure_unlocked', 'Structure unlocked', {})
       }
     } catch (err) {
       console.error('Toggle structure lock failed', err)
@@ -127,10 +135,11 @@ export default function Document() {
     setPendingProposal(null)
     if (pendingProposalReason === 'restore') {
       setPendingProposalReason('ai_rewrite')
-      api.addLogEntry(id, 'version_restored', 'Version restored')
-      api.createSnapshot(id, 'Version restored', 'restore').catch(() => {})
+      api.createSnapshot(id, 'Version restored', 'restore', restoreSnapshotId, restoreSnapshotLabel).catch(() => {})
+      setRestoreSnapshotId(null)
+      setRestoreSnapshotLabel(null)
     } else {
-      api.addLogEntry(id, 'rewrite_accepted', 'AI rewrite accepted')
+      api.addLogEntry(id, 'rewrite_accepted', 'AI rewrite accepted', {})
       api.createSnapshot(id, 'AI rewrite', 'rewrite').catch(() => {})
     }
   }
@@ -138,7 +147,7 @@ export default function Document() {
   const handleReject = () => {
     setPendingProposal(null)
     chatPanelRef.current?.appendMessages(null, 'Changes rejected.')
-    api.addLogEntry(id, 'rewrite_rejected', 'AI rewrite rejected')
+    api.addLogEntry(id, 'rewrite_rejected', 'AI rewrite rejected', {})
   }
 
 
@@ -148,9 +157,10 @@ export default function Document() {
     setIsRenaming(false)
     if (!newTitle || newTitle === doc?.title) return
     try {
+      const oldTitle = doc?.title
       const updated = await api.updateDocument(id, { title: newTitle })
       setDoc(updated)
-      api.addLogEntry(id, 'document_renamed', `Renamed to "${newTitle}"`)
+      api.addLogEntry(id, 'document_renamed', `Renamed to "${newTitle}"`, { from: oldTitle, to: newTitle })
     } catch (err) {
       console.error('Rename failed', err)
     }
@@ -172,6 +182,7 @@ export default function Document() {
       setActiveBar(null)
       setFlashStatus('Template saved')
       setTimeout(() => setFlashStatus(''), 3000)
+      api.addLogEntry(id, 'template_created', `Saved as template: "${title}"`, { template_title: title })
     } catch (err) {
       console.error('Save template failed', err)
     }

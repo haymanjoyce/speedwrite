@@ -11,7 +11,8 @@ router = APIRouter(prefix="/documents")
 
 class LogEntryRequest(BaseModel):
     event: str
-    detail: str
+    summary: str
+    metadata: dict = {}
 
 
 @router.get("/{doc_id}/log")
@@ -28,6 +29,6 @@ def add_log_entry(doc_id: str, data: LogEntryRequest, user=Depends(get_current_u
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    append_audit_log(doc, data.event, data.detail)
+    append_audit_log(doc, data.event, data.summary, data.metadata)
     save_document(doc)
     return doc["audit_log"][-1]

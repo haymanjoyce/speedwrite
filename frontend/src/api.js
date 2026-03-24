@@ -120,13 +120,13 @@ export const api = {
     request('GET', `/documents/${docId}/history`),
   getSnapshot: (docId, snapshotId) =>
     request('GET', `/documents/${docId}/history/${snapshotId}`),
-  createSnapshot: (docId, label = '', trigger = 'manual') =>
-    request('POST', `/documents/${docId}/snapshot`, { label, trigger }),
+  createSnapshot: (docId, label = '', trigger = 'manual', sourceSnapshotId = null, sourceSnapshotLabel = null) =>
+    request('POST', `/documents/${docId}/snapshot`, { label, trigger, source_snapshot_id: sourceSnapshotId, source_snapshot_label: sourceSnapshotLabel }),
 
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
-  addLogEntry: (docId, event, detail) =>
-    request('POST', `/documents/${docId}/log`, { event, detail }),
+  addLogEntry: (docId, event, summary, metadata = {}) =>
+    request('POST', `/documents/${docId}/log`, { event, summary, metadata }),
 
   // Section protection
   protectSection: (docId, heading) =>

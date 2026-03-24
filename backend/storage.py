@@ -56,12 +56,13 @@ def delete_document(user_id: str, doc_id: str) -> None:
         path.unlink()
 
 
-def append_audit_log(doc: dict, event: str, detail: str) -> dict:
+def append_audit_log(doc: dict, event: str, summary: str, metadata: dict = None) -> dict:
     doc.setdefault("audit_log", [])
     doc["audit_log"].append({
         "id": str(uuid.uuid4()),
         "event": event,
         "timestamp": datetime.utcnow().isoformat(),
-        "detail": detail,
+        "summary": summary,
+        "metadata": metadata or {},
     })
     return doc

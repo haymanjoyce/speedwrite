@@ -7,11 +7,35 @@ import TopBar from '../components/TopBar'
 const EVENT_LABELS = {
   document_created: 'Created',
   document_edited: 'Saved',
+  document_renamed: 'Renamed',
   rewrite_accepted: 'Rewrite accepted',
   rewrite_rejected: 'Rewrite rejected',
+  version_restored: 'Version restored',
+  manual_checkpoint: 'Version saved',
   evidence_added: 'Source added',
   evidence_deleted: 'Source deleted',
+  section_locked: 'Section locked',
+  section_unlocked: 'Section unlocked',
+  structure_locked: 'Structure locked',
+  structure_unlocked: 'Structure unlocked',
+  template_created: 'Template saved',
   document_deleted: 'Document deleted',
+}
+
+const METADATA_LABELS = {
+  title: 'Title',
+  from: 'From',
+  to: 'To',
+  word_count: 'Word count',
+  heading: 'Section',
+  source_type: 'Source type',
+  url: 'URL',
+  file_size: 'File size',
+  source_doc_id: 'Source document ID',
+  label: 'Label',
+  source_snapshot_id: 'Snapshot ID',
+  source_snapshot_label: 'Snapshot label',
+  template_title: 'Template title',
 }
 
 function formatRelativeTime(isoString) {
@@ -94,6 +118,11 @@ export default function Log() {
                 <div className="text-sm font-medium truncate">
                   {EVENT_LABELS[entry.event] ?? entry.event}
                 </div>
+                {(entry.summary || entry.detail) && (
+                  <div className="text-xs text-gray-500 mt-0.5 truncate">
+                    {entry.summary || entry.detail}
+                  </div>
+                )}
                 <div className="text-xs text-gray-400 mt-0.5">
                   {formatRelativeTime(entry.timestamp)}
                 </div>
@@ -120,7 +149,19 @@ export default function Log() {
               <p className="text-sm text-gray-400 mb-6">
                 {formatFullTime(selectedEntry.timestamp)}
               </p>
-              <p className="text-gray-700 text-sm mb-8">{selectedEntry.detail}</p>
+              {(selectedEntry.summary || selectedEntry.detail) && (
+                <p className="text-gray-700 text-sm mb-6">{selectedEntry.summary || selectedEntry.detail}</p>
+              )}
+              {selectedEntry.metadata && Object.keys(selectedEntry.metadata).length > 0 && (
+                <div className="mb-8 space-y-2">
+                  {Object.entries(selectedEntry.metadata).map(([key, value]) => (
+                    <div key={key} className="flex gap-3 text-sm">
+                      <span className="text-gray-400 w-36 flex-shrink-0">{METADATA_LABELS[key] ?? key}</span>
+                      <span className="text-gray-700 break-all">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <p className="text-xs text-gray-300 font-mono">{selectedEntry.id}</p>
             </div>
           )}
