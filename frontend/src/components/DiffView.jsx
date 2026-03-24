@@ -58,17 +58,23 @@ function getProtectedLineSet(content, protectedSections) {
 
 import { useEffect, useMemo, useRef } from 'react'
 
-export default function DiffView({ originalContent, proposedContent, protectedSections = [] }) {
+export default function DiffView({ originalContent, proposedContent, protectedSections = [], structureLocked = false }) {
   const diff = useMemo(() => {
     const oldLines = (originalContent ?? '').split('\n')
     const newLines = (proposedContent ?? '').split('\n')
     return diffLines(oldLines, newLines)
   }, [originalContent, proposedContent])
 
-  const protectedLineSet = useMemo(
-    () => getProtectedLineSet(originalContent ?? '', protectedSections),
-    [originalContent, protectedSections]
-  )
+  const protectedLineSet = useMemo(() => {
+    const base = getProtectedLineSet(originalContent ?? '', protectedSections)
+    if (structureLocked) {
+      const lines = (originalContent ?? '').split('\n')
+      lines.forEach((line, i) => {
+        if (/^#{1,6}\s/.test(line)) base.add(i)
+      })
+    }
+    return base
+  }, [originalContent, protectedSections, structureLocked])
 
   const firstChangeRef = useRef(null)
 

@@ -112,7 +112,7 @@ function renderMarkdown(content, protectedLineSet) {
   return blocks
 }
 
-export default function MarkdownPreview({ content, protectedSections = [] }) {
+export default function MarkdownPreview({ content, protectedSections = [], structureLocked = false }) {
   const protectedLineSet = getProtectedLineSet(content ?? '', protectedSections)
   const blocks = renderMarkdown(content ?? '', protectedLineSet)
 
@@ -120,7 +120,8 @@ export default function MarkdownPreview({ content, protectedSections = [] }) {
     <div className="flex-1 overflow-y-auto p-8 bg-white max-w-3xl">
       {blocks.map((block, idx) => {
         const isProtected = protectedLineSet.has(block.startLine)
-        if (isProtected) {
+        const isStructureLockedHeading = structureLocked && /^<h[123][\s>]/.test(block.html)
+        if (isProtected || isStructureLockedHeading) {
           return (
             <div key={idx} className="bg-gray-50 border-l-2 border-gray-200 pl-4 my-1">
               <div dangerouslySetInnerHTML={{ __html: block.html }} />

@@ -4,7 +4,7 @@ import DiffView from './DiffView'
 import MarkdownPreview from './MarkdownPreview'
 import SegmentedControl from './SegmentedControl'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, onEditorModeChange, protectedSections = [], flashStatus = '' }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, onEditorModeChange, protectedSections = [], flashStatus = '', structureLocked = false }, ref) {
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
   const saveTimer = useRef(null)
@@ -123,9 +123,9 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
         </div>
       </div>
       {pendingProposal ? (
-        <DiffView originalContent={content} proposedContent={pendingProposal} protectedSections={protectedSections} />
+        <DiffView originalContent={content} proposedContent={pendingProposal} protectedSections={protectedSections} structureLocked={structureLocked} />
       ) : editorMode === 'preview' ? (
-        <MarkdownPreview content={content} protectedSections={protectedSections} />
+        <MarkdownPreview content={content} protectedSections={protectedSections} structureLocked={structureLocked} />
       ) : (
         <textarea
           ref={textareaRef}

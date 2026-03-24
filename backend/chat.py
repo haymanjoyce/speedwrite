@@ -70,7 +70,8 @@ def _build_structure_lock_block(structure_locked: bool) -> str:
         return ""
     return (
         "The document structure is locked. Do not add, remove, reorder, or rename any sections. "
-        "Only rewrite the content within existing sections.\n\n"
+        "Rewrite the content within sections freely, except where individual sections are also locked. "
+        "Locks are constraints — always proceed with the rewrite, doing as much as permitted.\n\n"
     )
 
 

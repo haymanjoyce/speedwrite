@@ -10,7 +10,7 @@ export default function DocumentSidebar({ document, onHeadingClick, onSectionRew
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Structure</span>
         <button
           onClick={onToggleStructureLock}
-          title={structureLocked ? 'Structure locked — AI cannot add, remove, or rename sections. Click to unlock.' : 'Lock structure — prevent AI from changing sections'}
+          title={structureLocked ? 'Locked: AI cannot add, remove, reorder, or rename sections. Section content can still be rewritten. Click to unlock.' : 'Lock structure: AI cannot add, remove, reorder, or rename sections. Section content can still be rewritten.'}
           className={`text-base leading-none transition-colors cursor-pointer ${structureLocked ? 'text-gray-700' : 'text-gray-300 hover:text-gray-500'}`}
         >
           {structureLocked ? '🔒' : '🔓'}

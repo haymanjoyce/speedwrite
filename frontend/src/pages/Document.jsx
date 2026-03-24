@@ -276,6 +276,7 @@ export default function Document() {
           onEditorModeChange={setEditorMode}
           protectedSections={protectedSections}
           flashStatus={flashStatus}
+          structureLocked={structureLocked}
         />
         <div className={pendingProposal ? 'hidden' : 'contents'}>
           <ChatPanel
