@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_current_user
-from chat import _build_evidence_block, _build_protected_block
+from chat import _build_evidence_block, _build_protected_block, _build_structure_lock_block
 from llm import complete
 from storage import load_document
 
@@ -63,6 +63,7 @@ class ActionRequest(BaseModel):
     action: str
     instructions: Optional[str] = ""
     provider: Optional[str] = None
+    structure_locked: bool = False
 
 
 class ActionResponse(BaseModel):
@@ -82,11 +83,12 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
     query = f"{data.action} {data.instructions}".strip()
     evidence_block = _build_evidence_block(doc, query=query)
     protected_block = _build_protected_block(doc)
+    structure_lock_block = _build_structure_lock_block(data.structure_locked)
     system_prompt = _SYSTEM.format(
         title=doc.get("title", "Untitled"),
         content=doc.get("content", ""),
         evidence_block=evidence_block,
-        protected_block=protected_block,
+        protected_block=protected_block + structure_lock_block,
     )
 
     extra = f" {data.instructions.strip()}" if data.instructions and data.instructions.strip() else ""

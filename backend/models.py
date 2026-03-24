@@ -48,3 +48,4 @@ class Document(BaseModel):
     protected_sections: list = []
     history: list = []
     save_count: int = 0
+    structure_locked: bool = False

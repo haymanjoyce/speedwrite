@@ -178,3 +178,23 @@ def unprotect_section(doc_id: str, data: ProtectRequest, user=Depends(get_curren
     doc["protected_sections"] = [h for h in doc["protected_sections"] if h != data.heading]
     save_document(doc)
     return doc["protected_sections"]
+
+
+@router.post("/{doc_id}/lock-structure")
+def lock_structure(doc_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    doc["structure_locked"] = True
+    save_document(doc)
+    return {"structure_locked": True}
+
+
+@router.post("/{doc_id}/unlock-structure")
+def unlock_structure(doc_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    doc["structure_locked"] = False
+    save_document(doc)
+    return {"structure_locked": False}

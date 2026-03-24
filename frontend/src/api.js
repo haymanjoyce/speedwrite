@@ -49,10 +49,10 @@ export const api = {
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
 
   // Chat
-  chatMessage: (docId, message, context, ignoreHistory = false, provider = null, contextLabel = null, signal = null) =>
-    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider, context_label: contextLabel }, signal),
-  documentAction: (docId, action, instructions = '', provider = null) =>
-    request('POST', `/documents/${docId}/action`, { action, instructions, provider }),
+  chatMessage: (docId, message, context, ignoreHistory = false, provider = null, contextLabel = null, signal = null, structureLocked = false) =>
+    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider, context_label: contextLabel, structure_locked: structureLocked }, signal),
+  documentAction: (docId, action, instructions = '', provider = null, structureLocked = false) =>
+    request('POST', `/documents/${docId}/action`, { action, instructions, provider, structure_locked: structureLocked }),
 
   // Evidence
   listEvidence: (docId) => request('GET', `/documents/${docId}/evidence`),
@@ -133,4 +133,8 @@ export const api = {
     request('POST', `/documents/${docId}/protect`, { heading }),
   unprotectSection: (docId, heading) =>
     request('DELETE', `/documents/${docId}/protect`, { heading }),
+  lockStructure: (docId) =>
+    request('POST', `/documents/${docId}/lock-structure`),
+  unlockStructure: (docId) =>
+    request('POST', `/documents/${docId}/unlock-structure`),
 }

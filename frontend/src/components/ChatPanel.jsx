@@ -46,7 +46,7 @@ const INSIGHTS_PROMPTS = Object.fromEntries(SHARED_INSIGHT_ACTIONS.map((a) => [a
 
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
-  headings, evidenceSources, pendingProposal, evidenceCount = 0,
+  headings, evidenceSources, pendingProposal, evidenceCount = 0, structureLocked = false,
 }, ref) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -210,7 +210,7 @@ const ChatPanel = forwardRef(function ChatPanel({
         }
       }
 
-      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal)
+      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)

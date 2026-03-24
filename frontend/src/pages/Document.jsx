@@ -41,6 +41,7 @@ export default function Document() {
   const [pendingProposalReason, setPendingProposalReason] = useState('ai_rewrite')
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
+  const [structureLocked, setStructureLocked] = useState(false)
   const [isRenaming, setIsRenaming] = useState(false)
   const [activeBar, setActiveBar] = useState(null) // null | 'save-template'
   const [saveTemplateTitle, setSaveTemplateTitle] = useState('')
@@ -61,6 +62,7 @@ export default function Document() {
     api.getDocument(id).then((data) => {
       setDoc(data)
       setProtectedSections(data.protected_sections ?? [])
+      setStructureLocked(data.structure_locked ?? false)
       if (location.state?.restoreContent) {
         setPendingProposal(location.state.restoreContent)
         setPendingProposalReason('restore')
@@ -93,6 +95,21 @@ export default function Document() {
     } catch (err) {
       console.error('Toggle protection failed', err)
       setProtectedSections(protectedSections) // revert on error
+    }
+  }
+
+  const handleToggleStructureLock = async () => {
+    const newLocked = !structureLocked
+    setStructureLocked(newLocked)
+    try {
+      if (newLocked) {
+        await api.lockStructure(id)
+      } else {
+        await api.unlockStructure(id)
+      }
+    } catch (err) {
+      console.error('Toggle structure lock failed', err)
+      setStructureLocked(structureLocked)
     }
   }
 
@@ -244,6 +261,8 @@ export default function Document() {
           onSectionRewrite={handleSectionRewritePrefill}
           protectedSections={protectedSections}
           onToggleProtection={handleToggleProtection}
+          structureLocked={structureLocked}
+          onToggleStructureLock={handleToggleStructureLock}
         />
         <Editor
           ref={editorRef}
@@ -270,6 +289,7 @@ export default function Document() {
             evidenceSources={doc?.evidence || []}
             evidenceCount={doc?.evidence?.length ?? 0}
             pendingProposal={pendingProposal}
+            structureLocked={structureLocked}
           />
         </div>
       </div>

@@ -19,6 +19,7 @@ class ChatRequest(BaseModel):
     ignore_history: bool = False
     provider: Optional[str] = None
     context_label: Optional[str] = None
+    structure_locked: bool = False
 
 
 class ChatResponse(BaseModel):
@@ -62,6 +63,15 @@ revised document wrapped in XML tags:
 </proposed_document>
 
 """
+
+
+def _build_structure_lock_block(structure_locked: bool) -> str:
+    if not structure_locked:
+        return ""
+    return (
+        "The document structure is locked. Do not add, remove, reorder, or rename any sections. "
+        "Only rewrite the content within existing sections.\n\n"
+    )
 
 
 def _build_protected_block(doc: dict) -> str:
@@ -154,7 +164,8 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
 
     evidence_block = _build_evidence_block(doc, query=data.message)
     protected_block = _build_protected_block(doc)
-    scope_instruction = protected_block + (_SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION)
+    structure_lock_block = _build_structure_lock_block(data.structure_locked)
+    scope_instruction = protected_block + structure_lock_block + (_SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION)
 
     system_prompt = _AGENT_SYSTEM.format(
         document_content=doc.get("content", ""),
