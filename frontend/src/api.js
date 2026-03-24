@@ -120,8 +120,8 @@ export const api = {
     request('GET', `/documents/${docId}/history`),
   getSnapshot: (docId, snapshotId) =>
     request('GET', `/documents/${docId}/history/${snapshotId}`),
-  createSnapshot: (docId, label = '') =>
-    request('POST', `/documents/${docId}/snapshot`, { label }),
+  createSnapshot: (docId, label = '', trigger = 'manual') =>
+    request('POST', `/documents/${docId}/snapshot`, { label, trigger }),
 
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),

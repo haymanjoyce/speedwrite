@@ -113,6 +113,7 @@ def delete_doc(doc_id: str, user=Depends(get_current_user)):
 
 class SnapshotRequest(BaseModel):
     label: str = ""
+    trigger: str = ""
 
 
 @router.post("/{doc_id}/snapshot")
@@ -121,7 +122,7 @@ def create_snapshot(doc_id: str, data: SnapshotRequest, user=Depends(get_current
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     label = data.label.strip() or "Manual checkpoint"
-    trigger = "rewrite" if label == "AI rewrite" else "manual"
+    trigger = data.trigger.strip() or "manual"
     add_snapshot(doc, trigger, label)
     save_document(doc)
     return doc["history"][-1]

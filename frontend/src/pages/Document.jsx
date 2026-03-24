@@ -38,6 +38,7 @@ export default function Document() {
   const [selectedText, setSelectedText] = useState('')
   const [editorContentOverride, setEditorContentOverride] = useState(null)
   const [pendingProposal, setPendingProposal] = useState(null)
+  const [pendingProposalReason, setPendingProposalReason] = useState('ai_rewrite')
   const [editorMode, setEditorMode] = useState('edit')
   const [protectedSections, setProtectedSections] = useState([])
   const [isRenaming, setIsRenaming] = useState(false)
@@ -62,6 +63,7 @@ export default function Document() {
       setProtectedSections(data.protected_sections ?? [])
       if (location.state?.restoreContent) {
         setPendingProposal(location.state.restoreContent)
+        setPendingProposalReason('restore')
         window.history.replaceState({}, '', window.location.pathname)
       }
     }).catch(() => navigate('/'))
@@ -106,8 +108,14 @@ export default function Document() {
   const handleAccept = () => {
     setEditorContentOverride(pendingProposal)
     setPendingProposal(null)
-    api.addLogEntry(id, 'rewrite_accepted', 'AI rewrite accepted')
-    api.createSnapshot(id, 'AI rewrite').catch(() => {})
+    if (pendingProposalReason === 'restore') {
+      setPendingProposalReason('ai_rewrite')
+      api.addLogEntry(id, 'version_restored', 'Version restored')
+      api.createSnapshot(id, 'Version restored', 'restore').catch(() => {})
+    } else {
+      api.addLogEntry(id, 'rewrite_accepted', 'AI rewrite accepted')
+      api.createSnapshot(id, 'AI rewrite', 'rewrite').catch(() => {})
+    }
   }
 
   const handleReject = () => {
@@ -250,18 +258,20 @@ export default function Document() {
           protectedSections={protectedSections}
           flashStatus={flashStatus}
         />
-        <ChatPanel
-          ref={chatPanelRef}
-          docId={id}
-          document={doc}
-          onProposedChange={setPendingProposal}
-          contextText={contextText}
-          onClearContext={() => setContextText('')}
-          headings={parseHeadingsWithContent(doc?.content)}
-          evidenceSources={doc?.evidence || []}
-          evidenceCount={doc?.evidence?.length ?? 0}
-          pendingProposal={pendingProposal}
-        />
+        <div className={pendingProposal ? 'hidden' : 'contents'}>
+          <ChatPanel
+            ref={chatPanelRef}
+            docId={id}
+            document={doc}
+            onProposedChange={setPendingProposal}
+            contextText={contextText}
+            onClearContext={() => setContextText('')}
+            headings={parseHeadingsWithContent(doc?.content)}
+            evidenceSources={doc?.evidence || []}
+            evidenceCount={doc?.evidence?.length ?? 0}
+            pendingProposal={pendingProposal}
+          />
+        </div>
       </div>
     </div>
   )

@@ -5,7 +5,7 @@ import ContextBar from '../components/ContextBar'
 import MarkdownPreview from '../components/MarkdownPreview'
 import TopBar from '../components/TopBar'
 
-const TRIGGER_ICONS = { auto: '💾', rewrite: '🤖', manual: '📌' }
+const TRIGGER_ICONS = { auto: '💾', rewrite: '🤖', manual: '📌', restore: '🔄' }
 
 function timeAgo(isoString) {
   const date = new Date(isoString + 'Z')
