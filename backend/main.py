@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from actions import router as actions_router
+from export import router as export_router
 from auth import router as auth_router
 from config import router as config_router
 from embeddings import router as embeddings_router
@@ -17,6 +18,7 @@ app = FastAPI(title="SpeedWrite API")
 app.include_router(config_router)
 app.include_router(auth_router)
 app.include_router(documents_router)
+app.include_router(export_router)
 app.include_router(actions_router)
 app.include_router(embeddings_router)
 app.include_router(chat_router)

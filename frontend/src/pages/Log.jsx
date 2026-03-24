@@ -20,6 +20,8 @@ const EVENT_LABELS = {
   structure_locked: 'Structure locked',
   structure_unlocked: 'Structure unlocked',
   template_created: 'Template saved',
+  document_exported_txt: 'Exported as .txt',
+  document_exported_pdf: 'Exported as PDF',
   document_deleted: 'Document deleted',
 }
 

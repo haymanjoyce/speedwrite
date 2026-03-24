@@ -188,6 +188,17 @@ export default function Document() {
     }
   }
 
+  const handleExport = async (format) => {
+    try {
+      await api.downloadExport(id, format)
+      const summary = format === 'txt' ? 'Exported as .txt' : 'Exported as PDF'
+      const event = format === 'txt' ? 'document_exported_txt' : 'document_exported_pdf'
+      api.addLogEntry(id, event, summary, {})
+    } catch (err) {
+      console.error('Export failed', err)
+    }
+  }
+
   const handleSaveVersion = async () => {
     try {
       await api.createSnapshot(id)
@@ -215,6 +226,8 @@ export default function Document() {
         { label: 'Save version', onClick: handleSaveVersion, variant: 'default' },
         { label: 'Rename', onClick: handleRename, variant: 'default' },
         { label: 'Save as template', onClick: handleSaveAsTemplate, variant: 'default' },
+        { label: 'Export .txt', onClick: () => handleExport('txt'), variant: 'default' },
+        { label: 'Export PDF', onClick: () => handleExport('pdf'), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
       ]
 

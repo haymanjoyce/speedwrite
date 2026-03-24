@@ -125,6 +125,30 @@ export const api = {
   createSnapshot: (docId, label = '', trigger = 'manual', sourceSnapshotId = null, sourceSnapshotLabel = null) =>
     request('POST', `/documents/${docId}/snapshot`, { label, trigger, source_snapshot_id: sourceSnapshotId, source_snapshot_label: sourceSnapshotLabel }),
 
+  // Export
+  downloadExport: async (docId, format) => {
+    const token = getToken()
+    const res = await fetch(`${BASE_URL}/documents/${docId}/export/${format}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+      return
+    }
+    if (!res.ok) throw new Error('Export failed')
+    const blob = await res.blob()
+    const disposition = res.headers.get('Content-Disposition') || ''
+    const match = disposition.match(/filename="([^"]+)"/)
+    const filename = match ? match[1] : `export.${format}`
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+
   // Audit log
   listLog: (docId) => request('GET', `/documents/${docId}/log`),
   addLogEntry: (docId, event, summary, metadata = {}) =>
