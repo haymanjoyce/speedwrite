@@ -95,6 +95,8 @@ export const api = {
     request('POST', `/documents/${docId}/evidence/reindex`),
   ragQuery: (docId, evidenceId, query, signal = null) =>
     request('POST', `/documents/${docId}/evidence/${evidenceId}/rag-query`, { query }, signal),
+  refreshEvidence: (docId, evidenceId) =>
+    request('POST', `/documents/${docId}/evidence/${evidenceId}/refresh`),
 
   // Evidence chat
   evidenceChat: (docId, message, context, contextLabel, ignoreHistory = false, signal = null) =>

@@ -80,6 +80,8 @@ class EvidenceItem(BaseModel):
     source_doc_id: Optional[str] = None
     sync: Optional[bool] = None
     synced_at: Optional[str] = None
+    last_fetched_at: Optional[str] = None
+    last_fetch_error: Optional[str] = None
 
 
 class EvidenceItemFull(EvidenceItem):
@@ -205,6 +207,8 @@ def add_evidence_url(doc_id: str, data: AddUrlRequest, user=Depends(get_current_
         "file_size": None,
         "content": content,
         "created_at": now,
+        "last_fetched_at": now,
+        "last_fetch_error": None,
     }
     doc.setdefault("evidence", [])
     doc["evidence"].append(item)
@@ -333,6 +337,38 @@ def rag_query(doc_id: str, evidence_id: str, data: RagQueryRequest, user=Depends
         "chunks": [{"text": c["text"], "chunk_index": c["chunk_index"]} for c in chunks],
         "used_rag": True,
     }
+
+
+@router.post("/{doc_id}/evidence/{evidence_id}/refresh", response_model=EvidenceItemFull)
+def refresh_evidence(doc_id: str, evidence_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    items = doc.get("evidence", [])
+    item = next((i for i in items if i["id"] == evidence_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evidence item not found")
+    if item.get("type") != "url":
+        raise HTTPException(status_code=400, detail="Only URL sources can be refreshed")
+
+    try:
+        _, content = _fetch_url(item["url"])
+        item["content"] = content
+        item["last_fetched_at"] = datetime.utcnow().isoformat()
+        item["last_fetch_error"] = None
+        save_document(doc)
+        index_evidence_background(user["id"], doc_id, evidence_id, item["title"], content)
+    except httpx.HTTPStatusError as e:
+        item["last_fetch_error"] = f"{e.response.status_code} {e.response.reason_phrase}"
+        save_document(doc)
+    except httpx.TimeoutException:
+        item["last_fetch_error"] = "Connection timeout"
+        save_document(doc)
+    except Exception:
+        item["last_fetch_error"] = "Fetch failed"
+        save_document(doc)
+
+    return item
 
 
 @router.delete("/{doc_id}/evidence/{evidence_id}", status_code=204)

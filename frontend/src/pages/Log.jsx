@@ -14,6 +14,7 @@ const EVENT_LABELS = {
   manual_checkpoint: 'Version saved',
   evidence_added: 'Source added',
   evidence_deleted: 'Source deleted',
+  source_updated: 'Source updated',
   section_locked: 'Section locked',
   section_unlocked: 'Section unlocked',
   structure_locked: 'Structure locked',

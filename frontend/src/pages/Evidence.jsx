@@ -19,6 +19,8 @@ export default function Evidence() {
   const [showModal, setShowModal] = useState(false)
   const [reindexStatus, setReindexStatus] = useState('')
   const [pendingDelete, setPendingDelete] = useState(false)
+  const [refreshingId, setRefreshingId] = useState(null)
+  const [updatingAllSources, setUpdatingAllSources] = useState(false)
   const initialSelectDoneRef = useRef(false)
 
   useEffect(() => {
@@ -115,6 +117,34 @@ export default function Evidence() {
     }
   }
 
+  const handleRefresh = async (evidenceId) => {
+    setRefreshingId(evidenceId)
+    try {
+      const updated = await api.refreshEvidence(id, evidenceId)
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      if (selectedItem?.id === evidenceId) setSelectedItem(updated)
+      if (!updated.last_fetch_error) {
+        api.addLogEntry(id, 'source_updated', `Source updated: ${updated.title}`, { title: updated.title, type: 'url' })
+      }
+    } catch (err) {
+      console.error('Refresh failed', err)
+    } finally {
+      setRefreshingId(null)
+    }
+  }
+
+  const handleUpdateAllSources = async () => {
+    setUpdatingAllSources(true)
+    try {
+      const urlItems = items.filter((i) => i.type === 'url')
+      for (const item of urlItems) {
+        await handleRefresh(item.id)
+      }
+    } finally {
+      setUpdatingAllSources(false)
+    }
+  }
+
   const handleDelete = async () => {
     try {
       await api.deleteEvidence(id, selectedItem.id)
@@ -166,8 +196,17 @@ export default function Evidence() {
           selectedId={selectedItem?.id}
           onSelect={handleSelect}
           onAdd={() => setShowModal(true)}
+          onUpdateAllSources={handleUpdateAllSources}
+          updatingAllSources={updatingAllSources}
         />
-        <SourceDetail item={selectedItem} onToggleSync={handleToggleSync} onFetchLiveContent={handleFetchLiveContent} />
+        <SourceDetail
+          item={selectedItem}
+          allItems={items}
+          onToggleSync={handleToggleSync}
+          onFetchLiveContent={handleFetchLiveContent}
+          onRefresh={() => handleRefresh(selectedItem.id)}
+          refreshing={refreshingId === selectedItem?.id}
+        />
         <EvidenceChatPanel docId={id} evidenceSources={items} document={doc} />
       </div>
       {showModal && (

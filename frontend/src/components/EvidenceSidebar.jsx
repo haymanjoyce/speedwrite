@@ -2,11 +2,22 @@ import Button from './Button'
 
 const TYPE_ICON = { file: '📄', url: '🔗', text: '📝' }
 
-export default function EvidenceSidebar({ items, selectedId, onSelect, onAdd }) {
+const hasUrlSources = (items) => items.some((i) => i.type === 'url')
+
+export default function EvidenceSidebar({ items, selectedId, onSelect, onAdd, onUpdateAllSources, updatingAllSources = false }) {
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
-      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sources</span>
+        {hasUrlSources(items) && (
+          <button
+            onClick={onUpdateAllSources}
+            disabled={updatingAllSources}
+            className="text-xs rounded px-2 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {updatingAllSources ? 'Updating…' : 'Update sources'}
+          </button>
+        )}
       </div>
       <div className="px-4 pt-3 pb-3 border-b border-gray-200">
         <Button variant="primary" size="md" onClick={onAdd} className="w-full">

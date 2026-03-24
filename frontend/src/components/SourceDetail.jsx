@@ -4,6 +4,21 @@ import { Link } from 'react-router-dom'
 const TYPE_ICON = { file: '📄', url: '🔗', text: '📝', document: '📑' }
 const MAX_CONTENT = 2000
 
+function timeAgo(isoString) {
+  const date = new Date(isoString + 'Z')
+  const now = new Date()
+  const diffMs = now - date
+  const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffSeconds < 60) return 'just now'
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays === 1) return 'yesterday'
+  return date.toLocaleDateString()
+}
+
 function formatBytes(n) {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
@@ -29,7 +44,7 @@ function getDomain(url) {
   try { return new URL(url).hostname } catch { return null }
 }
 
-export default function SourceDetail({ item, onToggleSync, onFetchLiveContent }) {
+export default function SourceDetail({ item, allItems = [], onToggleSync, onFetchLiveContent, onRefresh, refreshing = false }) {
   const [liveContent, setLiveContent] = useState(null)
 
   useEffect(() => {
@@ -48,7 +63,6 @@ export default function SourceDetail({ item, onToggleSync, onFetchLiveContent })
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Source Detail</span>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center text-center gap-2">
-          <span className="text-3xl">🔍</span>
           <p className="text-sm text-gray-400">Select a source to view its contents</p>
         </div>
       </div>
@@ -64,13 +78,44 @@ export default function SourceDetail({ item, onToggleSync, onFetchLiveContent })
 
   const domain = item.url ? getDomain(item.url) : null
 
+  const isDuplicateUrl = item.type === 'url' && item.url &&
+    allItems.some((other) => other.id !== item.id && other.type === 'url' && other.url?.toLowerCase() === item.url.toLowerCase())
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
 
       {/* Panel header */}
-      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Source Detail</span>
+        {item.type === 'url' && (
+          <div className="flex items-center gap-3">
+            {item.last_fetched_at && (
+              <span className="text-xs text-gray-400">Last updated: {timeAgo(item.last_fetched_at)}</span>
+            )}
+            <button
+              onClick={onRefresh}
+              disabled={refreshing}
+              className="text-xs rounded px-2 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {refreshing ? 'Updating…' : 'Update source'}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Fetch error warning */}
+      {item.last_fetch_error && (
+        <div className="bg-amber-50 border-b border-amber-100 text-xs text-amber-600 px-4 py-2 flex-shrink-0">
+          Last update failed ({item.last_fetch_error})
+        </div>
+      )}
+
+      {/* Duplicate URL warning */}
+      {isDuplicateUrl && (
+        <div className="bg-amber-50 border-b border-amber-100 text-xs text-amber-600 px-4 py-2 flex-shrink-0">
+          Another source with this URL already exists.
+        </div>
+      )}
 
       {/* Metadata header */}
       <div className="bg-white border-b border-gray-100 p-6 flex-shrink-0">
