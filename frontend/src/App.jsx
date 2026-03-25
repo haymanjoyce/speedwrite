@@ -7,7 +7,6 @@ import Document from './pages/Document'
 import Evidence from './pages/Evidence'
 import History from './pages/History'
 import Home from './pages/Home'
-import Log from './pages/Log'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
@@ -56,14 +55,6 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <ErrorBoundary><Evidence /></ErrorBoundary>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/document/:id/log"
-          element={
-            <RequireAuth>
-              <ErrorBoundary><Log /></ErrorBoundary>
             </RequireAuth>
           }
         />

@@ -1,7 +1,5 @@
 import json
 import os
-import uuid
-from datetime import datetime
 from pathlib import Path
 
 DATA_DIR = Path(os.getenv("DATA_DIR", "/var/logbooklm"))
@@ -54,15 +52,3 @@ def delete_document(user_id: str, doc_id: str) -> None:
     path = _doc_path(user_id, doc_id)
     if path.exists():
         path.unlink()
-
-
-def append_audit_log(doc: dict, event: str, summary: str, metadata: dict = None) -> dict:
-    doc.setdefault("audit_log", [])
-    doc["audit_log"].append({
-        "id": str(uuid.uuid4()),
-        "event": event,
-        "timestamp": datetime.utcnow().isoformat(),
-        "summary": summary,
-        "metadata": metadata or {},
-    })
-    return doc

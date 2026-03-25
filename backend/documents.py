@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from auth import get_current_user
 from models import Document, DocumentCreate, DocumentUpdate
-from storage import DOCS_DIR, append_audit_log, delete_document, list_documents, load_document, save_document
+from storage import DOCS_DIR, delete_document, list_documents, load_document, save_document
 
 router = APIRouter(prefix="/documents")
 
@@ -54,7 +54,6 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
         "history": [],
         "save_count": 0,
     }
-    append_audit_log(doc, "document_created", "Document created", {"title": title})
     save_document(doc)
     return doc
 
@@ -87,8 +86,6 @@ def update_document(doc_id: str, data: DocumentUpdate, user=Depends(get_current_
     if data.title is not None:
         doc["title"] = data.title
     doc["updated_at"] = datetime.utcnow().isoformat()
-    word_count = len(doc["content"].split()) if doc.get("content") else 0
-    append_audit_log(doc, "document_edited", f"Document saved ({word_count} words)", {"word_count": word_count})
     doc["save_count"] = doc.get("save_count", 0) + 1
     if doc["save_count"] % 10 == 0:
         add_snapshot(doc, "auto", "Auto save")
@@ -127,15 +124,6 @@ def create_snapshot(doc_id: str, data: SnapshotRequest, user=Depends(get_current
     label = data.label.strip() or "Manual checkpoint"
     trigger = data.trigger.strip() or "manual"
     add_snapshot(doc, trigger, label)
-    if trigger == "manual":
-        append_audit_log(doc, "manual_checkpoint", "Version saved manually", {"label": label})
-    elif trigger == "restore":
-        metadata = {}
-        if data.source_snapshot_id:
-            metadata["source_snapshot_id"] = data.source_snapshot_id
-        if data.source_snapshot_label:
-            metadata["source_snapshot_label"] = data.source_snapshot_label
-        append_audit_log(doc, "version_restored", f"Restored: {data.source_snapshot_label or label}", metadata)
     save_document(doc)
     return doc["history"][-1]
 

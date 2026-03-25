@@ -123,9 +123,6 @@ export default function Evidence() {
       const updated = await api.refreshEvidence(id, evidenceId)
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
       if (selectedItem?.id === evidenceId) setSelectedItem(updated)
-      if (!updated.last_fetch_error) {
-        api.addLogEntry(id, 'source_updated', `Source updated: ${updated.title}`, { title: updated.title, type: 'url' })
-      }
     } catch (err) {
       console.error('Refresh failed', err)
     } finally {
@@ -163,7 +160,6 @@ export default function Evidence() {
         tabs={[
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
           { label: 'Evidence', active: true, onClick: () => {} },
-          { label: 'Log', active: false, onClick: () => navigate(`/document/${id}/log`) },
           { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
         ]}
         actions={[

@@ -4,6 +4,14 @@
 
 SpeedWrite is an AI-assisted document authoring platform. The core unit is a document — each document has its own evidence base, AI agent chat, and markdown content.
 
+## Intentional Removals
+
+### Audit Log removed (do not re-add)
+
+The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `/document/:id/log` route) was removed intentionally. It is an audit trail, not a user-facing document authoring feature. The Log concept belongs in a separate product (LogbookLM), which will be built later as a fork of SpeedWrite. Do not re-add audit logging or a Log tab to SpeedWrite.
+
+Existing `audit_log` arrays in document JSON files are harmless and simply ignored.
+
 ## Design Decisions
 
 ### Rewrite operates at section level, not selected-text level
@@ -27,17 +35,16 @@ The app uses three tiers of navigation and controls:
 **Tier 1 — Global bar (TopBar)**
 - Always visible at the top of every page
 - Contains: app name/logo, breadcrumb navigation, search icon, user email, logout
-- Breadcrumb shows "SpeedWrite" (links to /) and, when a document is open, a spacer gap then the document title (plain text or editable input when renaming). No sub-page labels (Evidence, Log) in the breadcrumb — those are shown as tabs in the context bar instead. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`.
+- Breadcrumb shows "SpeedWrite" (links to /) and, when a document is open, a spacer gap then the document title (plain text or editable input when renaming). No sub-page labels (Evidence, History) in the breadcrumb — those are shown as tabs in the context bar instead. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`.
 
 **Tier 2 — Page context bar (ContextBar)**
 - Sits below the global bar
-- Left side: tab navigation (Document / Evidence / Log) for document sub-views; active tab is `text-gray-900 font-semibold`, inactive tabs are `text-gray-400 hover:text-gray-700 transition-colors`. No status text in the context bar — save status lives in the Editor panel header, source count lives in the AI Chat panel header.
+- Left side: tab navigation (Document / Evidence / History) for document sub-views; active tab is `text-gray-900 font-semibold`, inactive tabs are `text-gray-400 hover:text-gray-700 transition-colors`. No status text in the context bar — save status lives in the Editor panel header, source count lives in the AI Chat panel header.
 - Right side: page-specific action buttons (outlined, `text-xs rounded px-3 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300`)
 - Layout per view:
   - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
   - Document: tabs (Document active) · right: Add to chat (conditional) · Save version · Rename · Save as template · Export .txt · Export PDF · Close; tabs hidden and replaced with Accept · Reject when a proposal is pending
   - Evidence: tabs (Evidence active) · right: Reindex (conditional, hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close
-  - Log: tabs (Log active) · right: Close
 - ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`
 
 **Tier 3 — Panel headers**
@@ -52,8 +59,6 @@ The app uses three tiers of navigation and controls:
   - Source Detail (for URL sources: "Last updated: [relative time]" + "Update source" small outlined button right-aligned in panel header; no actions for other source types)
   - Documents (full-width New Document button below header)
   - Document Detail (no actions)
-  - Log (no actions)
-  - Entry Detail (no actions)
 
 ### Control type rules
 
@@ -109,7 +114,6 @@ speedwrite/
 │   ├── config.py        # GET /config endpoint (exposes server-side defaults)
 │   ├── search.py        # POST /search — cross-document full-text search
 │   ├── templates.py     # CRUD + AI prefill for document templates
-│   ├── log.py
 │   ├── models.py
 │   └── storage.py
 ├── frontend/                         # React 18 + Vite + Tailwind CSS
@@ -120,7 +124,6 @@ speedwrite/
 │       │   ├── Home.jsx
 │       │   ├── Document.jsx
 │       │   ├── Evidence.jsx
-│       │   ├── Log.jsx
 │       │   ├── History.jsx
 │       │   ├── Login.jsx
 │       │   └── Register.jsx
@@ -182,8 +185,7 @@ Three main views:
 1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Rename, and Delete action buttons when a document is selected.
 2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows tabs (Document active) + Save version · Rename · Save as template · Export .txt · Export PDF · Close buttons; "Add to chat" appears when editor text is selected. **Redraft** and **Insights** dropdowns live in the ChatPanel header (not the context bar). Edit/Preview segmented control lives in the Editor panel header (right-aligned). When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject buttons.
 3. **Evidence view** (`/document/:id/evidence`) — three-panel layout: source list (260px) on the left, source detail (flex-1) in the middle, `EvidenceChatPanel` (380px) always visible on the right. Context bar shows tabs (Evidence active) + Reindex (hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close buttons.
-4. **Log view** (`/document/:id/log`) — audit log entries newest-first on the left, entry detail on the right. Context bar shows tabs (Log active) + Close button.
-5. **History view** (`/document/:id/history`) — version snapshot list on the left, snapshot detail + MarkdownPreview on the right. Context bar shows tabs (History active) + Close button.
+4. **History view** (`/document/:id/history`) — version snapshot list on the left, snapshot detail + MarkdownPreview on the right. Context bar shows tabs (History active) + Close button.
 
 ### Error Boundaries
 
@@ -192,7 +194,7 @@ Three main views:
 ### Navigation
 
 Every view has a two-tier navigation:
-- **TopBar** — global: logo/breadcrumb, search icon, user email, logout. The breadcrumb shows "SpeedWrite" (links to /) and the document title when present — no sub-page labels. Container has `min-w-0 overflow-hidden whitespace-nowrap`; full path shown as native `title` tooltip on hover. In Document view, clicking Rename activates inline editing: the title span is replaced by an `<input>` (border-b border-blue-400, auto-sized via `size` attribute); Enter/blur saves, Escape cancels. `TopBar` accepts `isRenaming`, `onRenameSave`, `onRenameCancel` props. In Library view, the Document Detail panel title uses the same pattern with ✓/✕ confirm buttons. Sub-page navigation (Evidence, Log) is handled by tabs in the ContextBar, not the TopBar breadcrumb.
+- **TopBar** — global: logo/breadcrumb, search icon, user email, logout. The breadcrumb shows "SpeedWrite" (links to /) and the document title when present — no sub-page labels. Container has `min-w-0 overflow-hidden whitespace-nowrap`; full path shown as native `title` tooltip on hover. In Document view, clicking Rename activates inline editing: the title span is replaced by an `<input>` (border-b border-blue-400, auto-sized via `size` attribute); Enter/blur saves, Escape cancels. `TopBar` accepts `isRenaming`, `onRenameSave`, `onRenameCancel` props. In Library view, the Document Detail panel title uses the same pattern with ✓/✕ confirm buttons. Sub-page navigation (Evidence, History) is handled by tabs in the ContextBar, not the TopBar breadcrumb.
 - **ContextBar** — context-specific: outlined action buttons right-aligned, tab navigation left-aligned. Default buttons are `border border-gray-200 rounded`. Actions can set `variant: 'primary'` for a blue button (`bg-blue-600 border border-blue-600 text-white`). Primary sidebar actions (New Document, Add Source) are blue buttons inside sidebar headers. "Open" in the library view and "Add to chat" in the document view use `variant: 'primary'`.
 
 ## AI Features
@@ -212,8 +214,8 @@ Every view has a two-tier navigation:
 - **Backend model**: Anthropic path uses `claude-sonnet-4-20250514`. Ollama path uses `OLLAMA_CHAT_MODEL` env var (default: `llama3.2`). Anthropic API key stored in `.env` as `ANTHROPIC_API_KEY`.
 - **Evidence chat**: `EvidenceChatPanel.jsx` is a persistent chat panel on the Evidence page for interrogating individual sources. The `+` button opens a `SourcePickerPopup` (evidence sources only — no section option); the first item is "📚 All sources" which fetches all sources in parallel, concatenates them with `--- Source: {title} ({type}) ---` separators, and sets label to "All sources (N sources)"; individual sources call `api.getEvidence(docId, evidenceId)` to fetch full content. All attached content is truncated to 6000 chars (amber chip shown if original exceeded 3000 chars). An **Insights** dropdown in the panel header (Summarise · Find contradictions · Extract themes, shared with ChatPanel via `insightPrompts.js`) is disabled when no source is attached; clicking an item fires the prompt automatically. History is stored as `evidence_chat_history` on the document JSON and loaded/reset on `document.id` change. `ignore_history` is set to `true` when context is attached (fresh response per source). Backend endpoint: `POST /documents/{doc_id}/evidence-chat` in `backend/evidence_chat.py`. Never modifies the document — returns `{ message }` only.
 - **Token limits**: `chat.py` and `actions.py` both use `max_tokens=4096` to prevent truncated `<proposed_document>` responses. Known limitation: very large attachments (sections or evidence sources) can still cause truncation if the combined prompt + response exceeds the model's context window. Workaround: attach smaller sections rather than entire large documents. Future fix: streaming responses or context summarisation.
-- **Document templates**: Users can create documents from built-in templates or their own saved templates. Built-in templates (Meeting Notes, Research Report, Project Brief, Weekly Update, Decision Log) are defined as `BUILT_IN_TEMPLATES` in `frontend/src/data/templates.js`. User templates are stored at `/var/speedwrite/templates/{user_id}/{template_id}.json` and managed via `backend/templates.py` (GET /templates, GET /templates/{id}, POST /templates, DELETE /templates/{id}). The Library view Documents panel has two stacked full-width buttons: `+ New Document` (primary, existing behaviour) and `From template…` (secondary) which opens `TemplatePickerOverlay.jsx`. The overlay has two screens: (1) template grid (two tabs: Built-in / My Templates, 2-column card grid; My Templates cards have an instant-delete × button); (2) AI pre-fill step — template name in header, optional description textarea, "Create without AI" and "Create with AI" buttons. Built-in template content comes from the frontend constant; user template content is fetched via `GET /templates/{id}` on card select. "Create with AI" is disabled when description is empty; both buttons show "Creating…" and are disabled while the request is in flight. `POST /templates/prefill` calls `llm.complete()` (respects `LLM_PROVIDER`, max_tokens=2048) and returns `{ content }`. Both creation paths navigate to `/document/:id` on success. Document view context bar order: Rename · Save as template · Evidence · Log · Close. "Save as template" opens an inline bar below the context bar (same slot as `activeBar` state: `null | 'save-template'`), with title input (pre-filled from doc title), description input, Save/Cancel buttons; on save shows "Template saved" status for 3 seconds.
-- **Document export**: Two export formats available from the Document view ContextBar. `GET /documents/{doc_id}/export/txt` strips all markdown syntax (headings, bold, italic, lists, code blocks, links, blockquotes) using regex while collapsing consecutive blank lines to a single blank line, then returns a UTF-8 plain text download. `GET /documents/{doc_id}/export/pdf` converts markdown to HTML via the `markdown` Python library (`extra` extension), applies basic print CSS (Georgia font, 2.5cm margins, styled headings/code blocks), and renders to PDF via `weasyprint`. Both endpoints require auth, sanitise the document title for the filename (`re.sub` strips non-word chars, spaces become underscores), and set `Content-Disposition: attachment`. Implemented in `backend/export.py`. Frontend: `api.downloadExport(docId, format)` performs an authenticated fetch, receives the binary response as a blob, extracts the filename from the `Content-Disposition` header, and triggers a download via a temporary `<a>` element with a blob URL. Fires `document_exported_txt` or `document_exported_pdf` audit log event on success. Dockerfile: requires `libpango-1.0-0`, `libpangoft2-1.0-0`, `libharfbuzz0b`, `shared-mime-info`, `fonts-liberation` apt packages (weasyprint 60+ uses pydyf instead of Cairo — no `libcairo2` or `libgdk-pixbuf` needed).
+- **Document templates**: Users can create documents from built-in templates or their own saved templates. Built-in templates (Meeting Notes, Research Report, Project Brief, Weekly Update, Decision Log) are defined as `BUILT_IN_TEMPLATES` in `frontend/src/data/templates.js`. User templates are stored at `/var/speedwrite/templates/{user_id}/{template_id}.json` and managed via `backend/templates.py` (GET /templates, GET /templates/{id}, POST /templates, DELETE /templates/{id}). The Library view Documents panel has two stacked full-width buttons: `+ New Document` (primary, existing behaviour) and `From template…` (secondary) which opens `TemplatePickerOverlay.jsx`. The overlay has two screens: (1) template grid (two tabs: Built-in / My Templates, 2-column card grid; My Templates cards have an instant-delete × button); (2) AI pre-fill step — template name in header, optional description textarea, "Create without AI" and "Create with AI" buttons. Built-in template content comes from the frontend constant; user template content is fetched via `GET /templates/{id}` on card select. "Create with AI" is disabled when description is empty; both buttons show "Creating…" and are disabled while the request is in flight. `POST /templates/prefill` calls `llm.complete()` (respects `LLM_PROVIDER`, max_tokens=2048) and returns `{ content }`. Both creation paths navigate to `/document/:id` on success. Document view context bar order: Rename · Save as template · Evidence · Close. "Save as template" opens an inline bar below the context bar (same slot as `activeBar` state: `null | 'save-template'`), with title input (pre-filled from doc title), description input, Save/Cancel buttons; on save shows "Template saved" status for 3 seconds.
+- **Document export**: Two export formats available from the Document view ContextBar. `GET /documents/{doc_id}/export/txt` strips all markdown syntax (headings, bold, italic, lists, code blocks, links, blockquotes) using regex while collapsing consecutive blank lines to a single blank line, then returns a UTF-8 plain text download. `GET /documents/{doc_id}/export/pdf` converts markdown to HTML via the `markdown` Python library (`extra` extension), applies basic print CSS (Georgia font, 2.5cm margins, styled headings/code blocks), and renders to PDF via `weasyprint`. Both endpoints require auth, sanitise the document title for the filename (`re.sub` strips non-word chars, spaces become underscores), and set `Content-Disposition: attachment`. Implemented in `backend/export.py`. Frontend: `api.downloadExport(docId, format)` performs an authenticated fetch, receives the binary response as a blob, extracts the filename from the `Content-Disposition` header, and triggers a download via a temporary `<a>` element with a blob URL. Dockerfile: requires `libpango-1.0-0`, `libpangoft2-1.0-0`, `libharfbuzz0b`, `shared-mime-info`, `fonts-liberation` apt packages (weasyprint 60+ uses pydyf instead of Cairo — no `libcairo2` or `libgdk-pixbuf` needed).
 - **Global search**: `POST /search` (`backend/search.py`) performs case-insensitive substring search across all of the user's documents — document titles and content, evidence source titles and content, and `chat_history` messages (not `evidence_chat_history`). Returns up to 5 results per group (documents, evidence, chat). Excerpt helper extracts ~200 chars around the first match, padded with `…`. Frontend: `SearchOverlay.jsx` is an overlay (fixed inset-0 z-50, bg-black bg-opacity-40) with a centered panel (max-w-2xl mt-24). Triggered by Cmd/Ctrl+K or the search icon in TopBar. State managed via `SearchContext.jsx` (`SearchProvider` + `useSearch()` hook); `AppRoutes` in `App.jsx` registers the keyboard listener and renders the overlay. Search-as-you-type with 300ms debounce. Idle state ("Start typing…") shown when query < 2 chars; "Searching…" while loading; "No results found" on empty results. Match terms highlighted inline in the frontend (split on match, wrap in `<strong>`). Evidence results navigate to `/document/:id/evidence` with `{ state: { evidenceId } }`; `Evidence.jsx` reads `location.state.evidenceId` on items-load to pre-select the source (one-shot via `initialSelectDoneRef`). **Known performance limitation**: search does full in-memory substring scan across all documents, evidence content, and chat history on every debounced keystroke — fine for typical dataset sizes but will slow down with very large evidence corpora. Future fix: index-based search or SQLite FTS.
 
 ## Document Tree
@@ -244,16 +246,6 @@ Every view has a two-tier navigation:
 - Enter key behaviour is user-configurable: "↵ on" sends on Enter (Shift+Enter for newline); "↵ off" reverts to Ctrl/Cmd+Enter only. Preference persisted in `localStorage` as `logbooklm_submit_on_enter` (key kept as-is for backwards compatibility with existing user preferences). The Send button uses `onClick={() => handleSend()}` (not `onClick={handleSend}`) to prevent the click event being passed as the `textOverride` argument.
 - A "↓ Latest" button appears between the messages area and the input when the user has scrolled more than 100px from the bottom. Auto-scroll only fires when already near the bottom.
 
-## Audit Log
-
-- Append-only log stored as `audit_log` array on each document JSON.
-- `append_audit_log(doc, event, summary, metadata=None)` helper in `storage.py` creates a UUID entry `{ id, event, timestamp, summary, metadata: {} }` and appends it. **Backward compat**: old entries that only have `detail` display gracefully in `Log.jsx` via `entry.summary || entry.detail` fallback.
-- Events fired from the **backend**: `document_created` (with `{ title }`), `document_edited` (with `{ word_count }`), `manual_checkpoint` (with `{ label }`, fired from `create_snapshot` when `trigger=="manual"`), `version_restored` (with `{ source_snapshot_id, source_snapshot_label }`, fired from `create_snapshot` when `trigger=="restore"`), `evidence_added` (with `{ source_type, title, ... }`), `evidence_deleted` (with `{ source_type, title }`).
-- Events fired from the **frontend** via `api.addLogEntry`: `rewrite_accepted`, `rewrite_rejected`, `document_renamed` (with `{ from, to }`), `section_locked` (with `{ heading }`), `section_unlocked` (with `{ heading }`), `structure_locked`, `structure_unlocked`, `template_created` (with `{ template_title }`), `source_updated` (with `{ title, type: 'url' }`, fired after a successful URL source refresh), `document_exported_txt`, `document_exported_pdf` (both with `{}`, fired after successful export). Note: `document_deleted` was removed — writing a log entry to a file that is immediately deleted served no purpose.
-- **Document deletion cleanup**: `DELETE /documents/{doc_id}` removes the evidence directory (`DOCS_DIR/{user_id}/evidence/{doc_id}/`, via `shutil.rmtree`), the embeddings file (`embeddings/{user_id}/{doc_id}.json`), and the document JSON. All three are cleaned up atomically in the endpoint; `storage.delete_document()` only removes the document JSON.
-- `GET /documents/{doc_id}/log` returns entries newest-first. `POST /documents/{doc_id}/log` body: `{ event, summary, metadata }`.
-- Log view (`/document/:id/log`) in `Log.jsx` — left panel lists entries with event label + summary snippet + relative timestamp; right panel shows event label, full timestamp, summary, and metadata as labelled key-value rows. `METADATA_LABELS` maps raw keys to human-readable labels.
-
 ## Document History
 
 - Version snapshots stored as `history: list` on each document JSON; max 50 entries (oldest dropped when limit exceeded).
@@ -265,11 +257,11 @@ Every view has a two-tier navigation:
 - `GET /documents/{doc_id}/history/{snapshot_id}` — returns full snapshot including content.
 - Frontend: `History.jsx` at `/document/:id/history`. Left panel lists snapshots with trigger icons (💾 auto / 🤖 rewrite / 📌 manual / 🔄 restore) and `timeAgo()` relative timestamps. Right panel shows metadata + MarkdownPreview + "Restore this version" button.
 - **Restore flow**: clicking "Restore this version" navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on doc load, sets it as `pendingProposal` (triggers diff view), stores `restoreSnapshotId`/`restoreSnapshotLabel` in state, sets `pendingProposalReason` to `'restore'`, then clears location state via `window.history.replaceState`. Accept → document restored; Reject → current content unchanged.
-- **`pendingProposalReason` state**: `'ai_rewrite'` (default) or `'restore'`. Controls what `handleAccept` does: restore path creates a `trigger='restore'` snapshot (with `source_snapshot_id`/`source_snapshot_label` — backend fires `version_restored` log entry); AI rewrite path logs `rewrite_accepted` and creates a `trigger='rewrite'` snapshot. Reset to `'ai_rewrite'` after accept.
+- **`pendingProposalReason` state**: `'ai_rewrite'` (default) or `'restore'`. Controls what `handleAccept` does: restore path creates a `trigger='restore'` snapshot (with `source_snapshot_id`/`source_snapshot_label`); AI rewrite path creates a `trigger='rewrite'` snapshot. Reset to `'ai_rewrite'` after accept.
 - **After accepting a rewrite**: `Document.jsx` fires `api.createSnapshot(id, 'AI rewrite', 'rewrite')` fire-and-forget in `handleAccept`.
 - **`flashStatus` prop on `Editor.jsx`**: passed from `Document.jsx` to show brief messages ("Version saved", "Template saved") in the Editor panel header, overriding save status for 3 seconds.
 - `api.js` methods: `listHistory(docId)`, `getSnapshot(docId, snapshotId)`, `createSnapshot(docId, label = '', trigger = 'manual', sourceSnapshotId = null, sourceSnapshotLabel = null)`. Snapshot body: `{ label, trigger, source_snapshot_id, source_snapshot_label }`.
-- Context bar tabs updated in all four document sub-views (Document / Evidence / Log / History) to include the History tab.
+- Context bar tabs updated in all three document sub-views (Document / Evidence / History).
 
 ## Section Locking
 
@@ -299,7 +291,7 @@ JSON files on disk — no database.
 | Path | Purpose |
 |------|---------|
 | `/var/speedwrite/users.json` | All user accounts |
-| `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, audit log, protected sections, version history, and save_count |
+| `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, protected sections, version history, and save_count |
 | `/var/speedwrite/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources in a document |
 | `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved document templates |

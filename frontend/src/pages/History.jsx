@@ -83,7 +83,6 @@ export default function History() {
         tabs={[
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
           { label: 'Evidence', active: false, onClick: () => navigate(`/document/${id}/evidence`) },
-          { label: 'Log', active: false, onClick: () => navigate(`/document/${id}/log`) },
           { label: 'History', active: true, onClick: () => {} },
         ]}
         actions={[

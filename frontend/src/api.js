@@ -149,11 +149,6 @@ export const api = {
     URL.revokeObjectURL(url)
   },
 
-  // Audit log
-  listLog: (docId) => request('GET', `/documents/${docId}/log`),
-  addLogEntry: (docId, event, summary, metadata = {}) =>
-    request('POST', `/documents/${docId}/log`, { event, summary, metadata }),
-
   // Section protection
   protectSection: (docId, heading) =>
     request('POST', `/documents/${docId}/protect`, { heading }),
