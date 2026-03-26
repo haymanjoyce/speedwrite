@@ -8,7 +8,7 @@ SpeedWrite is an AI-assisted document authoring platform. The core unit is a doc
 
 ### Audit Log removed (do not re-add)
 
-The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `/document/:id/log` route) was removed intentionally. It is an audit trail, not a user-facing document authoring feature. The Log concept belongs in a separate product (LogbookLM), which will be built later as a fork of SpeedWrite. Do not re-add audit logging or a Log tab to SpeedWrite.
+The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `/document/:id/log` route) was removed intentionally. It is an audit trail, not a user-facing document authoring feature. The Log concept is out of scope for SpeedWrite. Do not re-add audit logging or a Log tab to SpeedWrite.
 
 Existing `audit_log` arrays in document JSON files are harmless and simply ignored.
 
@@ -200,7 +200,7 @@ Main views:
 - **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
 - **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
 - **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
-- **Enter key**: configurable. `localStorage` key is `logbooklm_submit_on_enter` (kept as-is for backwards compatibility). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
+- **Enter key**: configurable. `localStorage` key is `speedwrite_submit_on_enter`. Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
 - **RAG badge**: `✦ RAG` appears near Stop button when per-source RAG is active. Cleared in `finally` and by Stop handler.
 - **Double fetches in dev**: React 18 StrictMode causes intentional double-mount. Two `GET /documents/:id` on load is expected in dev, not a bug.
 
@@ -256,7 +256,7 @@ JSON files on disk — no database.
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources |
 | `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved templates |
 
-> **Note**: The local dev named volume is `dev_logbooklm_data` (name retained to avoid orphaning existing data) but it now mounts to `/var/speedwrite` in both `docker-compose.yml` and `docker-compose.override.yml`.
+> **Note**: The local dev named volume is `dev_speedwrite_data` and mounts to `/var/speedwrite` in both `docker-compose.yml` and `docker-compose.override.yml`.
 
 ## Environment Variables
 

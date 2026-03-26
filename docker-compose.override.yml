@@ -13,7 +13,7 @@ services:
       - "8000:8000"
     # Use a local named volume instead of the host path /var/speedwrite
     volumes:
-      - dev_logbooklm_data:/var/speedwrite
+      - dev_speedwrite_data:/var/speedwrite
 
   nginx:
     # Shadow the SSL-only prod configs with HTTP-only local equivalents.
@@ -24,4 +24,4 @@ services:
       - /dev/null:/etc/nginx/conf.d/default.conf:ro
 
 volumes:
-  dev_logbooklm_data:
+  dev_speedwrite_data:

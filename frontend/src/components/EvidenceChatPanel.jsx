@@ -129,7 +129,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitOnEnter, setSubmitOnEnter] = useState(
-    () => localStorage.getItem('logbooklm_submit_on_enter') !== 'false'
+    () => localStorage.getItem('speedwrite_submit_on_enter') !== 'false'
   )
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [localContext, setLocalContext] = useState(null)
@@ -188,7 +188,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
   const toggleSubmitOnEnter = () => {
     setSubmitOnEnter((prev) => {
       const next = !prev
-      localStorage.setItem('logbooklm_submit_on_enter', String(next))
+      localStorage.setItem('speedwrite_submit_on_enter', String(next))
       return next
     })
   }
