@@ -71,7 +71,6 @@ speedwrite/
 │   ├── actions.py
 │   ├── embeddings.py
 │   ├── llm.py
-│   ├── config.py
 │   ├── search.py
 │   ├── templates.py
 │   ├── export.py
@@ -102,7 +101,6 @@ speedwrite/
 │       │   ├── AttachmentPopup.jsx
 │       │   ├── ActionsDropdown.jsx
 │       │   ├── InstructionBar.jsx
-│       │   ├── ProviderToggle.jsx
 │       │   ├── SegmentedControl.jsx
 │       │   ├── ErrorBoundary.jsx
 │       │   ├── SearchOverlay.jsx
@@ -159,8 +157,7 @@ Four main views:
 - **Redraft vs Insights**: Both dropdowns in ChatPanel header, both disabled when `pendingProposal` is truthy. Redraft shows `InstructionBar` for optional instructions before firing. Insights fire immediately. Both use `SHARED_INSIGHT_ACTIONS` from `insightPrompts.js`.
 - **Evidence base**: File uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, other documents. URL sources carry `last_fetched_at` and `last_fetch_error`. `POST .../evidence/{id}/refresh` updates content and re-embeds on success. "Update sources" in Sources panel header runs all URL sources sequentially. Duplicate URL detection shows amber banner in SourceDetail.
 - **Embeddings/RAG**: Chunked (2000 chars, 200 overlap), embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved (cosine similarity) instead of full dump. Per-source RAG preflight in ChatPanel/EvidenceChatPanel: `api.ragQuery` → `POST .../evidence/{id}/rag-query`; if `used_rag: true`, chunks replace context. Falls back silently if Ollama unreachable.
-- **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. `LLM_PROVIDER` env var controls default; `provider` field on request body overrides per-request. Anthropic model: `claude-sonnet-4-20250514`. Ollama model: `OLLAMA_CHAT_MODEL` (default `llama3.2`).
-- **ProviderToggle.jsx** exists but is not exposed in the Document view — reserved for a future enterprise tier. Backend and api.js plumbing is intact.
+- **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. Anthropic is the only active path. `_complete_ollama()` is retained but dormant — no UI toggle and `LLM_PROVIDER`/`OLLAMA_CHAT_MODEL` are commented out in `.env.example`. `config.py` and `ProviderToggle.jsx` have been deleted. Anthropic model: `claude-sonnet-4-20250514`.
 - **Evidence chat** (`EvidenceChatPanel.jsx`): Persistent chat on Evidence page. "All sources" option concatenates all sources. `ignore_history: true` when context attached. Backend: `POST /documents/{doc_id}/evidence-chat` in `evidence_chat.py`. Never modifies the document.
 - **Token limits**: `max_tokens=4096` in `chat.py` and `actions.py`. Large attachments can still cause truncation if total prompt + response exceeds model context window.
 - **Document templates**: Built-in templates in `frontend/src/data/templates.js`. User templates at `/var/speedwrite/templates/{user_id}/{template_id}.json` via `backend/templates.py`. `TemplatePickerOverlay.jsx` two screens: grid picker → AI pre-fill step. `POST /templates/prefill` calls `llm.complete()` (max_tokens=2048). "Save as template" opens inline bar (same `activeBar` state slot as other inline bars).
@@ -237,9 +234,9 @@ JSON files on disk — no database.
 |----------|---------|
 | `JWT_SECRET` | JWT signing secret |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
-| `LLM_PROVIDER` | `anthropic` (default) or `ollama` |
-| `OLLAMA_HOST` | Ollama base URL (default: `http://host.docker.internal:11434`) |
-| `OLLAMA_CHAT_MODEL` | Ollama chat model (default: `llama3.2`) |
+| `OLLAMA_HOST` | Ollama base URL (default: `http://host.docker.internal:11434`) — used for embeddings only |
+| `LLM_PROVIDER` | Dormant — commented out in `.env.example`. Set to `ollama` to activate Ollama chat path. |
+| `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. Ollama chat model (default `llama3.2`). |
 
 ## Ollama Setup
 
@@ -247,7 +244,7 @@ Ollama runs outside Docker; reached via `host.docker.internal`.
 
 ```bash
 ollama pull nomic-embed-text   # required for embeddings/RAG
-ollama pull llama3.2           # required if LLM_PROVIDER=ollama
+ollama pull llama3.2           # only needed if reactivating Ollama chat (dormant)
 ```
 
 Embeddings always attempted via Ollama regardless of `LLM_PROVIDER`. If unreachable, skipped silently and RAG falls back to full context dump.

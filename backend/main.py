@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from actions import router as actions_router
 from export import router as export_router
 from auth import router as auth_router
-from config import router as config_router
 from embeddings import router as embeddings_router
 from chat import router as chat_router
 from documents import router as documents_router
@@ -14,7 +13,6 @@ from templates import router as templates_router
 
 app = FastAPI(title="SpeedWrite API")
 
-app.include_router(config_router)
 app.include_router(auth_router)
 app.include_router(documents_router)
 app.include_router(export_router)

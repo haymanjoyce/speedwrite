@@ -40,6 +40,9 @@ def _complete_anthropic(system: str, messages: list[dict], max_tokens: int) -> s
     return response.content[0].text
 
 
+# NOTE: Ollama chat is not currently exposed. _complete_ollama() is retained
+# for future use. LLM_PROVIDER env var would need to be set to "ollama" to
+# activate it, along with a UI toggle. Do not remove without discussion.
 def _complete_ollama(system: str, messages: list[dict], max_tokens: int) -> str:
     ollama_messages = [{"role": "system", "content": system}] + messages
     try:
