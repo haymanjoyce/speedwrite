@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-DATA_DIR = Path(os.getenv("DATA_DIR", "/var/logbooklm"))
+DATA_DIR = Path(os.getenv("DATA_DIR", "/var/speedwrite"))
 USERS_FILE = DATA_DIR / "users.json"
 DOCS_DIR = DATA_DIR / "documents"
 

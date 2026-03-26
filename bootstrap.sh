@@ -1,100 +1,144 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# =============================================================================
+# SpeedWrite Bootstrap Script
+# Run once on a fresh Hetzner Ubuntu 24.04 VPS.
+# Prerequisites:
+#   - Tailscale already installed and connected (run before locking firewall)
+#   - EMAIL variable set below
+#   - After this script: complete Cloudflare tunnel setup manually (see step 8)
+# =============================================================================
+
 REPO_URL="https://github.com/haymanjoyce/speedwrite"
 REPO_DIR="/opt/speedwrite"
-DOMAINS=("speedwrite.app")
+DATA_DIR="/var/speedwrite"
 ADMIN_USER="richard"
-EMAIL=""   # Required: set your email before running (used for Let's Encrypt notifications)
+EMAIL=""  # Set this before running — used for fail2ban/system notifications
 
 if [ -z "${EMAIL}" ]; then
     echo "ERROR: Set the EMAIL variable before running bootstrap.sh"
     exit 1
 fi
 
-echo "==> [1/9] Updating and hardening Ubuntu"
-apt-get update -y && apt-get upgrade -y
+echo "==> [1/9] Updating system packages"
+apt-get update -y && apt-get full-upgrade -y
 apt-get install -y \
-    fail2ban \
-    ufw \
-    unattended-upgrades \
     curl \
-    git
+    git \
+    ufw \
+    fail2ban \
+    unattended-upgrades
 
-# UFW: allow SSH, HTTP, HTTPS
+echo "==> [2/9] Configuring firewall (Tailscale-only SSH)"
 ufw default deny incoming
 ufw default allow outgoing
-ufw allow 22/tcp
-ufw allow 80/tcp
-ufw allow 443/tcp
+# Allow SSH only from Tailscale subnet
+ufw allow in on tailscale0 to any port 22 proto tcp
+# Allow HTTP from Cloudflare tunnel (cloudflared runs on host, connects to localhost:80)
+ufw allow 80/tcp comment 'Cloudflare tunnel ingress'
 ufw --force enable
+ufw status verbose
 
-# fail2ban
-systemctl enable fail2ban
-systemctl start fail2ban
-
-# SSH hardening
-sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+echo "==> [3/9] SSH hardening"
+sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
 sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-systemctl restart sshd
+sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' /etc/ssh/sshd_config
+systemctl restart ssh
 
-# Unattended upgrades
-dpkg-reconfigure -plow unattended-upgrades
+echo "==> [4/9] Configuring fail2ban and unattended upgrades"
+systemctl enable --now fail2ban
+cat <<EOF > /etc/apt/apt.conf.d/50unattended-upgrades
+Unattended-Upgrade::Allowed-Origins {
+    "\${distro_id}:\${distro_codename}";
+    "\${distro_id}:\${distro_codename}-security";
+};
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+EOF
+dpkg-reconfigure --priority=low unattended-upgrades
 
-echo "==> [2/9] Installing Docker and Docker Compose"
+echo "==> [5/9] Installing Docker"
 curl -fsSL https://get.docker.com | sh
 apt-get install -y docker-compose-plugin
-systemctl enable docker
-systemctl start docker
+systemctl enable --now docker
 
-echo "==> [3/9] Installing certbot"
-apt-get install -y certbot python3-certbot-nginx
+echo "==> [6/9] Configuring Docker log rotation"
+cat <<EOF > /etc/docker/daemon.json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+EOF
+systemctl restart docker
 
-echo "==> [4/9] Creating admin user '${ADMIN_USER}' if not exists"
+echo "==> [7/9] Installing Ollama and pulling embedding model"
+curl -fsSL https://ollama.com/install.sh | sh
+systemctl enable --now ollama
+# Wait for Ollama to be ready
+sleep 5
+ollama pull nomic-embed-text
+
+echo "==> [8/9] Installing Cloudflare tunnel (cloudflared)"
+wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+    -O /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+
+echo ""
+echo "==========================================================="
+echo "  MANUAL STEP REQUIRED: Cloudflare Tunnel Setup"
+echo "==========================================================="
+echo ""
+echo "Run the following commands to set up the Cloudflare tunnel:"
+echo ""
+echo "  cloudflared tunnel login"
+echo "  (opens browser — authenticate with your Cloudflare account)"
+echo ""
+echo "  cloudflared tunnel create speedwrite"
+echo "  cloudflared tunnel route dns speedwrite speedwrite.app"
+echo ""
+echo "  Then create /etc/cloudflared/config.yml with:"
+echo ""
+echo "  tunnel: <your-tunnel-id>"
+echo "  credentials-file: /root/.cloudflared/<your-tunnel-id>.json"
+echo "  ingress:"
+echo "    - hostname: speedwrite.app"
+echo "      service: http://localhost:80"
+echo "    - service: http_status:404"
+echo ""
+echo "  Then run:"
+echo "  cloudflared service install"
+echo "  systemctl enable --now cloudflared"
+echo ""
+echo "==========================================================="
+echo ""
+
+echo "==> [9/9] Creating admin user and cloning repo"
 if ! id "${ADMIN_USER}" &>/dev/null; then
     adduser --disabled-password --gecos "" "${ADMIN_USER}"
     usermod -aG sudo,docker "${ADMIN_USER}"
-    echo "User '${ADMIN_USER}' created."
-else
-    echo "User '${ADMIN_USER}' already exists."
+    echo "User '${ADMIN_USER}' created. Add their SSH key to ~/.ssh/authorized_keys"
 fi
 
-echo "==> [5/9] Cloning repo to ${REPO_DIR}"
 if [ ! -d "${REPO_DIR}/.git" ]; then
     git clone "${REPO_URL}" "${REPO_DIR}"
 else
-    echo "Repo already cloned, pulling latest."
     git -C "${REPO_DIR}" pull origin main
 fi
 
-echo "==> [6/9] Creating data directories"
-mkdir -p /var/logbooklm/projects
-chown -R "${ADMIN_USER}:${ADMIN_USER}" /var/logbooklm
-# NOTE: data directory /var/logbooklm is intentionally kept at this path.
-# Migrate to /var/speedwrite on VPS deploy if starting fresh.
-
-echo "==> [7/9] Obtaining SSL certificates"
-for domain in "${DOMAINS[@]}"; do
-    if [ ! -d "/etc/letsencrypt/live/${domain}" ]; then
-        certbot certonly --standalone --non-interactive --agree-tos \
-            --email "${EMAIL}" -d "${domain}"
-    else
-        echo "Cert for ${domain} already exists."
-    fi
-done
-
-echo "==> [8/9] Starting Docker stack"
-cd "${REPO_DIR}"
-docker compose up --build -d
-
-echo "==> [9/9] Health check"
-sleep 5
-if curl -sf http://localhost:8000/health > /dev/null; then
-    echo "Health check PASSED."
-else
-    echo "Health check FAILED. Check logs: docker compose logs app"
-    exit 1
-fi
+mkdir -p "${DATA_DIR}"
+chown -R "${ADMIN_USER}:${ADMIN_USER}" "${DATA_DIR}"
 
 echo ""
 echo "Bootstrap complete!"
+echo ""
+echo "Next steps:"
+echo "  1. Complete the Cloudflare tunnel setup shown above"
+echo "  2. cd ${REPO_DIR} && cp .env.example .env"
+echo "  3. Edit .env — set JWT_SECRET, ANTHROPIC_API_KEY, SENDGRID_API_KEY,"
+echo "     EMAIL_FROM, APP_URL, OLLAMA_HOST=http://172.17.0.1:11434"
+echo "  4. docker compose up --build -d"
+echo "  5. curl http://localhost:8000/health  (should return ok)"

@@ -11,9 +11,9 @@ services:
     # Expose the backend API directly on the host for local testing
     ports:
       - "8000:8000"
-    # Use a local named volume instead of the host path /var/logbooklm
+    # Use a local named volume instead of the host path /var/speedwrite
     volumes:
-      - dev_logbooklm_data:/var/logbooklm
+      - dev_logbooklm_data:/var/speedwrite
 
   nginx:
     # Shadow the SSL-only prod configs with HTTP-only local equivalents.

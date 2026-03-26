@@ -135,9 +135,11 @@ speedwrite/
 |------------|---------------|---------------|-------------------------------------|
 | `frontend` | `./frontend`  | —             | Build-only; copies /dist to volume  |
 | `app`      | `./backend`   | 8000          | FastAPI backend (Python 3.12)       |
-| `nginx`    | nginx:1.27    | 80, 443       | Reverse proxy + static file server  |
+| `nginx`    | nginx:1.27    | 80            | Reverse proxy + static file server  |
 
-`docker-compose.override.yml` is auto-merged locally. It exposes the backend on 8000, uses a local named volume, replaces SSL config with plain HTTP, and suppresses `nginx/default.conf`. The nginx `/api/` location sets `proxy_read_timeout 300s` to handle slow Ollama inference.
+`docker-compose.override.yml` is auto-merged locally. It exposes the backend on 8000, uses a local named volume, overrides the production nginx config with local-dev equivalents (different server names), and suppresses `nginx/default.conf`. The nginx `/api/` location sets `proxy_read_timeout 300s` to handle slow Ollama inference.
+
+Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the host — nginx only speaks HTTP. `speedwrite.app.conf` is plain HTTP; no Certbot or `/etc/letsencrypt` involved.
 
 ## App Architecture
 
@@ -254,7 +256,7 @@ JSON files on disk — no database.
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources |
 | `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved templates |
 
-> **Note**: Canonical data dir is `/var/speedwrite`. Existing VPS and local dev volume (`dev_logbooklm_data`) still mount to `/var/logbooklm` — update volume mount and `DATA_DIR` env var when provisioning fresh.
+> **Note**: The local dev named volume is `dev_logbooklm_data` (name retained to avoid orphaning existing data) but it now mounts to `/var/speedwrite` in both `docker-compose.yml` and `docker-compose.override.yml`.
 
 ## Environment Variables
 
@@ -265,7 +267,7 @@ JSON files on disk — no database.
 | `SENDGRID_API_KEY` | SendGrid API key — required for password reset emails |
 | `EMAIL_FROM` | Sender address for reset emails (default: `noreply@speedwrite.app`) |
 | `APP_URL` | Public app URL used in reset email links (default: `http://localhost`) |
-| `OLLAMA_HOST` | Ollama base URL (default: `http://host.docker.internal:11434`) — used for embeddings only |
+| `OLLAMA_HOST` | Ollama base URL (default: `http://172.17.0.1:11434`) — used for embeddings only. Local dev on Windows/Mac: `http://host.docker.internal:11434` |
 | `LLM_PROVIDER` | Dormant — commented out in `.env.example`. Set to `ollama` to activate Ollama chat path. |
 | `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. Ollama chat model (default `llama3.2`). |
 

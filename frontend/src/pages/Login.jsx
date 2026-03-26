@@ -11,7 +11,6 @@ export default function Login() {
 
   const submit = async (e) => {
     e.preventDefault()
-    setError('')
     try {
       const data = await api.login(email, password)
       localStorage.setItem('token', data.access_token)

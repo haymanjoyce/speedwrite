@@ -17,9 +17,13 @@ async function request(method, path, body, signal) {
   })
 
   if (res.status === 401) {
-    localStorage.removeItem('token')
-    window.location.href = '/login'
-    return
+    if (localStorage.getItem('token')) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+      return
+    }
+    const err = await res.json().catch(() => ({ detail: 'Invalid credentials' }))
+    throw new Error(err.detail || 'Invalid credentials')
   }
 
   if (res.status === 204) return null
