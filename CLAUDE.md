@@ -172,6 +172,17 @@ Four main views:
 - Clicking heading scrolls editor to it via `useImperativeHandle` on Editor.
 - No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
 
+## Editor Find Bar
+
+- Triggered by the magnifying glass icon button in the Editor panel header (left of the Edit/Preview segmented control) or Ctrl+F / Cmd+F while the textarea is focused. Only available in edit mode when `pendingProposal` is falsy.
+- Slim bar (`h-10`, `bg-gray-50`, `border-b`) rendered between the panel header and the textarea. Not shown in Preview or diff view.
+- Layout (left to right): search input · ↑ · ↓ · counter · flex spacer · ×.
+- Counter shows `X / Y` (blank when no query); no special treatment for zero results — just shows `0 / 0`.
+- Matches computed with `useMemo` (case-insensitive) to avoid stale-counter flicker. `findIndex` resets to 0 when `findQuery` changes.
+- Navigation selects the match via `setSelectionRange` and scrolls to it using the mirror div technique (same as `scrollToHeading`), subtracting 60px padding.
+- Enter / Shift+Enter on the input navigate next/prev. Escape closes the bar. Switching to Preview mode closes and resets the bar. Closing returns focus to the textarea.
+- State: `findOpen`, `findQuery`, `findIndex` (useState); `findMatches` (useMemo).
+
 ## Chat Panel
 
 - **Attachment**: `AttachmentPopup.jsx` (+ button). Section picker uses `parseHeadingsWithContent` from `Document.jsx`; evidence picker uses `doc.evidence`. Popup closes on outside click (anchor-ref-aware) or Escape.
