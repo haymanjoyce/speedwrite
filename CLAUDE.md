@@ -256,7 +256,7 @@ JSON files on disk — no database.
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources |
 | `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved templates |
 
-> **Note**: The local dev named volume is `dev_speedwrite_data` and mounts to `/var/speedwrite` in both `docker-compose.yml` and `docker-compose.override.yml`.
+> **Note**: The local dev named volume is `dev_speedwrite_data` — Docker Compose prefixes it with the project name, so the actual volume is `speedwrite_dev_speedwrite_data`. It mounts to `/var/speedwrite` in `docker-compose.override.yml`.
 
 ## Environment Variables
 
