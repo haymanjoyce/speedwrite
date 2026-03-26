@@ -30,7 +30,7 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 ### Three-tier navigation hierarchy
 
-**Tier 1 — Global bar (TopBar):** Always visible. App name/logo, breadcrumb, search icon, user email, logout. Breadcrumb shows "SpeedWrite" (→ /) and document title when open — no sub-page labels in breadcrumb. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`.
+**Tier 1 — Global bar (TopBar):** Always visible. App name/logo, breadcrumb, search icon, user dropdown. Breadcrumb shows "SpeedWrite" (→ /) and document title when open — no sub-page labels in breadcrumb. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`. The user area shows `display_name || email` as a dropdown trigger (▾); dropdown items: "Account settings" (→ `/account`) and "Sign out". Dropdown closes on outside click or Escape.
 
 **Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab `text-gray-900 font-semibold`, inactive `text-gray-400`. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`.
 - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
@@ -64,6 +64,7 @@ speedwrite/
 ├── backend/
 │   ├── main.py
 │   ├── auth.py
+│   ├── mailer.py
 │   ├── documents.py
 │   ├── chat.py
 │   ├── evidence.py
@@ -86,7 +87,10 @@ speedwrite/
 │       │   ├── Evidence.jsx
 │       │   ├── History.jsx
 │       │   ├── Login.jsx
-│       │   └── Register.jsx
+│       │   ├── Register.jsx
+│       │   ├── Account.jsx
+│       │   ├── ResetRequest.jsx
+│       │   └── ResetConfirm.jsx
 │       ├── components/
 │       │   ├── TopBar.jsx
 │       │   ├── ContextBar.jsx
@@ -137,12 +141,15 @@ speedwrite/
 
 ## App Architecture
 
-Four main views:
+Main views:
 
 1. **Library** (`/`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
 2. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right.
 4. **History** (`/document/:id/history`) — snapshot list left, snapshot detail + MarkdownPreview right.
+5. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
+6. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
+7. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
 
 `ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
 
@@ -225,6 +232,16 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - When `structureLocked` is true, heading lines highlighted in `DiffView` (`~` gutter, `bg-gray-100`, `border-l-2 border-gray-300`) and `MarkdownPreview` (`bg-gray-50 border-l-2 border-gray-200 pl-4`). `DiffView` matches `/^#{1,6}\s/` lines.
 - `ChatPanel` receives and forwards `structureLocked` on every message (including Redraft actions, which route through `handleSend`).
 
+## Auth & Account Management
+
+- **Password reset flow**: `POST /auth/reset-password/request` (no auth) generates a `secrets.token_urlsafe(32)` token, stores `reset_token` + `reset_token_expires` (UTC ISO, 1 hour) on the user record, and emails a link via SendGrid (`mailer.py`). Always returns 200 — does not reveal whether email exists. SendGrid errors are logged but not surfaced. `POST /auth/reset-password/confirm` validates token + expiry, hashes new password, clears token fields.
+- **Change password**: `POST /auth/change-password` (auth required) — verifies current password before updating.
+- **Change email**: `POST /auth/change-email` (auth required) — verifies password, checks uniqueness.
+- **Update profile**: `POST /auth/update-profile` (auth required) — saves `display_name` on user record. `GET /auth/me` returns `display_name` (Optional, may be null).
+- **Delete account**: `DELETE /auth/account` (auth required) — verifies password, removes user from `users.json`, then `shutil.rmtree` on docs, embeddings, and templates dirs for that user.
+- **Email sending**: `backend/mailer.py` wraps SendGrid. Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
+- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string).
+
 ## Data Storage
 
 JSON files on disk — no database.
@@ -245,6 +262,9 @@ JSON files on disk — no database.
 |----------|---------|
 | `JWT_SECRET` | JWT signing secret |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
+| `SENDGRID_API_KEY` | SendGrid API key — required for password reset emails |
+| `EMAIL_FROM` | Sender address for reset emails (default: `noreply@speedwrite.app`) |
+| `APP_URL` | Public app URL used in reset email links (default: `http://localhost`) |
 | `OLLAMA_HOST` | Ollama base URL (default: `http://host.docker.internal:11434`) — used for embeddings only |
 | `LLM_PROVIDER` | Dormant — commented out in `.env.example`. Set to `ollama` to activate Ollama chat path. |
 | `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. Ollama chat model (default `llama3.2`). |

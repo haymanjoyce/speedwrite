@@ -3,12 +3,15 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import SearchOverlay from './components/SearchOverlay'
 import { SearchProvider, useSearch } from './context/SearchContext'
+import Account from './pages/Account'
 import Document from './pages/Document'
 import Evidence from './pages/Evidence'
 import History from './pages/History'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ResetConfirm from './pages/ResetConfirm'
+import ResetRequest from './pages/ResetRequest'
 
 function RequireAuth({ children }) {
   return localStorage.getItem('token') ? children : <Navigate to="/login" replace />
@@ -34,6 +37,9 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
         <Route path="/register" element={<ErrorBoundary><Register /></ErrorBoundary>} />
+        <Route path="/reset-password/request" element={<ErrorBoundary><ResetRequest /></ErrorBoundary>} />
+        <Route path="/reset-password/confirm" element={<ErrorBoundary><ResetConfirm /></ErrorBoundary>} />
+        <Route path="/account" element={<RequireAuth><ErrorBoundary><Account /></ErrorBoundary></RequireAuth>} />
         <Route
           path="/"
           element={

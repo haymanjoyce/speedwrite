@@ -1,6 +1,8 @@
 import os
+import secrets
+import shutil
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,8 +10,20 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from models import Token, UserCreate, UserLogin, UserOut
-from storage import load_users, save_users
+from mailer import send_password_reset_email
+from models import (
+    ChangeEmailRequest,
+    ChangePasswordRequest,
+    DeleteAccountRequest,
+    ResetPasswordConfirm,
+    ResetPasswordRequest,
+    Token,
+    UpdateProfileRequest,
+    UserCreate,
+    UserLogin,
+    UserOut,
+)
+from storage import DATA_DIR, DOCS_DIR, load_users, save_users
 
 router = APIRouter(prefix="/auth")
 
@@ -83,4 +97,87 @@ def login(data: UserLogin):
 
 @router.get("/me", response_model=UserOut)
 def me(user=Depends(get_current_user)):
-    return UserOut(id=user["id"], email=user["email"])
+    return UserOut(id=user["id"], email=user["email"], display_name=user.get("display_name"))
+
+
+@router.post("/reset-password/request")
+def reset_password_request(data: ResetPasswordRequest):
+    users = load_users()
+    user = next((u for u in users if u["email"] == data.email), None)
+    if not user:
+        return {"message": "If that email is registered, a reset link has been sent."}
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    user["reset_token"] = token
+    user["reset_token_expires"] = expires
+    save_users(users)
+    try:
+        send_password_reset_email(data.email, token)
+    except Exception as e:
+        print(f"SendGrid error: {e}")
+    return {"message": "If that email is registered, a reset link has been sent."}
+
+
+@router.post("/reset-password/confirm")
+def reset_password_confirm(data: ResetPasswordConfirm):
+    users = load_users()
+    user = next((u for u in users if u.get("reset_token") == data.token), None)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    expires_str = user.get("reset_token_expires")
+    if not expires_str:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    expires = datetime.fromisoformat(expires_str)
+    if datetime.now(timezone.utc) > expires:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    user["hashed_password"] = hash_password(data.new_password)
+    user["reset_token"] = None
+    user["reset_token_expires"] = None
+    save_users(users)
+    return {"message": "Password updated."}
+
+
+@router.post("/change-password")
+def change_password(data: ChangePasswordRequest, user=Depends(get_current_user)):
+    if not verify_password(data.current_password, user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    users = load_users()
+    u = next((u for u in users if u["id"] == user["id"]), None)
+    u["hashed_password"] = hash_password(data.new_password)
+    save_users(users)
+    return {"message": "Password updated."}
+
+
+@router.post("/change-email")
+def change_email(data: ChangeEmailRequest, user=Depends(get_current_user)):
+    if not verify_password(data.password, user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+    users = load_users()
+    if any(u["email"] == data.new_email and u["id"] != user["id"] for u in users):
+        raise HTTPException(status_code=400, detail="Email already in use")
+    u = next((u for u in users if u["id"] == user["id"]), None)
+    u["email"] = data.new_email
+    save_users(users)
+    return {"message": "Email updated."}
+
+
+@router.post("/update-profile")
+def update_profile(data: UpdateProfileRequest, user=Depends(get_current_user)):
+    users = load_users()
+    u = next((u for u in users if u["id"] == user["id"]), None)
+    u["display_name"] = data.display_name
+    save_users(users)
+    return {"message": "Profile updated."}
+
+
+@router.delete("/account")
+def delete_account(data: DeleteAccountRequest, user=Depends(get_current_user)):
+    if not verify_password(data.password, user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+    users = load_users()
+    users = [u for u in users if u["id"] != user["id"]]
+    save_users(users)
+    shutil.rmtree(DOCS_DIR / user["id"], ignore_errors=True)
+    shutil.rmtree(DOCS_DIR.parent / "embeddings" / user["id"], ignore_errors=True)
+    shutil.rmtree(DATA_DIR / "templates" / user["id"], ignore_errors=True)
+    return {"message": "Account deleted."}

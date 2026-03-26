@@ -15,6 +15,34 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     id: str
     email: str
+    display_name: Optional[str] = None
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordConfirm(BaseModel):
+    token: str
+    new_password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ChangeEmailRequest(BaseModel):
+    new_email: str
+    password: str
+
+
+class UpdateProfileRequest(BaseModel):
+    display_name: str
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str
 
 
 class Token(BaseModel):

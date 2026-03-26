@@ -13,3 +13,4 @@ beautifulsoup4==4.13.3
 lxml==5.3.1
 markdown==3.7
 weasyprint==63.1
+sendgrid==6.11.0

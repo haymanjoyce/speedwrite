@@ -7,11 +7,31 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
 export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel }) {
   const { open: openSearch } = useSearch()
   const [inputValue, setInputValue] = useState('')
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
   const inputRef = useRef(null)
 
   useEffect(() => {
     if (isRenaming) setInputValue(docTitle || '')
   }, [isRenaming])
+
+  useEffect(() => {
+    if (!dropdownOpen) return
+    const handleMouseDown = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [dropdownOpen])
 
   const breadcrumbTitle = docTitle ? `SpeedWrite / ${docTitle}` : 'SpeedWrite'
 
@@ -59,13 +79,34 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </button>
-        <span className="text-xs text-gray-500">{user?.email}</span>
-        <button
-          onClick={onLogout}
-          className="text-xs text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
-        >
-          Logout
-        </button>
+        {user && (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen((v) => !v)}
+              className="flex items-center gap-1 text-sm text-gray-600 cursor-pointer hover:text-gray-900 transition-colors"
+            >
+              {user.display_name || user.email}
+              <span className="text-gray-400 text-xs">▾</span>
+            </button>
+            {dropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 shadow-sm rounded z-50 min-w-[160px]">
+                <Link
+                  to="/account"
+                  onClick={() => setDropdownOpen(false)}
+                  className="text-sm text-gray-700 hover:bg-gray-50 px-4 py-2 block"
+                >
+                  Account settings
+                </Link>
+                <button
+                  onClick={() => { setDropdownOpen(false); onLogout?.() }}
+                  className="text-sm text-gray-700 hover:bg-gray-50 px-4 py-2 block w-full text-left cursor-pointer"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

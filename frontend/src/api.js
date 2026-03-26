@@ -39,7 +39,18 @@ export const api = {
   login: (email, password) =>
     request('POST', '/auth/login', { email, password }),
   me: () => request('GET', '/auth/me'),
-  getConfig: () => request('GET', '/config'),
+  requestPasswordReset: (email) =>
+    request('POST', '/auth/reset-password/request', { email }),
+  confirmPasswordReset: (token, new_password) =>
+    request('POST', '/auth/reset-password/confirm', { token, new_password }),
+  changePassword: (current_password, new_password) =>
+    request('POST', '/auth/change-password', { current_password, new_password }),
+  changeEmail: (new_email, password) =>
+    request('POST', '/auth/change-email', { new_email, password }),
+  updateProfile: (display_name) =>
+    request('POST', '/auth/update-profile', { display_name }),
+  deleteAccount: (password) =>
+    request('DELETE', '/auth/account', { password }),
 
   // Documents
   listDocuments: () => request('GET', '/documents/'),
