@@ -30,73 +30,32 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 ### Three-tier navigation hierarchy
 
-The app uses three tiers of navigation and controls:
+**Tier 1 — Global bar (TopBar):** Always visible. App name/logo, breadcrumb, search icon, user email, logout. Breadcrumb shows "SpeedWrite" (→ /) and document title when open — no sub-page labels in breadcrumb. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`.
 
-**Tier 1 — Global bar (TopBar)**
-- Always visible at the top of every page
-- Contains: app name/logo, breadcrumb navigation, search icon, user email, logout
-- Breadcrumb shows "SpeedWrite" (links to /) and, when a document is open, a spacer gap then the document title (plain text or editable input when renaming). No sub-page labels (Evidence, History) in the breadcrumb — those are shown as tabs in the context bar instead. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`.
+**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab `text-gray-900 font-semibold`, inactive `text-gray-400`. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`.
+- Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
+- Document: tabs (Document active) · right: Add to chat (conditional) · Save version · Rename · Save as template · Export .txt · Export PDF · Close; tabs replaced with Accept · Reject when proposal pending
+- Evidence: tabs (Evidence active) · right: Reindex (hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close
 
-**Tier 2 — Page context bar (ContextBar)**
-- Sits below the global bar
-- Left side: tab navigation (Document / Evidence / History) for document sub-views; active tab is `text-gray-900 font-semibold`, inactive tabs are `text-gray-400 hover:text-gray-700 transition-colors`. No status text in the context bar — save status lives in the Editor panel header, source count lives in the AI Chat panel header.
-- Right side: page-specific action buttons (outlined, `text-xs rounded px-3 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300`)
-- Layout per view:
-  - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
-  - Document: tabs (Document active) · right: Add to chat (conditional) · Save version · Rename · Save as template · Export .txt · Export PDF · Close; tabs hidden and replaced with Accept · Reject when a proposal is pending
-  - Evidence: tabs (Evidence active) · right: Reindex (conditional, hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close
-- ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`
-
-**Tier 3 — Panel headers**
-- Each panel has a slim header (h-11, bg-white, border-b border-gray-200)
-- Label: text-xs font-semibold text-gray-500 uppercase tracking-wide (left-aligned)
-- Panel-specific actions sit in the panel header or below it
-- Current panel headers:
-  - Structure (document tree, no actions)
-  - Editor (save status `text-xs text-gray-400` + Edit/Preview segmented control right-aligned in header; save status managed as local state inside `Editor.jsx`)
-  - AI Chat (source count `text-xs text-gray-400` beside label left-aligned when `evidenceCount > 0`; Redraft and Insights dropdowns right-aligned in header)
-  - Sources (full-width Add button below header; "Update sources" small outlined button right-aligned in panel header, shown only when URL sources exist)
-  - Source Detail (for URL sources: "Last updated: [relative time]" + "Update source" small outlined button right-aligned in panel header; no actions for other source types)
-  - Documents (full-width New Document button below header)
-  - Document Detail (no actions)
+**Tier 3 — Panel headers:** Slim headers (h-11, bg-white, border-b). Label text-xs font-semibold text-gray-500 uppercase tracking-wide, left-aligned. Panel-specific actions right-aligned in header or below it.
 
 ### Control type rules
 
-**Outlined buttons** (rounded, in ContextBar tier 2):
-- Navigation actions: move to another page or close current view
-- Page-level actions: Rename, Delete, Open
-- Toggle states: Accept/Reject during diff review, Add to chat
-- Default: `text-xs rounded px-3 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300`
-- Primary variant: `text-white bg-blue-600 border border-blue-600 hover:bg-blue-700`
-- Danger variant: `text-red-600 border border-red-200 hover:bg-red-50`
-
-**Buttons** (rounded, in panel headers or below them):
-- Panel-specific CRUD actions: Add Source, New Document
-- Full-width when they are the primary action for a panel
-- Use Button.jsx component with variant='primary' or 'secondary'
-
-**Segmented controls** (SegmentedControl.jsx):
-- Mutually exclusive mode switches within a panel
-- Examples: Edit/Preview in Editor panel
-- Always in panel header, right-aligned
-
-**Dropdowns** (ActionsDropdown.jsx):
-- Grouped sets of AI or transform actions
-- Examples: Redraft, Insights in AI Chat panel header
-- Always in panel header, right-aligned
-- Open downward with right-alignment to avoid off-screen overflow
+- **Outlined buttons** (ContextBar, Tier 2): navigation actions, page-level CRUD, toggle states (Accept/Reject, Add to chat). Primary variant = blue; danger variant = red.
+- **Buttons** (panel headers or below): panel CRUD actions (Add Source, New Document). Full-width for primary panel action. Use `Button.jsx` with `variant='primary'/'secondary'`.
+- **Segmented controls** (`SegmentedControl.jsx`): mutually exclusive mode switches in a panel header. Example: Edit/Preview in Editor.
+- **Dropdowns** (`ActionsDropdown.jsx`): grouped AI/transform actions in a panel header. Open downward, right-aligned (`right-0`).
 
 ### General principles
-- Labels and primary actions never compete for attention — label left, actions right
-- Destructive actions (Delete) always styled as danger/red
-- Primary actions (Add, New) always blue
-- The further down the tier hierarchy, the more specific the action scope — global bar affects everything, panel header affects only that panel
+- Labels left, actions right — they never compete
+- Destructive actions (Delete) always red; primary actions (Add, New) always blue
+- The further down the tier, the more specific the action scope
 
-### No-modal rule and intentional exception
-The app avoids modals as a general rule — actions happen inline or in panels. The **one intentional exception** is the global search overlay (`SearchOverlay.jsx`). Search is a transient, context-preserving interaction: the user needs to find something without losing their current place, and a full-screen dimmed overlay communicates "temporary mode" clearly. Do not add further modals without a similarly strong justification.
+### No-modal rule
+The app avoids modals — actions happen inline or in panels. The **one intentional exception** is `SearchOverlay.jsx` (global search). Do not add further modals without equally strong justification.
 
 ### Delete confirmations
-Destructive delete actions use an inline confirmation bar below the context bar instead of `window.confirm()`. The bar has a red (`bg-red-50 border-red-100`) background, a plain-text warning message on the left, and red Delete + gray Cancel buttons on the right. Escape or Cancel dismisses without deleting. Applies to: document delete (Home.jsx) and evidence source delete (Evidence.jsx). `pendingDelete` boolean state controls bar visibility; it is cleared on selection change and on successful deletion.
+Destructive deletes use an inline confirmation bar below the context bar (`bg-red-50 border-red-100`), not `window.confirm()`. Warning text left, Delete + Cancel buttons right. Escape/Cancel dismisses. `pendingDelete` boolean controls visibility; cleared on selection change and on success. Applies to: document delete (`Home.jsx`) and evidence delete (`Evidence.jsx`).
 
 ## Repository Structure
 
@@ -108,18 +67,20 @@ speedwrite/
 │   ├── documents.py
 │   ├── chat.py
 │   ├── evidence.py
+│   ├── evidence_chat.py
 │   ├── actions.py
 │   ├── embeddings.py
-│   ├── llm.py           # Unified LLM abstraction (Anthropic + Ollama)
-│   ├── config.py        # GET /config endpoint (exposes server-side defaults)
-│   ├── search.py        # POST /search — cross-document full-text search
-│   ├── templates.py     # CRUD + AI prefill for document templates
+│   ├── llm.py
+│   ├── config.py
+│   ├── search.py
+│   ├── templates.py
+│   ├── export.py
 │   ├── models.py
 │   └── storage.py
-├── frontend/                         # React 18 + Vite + Tailwind CSS
+├── frontend/
 │   └── src/
 │       ├── context/
-│       │   └── SearchContext.jsx         # SearchProvider + useSearch() hook — global search overlay state
+│       │   └── SearchContext.jsx
 │       ├── pages/
 │       │   ├── Home.jsx
 │       │   ├── Document.jsx
@@ -128,33 +89,33 @@ speedwrite/
 │       │   ├── Login.jsx
 │       │   └── Register.jsx
 │       ├── components/
-│       │   ├── TopBar.jsx            # Global nav: breadcrumb + user/logout
-│       │   ├── ContextBar.jsx        # Secondary nav: context-specific action buttons
-│       │   ├── Sidebar.jsx           # Unused — kept in repo
-│       │   ├── Button.jsx            # Reusable button (variant: primary/secondary/danger/ghost; size: sm/md)
+│       │   ├── TopBar.jsx
+│       │   ├── ContextBar.jsx
+│       │   ├── Sidebar.jsx          # Unused — kept in repo
+│       │   ├── Button.jsx
 │       │   ├── DocumentSidebar.jsx
 │       │   ├── DocumentTree.jsx
 │       │   ├── Editor.jsx
-│       │   ├── DiffView.jsx          # LCS-based inline diff renderer (replaces editor when proposal pending)
-│       │   ├── MarkdownPreview.jsx   # Custom markdown renderer for Preview mode (no external deps)
+│       │   ├── DiffView.jsx
+│       │   ├── MarkdownPreview.jsx
 │       │   ├── ChatPanel.jsx
-│       │   ├── AttachmentPopup.jsx   # Two-screen popup for attaching sections or evidence to chat
-│       │   ├── ActionsDropdown.jsx   # Reusable dropdown pill — accepts title + actions[] props; menu opens right-aligned (right-0)
-│       │   ├── InstructionBar.jsx    # Slim bar below context bar for optional action instructions
-│       │   ├── ProviderToggle.jsx    # Segmented pill to switch between Anthropic and Ollama
-│       │   ├── SegmentedControl.jsx  # Reusable segmented pill control (options, value, onChange)
-│       │   ├── ErrorBoundary.jsx     # Class component error boundary; catches render crashes
-│       │   ├── SearchOverlay.jsx     # Global search overlay — grouped results, keyboard nav, inline highlighting
-│       │   ├── TemplatePickerOverlay.jsx  # Two-screen overlay: template grid picker → AI pre-fill step
-│       │   ├── EvidenceChatPanel.jsx # Three-panel evidence chat — source picker, Insights dropdown, stop button
+│       │   ├── AttachmentPopup.jsx
+│       │   ├── ActionsDropdown.jsx
+│       │   ├── InstructionBar.jsx
+│       │   ├── ProviderToggle.jsx
+│       │   ├── SegmentedControl.jsx
+│       │   ├── ErrorBoundary.jsx
+│       │   ├── SearchOverlay.jsx
+│       │   ├── TemplatePickerOverlay.jsx
+│       │   ├── EvidenceChatPanel.jsx
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
 │       │   └── AddSourceModal.jsx
 │       ├── constants/
-│       │   └── attachmentLimits.js       # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
-│       ├── insightPrompts.js             # Shared SHARED_INSIGHT_ACTIONS array (Summarise · Find contradictions · Extract themes)
+│       │   └── attachmentLimits.js   # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
+│       ├── insightPrompts.js         # SHARED_INSIGHT_ACTIONS shared by ChatPanel and EvidenceChatPanel
 │       ├── data/
-│       │   └── templates.js              # BUILT_IN_TEMPLATES constant (5 built-in templates)
+│       │   └── templates.js          # BUILT_IN_TEMPLATES (5 built-in templates)
 │       └── api.js
 ├── nginx/
 │   ├── local_app.conf
@@ -174,115 +135,87 @@ speedwrite/
 | `app`      | `./backend`   | 8000          | FastAPI backend (Python 3.12)       |
 | `nginx`    | nginx:1.27    | 80, 443       | Reverse proxy + static file server  |
 
-All services share an internal Docker bridge network. `docker-compose.override.yml` is automatically merged for local development (see below).
-
-The nginx `/api/` location block sets `proxy_read_timeout 300s`, `proxy_send_timeout 300s`, and `proxy_connect_timeout 10s` to handle slow Ollama inference without gateway timeouts.
+`docker-compose.override.yml` is auto-merged locally. It exposes the backend on 8000, uses a local named volume, replaces SSL config with plain HTTP, and suppresses `nginx/default.conf`. The nginx `/api/` location sets `proxy_read_timeout 300s` to handle slow Ollama inference.
 
 ## App Architecture
 
-Three main views:
+Four main views:
 
-1. **Library view** (`/`) — document list on the left sidebar, document detail on the right. Context bar shows Open, Rename, and Delete action buttons when a document is selected.
-2. **Document view** (`/document/:id`) — document tree on the left, markdown editor in the middle, AI agent chat panel always visible on the right. Context bar shows tabs (Document active) + Save version · Rename · Save as template · Export .txt · Export PDF · Close buttons; "Add to chat" appears when editor text is selected. **Redraft** and **Insights** dropdowns live in the ChatPanel header (not the context bar). Edit/Preview segmented control lives in the Editor panel header (right-aligned). When the AI proposes a change, the editor is replaced by an inline diff view and the context bar shows only Accept and Reject buttons.
-3. **Evidence view** (`/document/:id/evidence`) — three-panel layout: source list (260px) on the left, source detail (flex-1) in the middle, `EvidenceChatPanel` (380px) always visible on the right. Context bar shows tabs (Evidence active) + Reindex (hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close buttons.
-4. **History view** (`/document/:id/history`) — version snapshot list on the left, snapshot detail + MarkdownPreview on the right. Context bar shows tabs (History active) + Close button.
+1. **Library** (`/`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
+2. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
+3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right.
+4. **History** (`/document/:id/history`) — snapshot list left, snapshot detail + MarkdownPreview right.
 
-### Error Boundaries
-
-`ErrorBoundary.jsx` is a class component that catches unhandled React render errors. It shows a centered friendly error screen (SpeedWrite name, heading, message, "Refresh page" button, collapsible error details). Two levels are used in `App.jsx`: one outer boundary wrapping `<BrowserRouter>` to catch router-level crashes, and one per-route boundary around each page component so a crash in one page doesn't affect navigation to others.
-
-### Navigation
-
-Every view has a two-tier navigation:
-- **TopBar** — global: logo/breadcrumb, search icon, user email, logout. The breadcrumb shows "SpeedWrite" (links to /) and the document title when present — no sub-page labels. Container has `min-w-0 overflow-hidden whitespace-nowrap`; full path shown as native `title` tooltip on hover. In Document view, clicking Rename activates inline editing: the title span is replaced by an `<input>` (border-b border-blue-400, auto-sized via `size` attribute); Enter/blur saves, Escape cancels. `TopBar` accepts `isRenaming`, `onRenameSave`, `onRenameCancel` props. In Library view, the Document Detail panel title uses the same pattern with ✓/✕ confirm buttons. Sub-page navigation (Evidence, History) is handled by tabs in the ContextBar, not the TopBar breadcrumb.
-- **ContextBar** — context-specific: outlined action buttons right-aligned, tab navigation left-aligned. Default buttons are `border border-gray-200 rounded`. Actions can set `variant: 'primary'` for a blue button (`bg-blue-600 border border-blue-600 text-white`). Primary sidebar actions (New Document, Add Source) are blue buttons inside sidebar headers. "Open" in the library view and "Add to chat" in the document view use `variant: 'primary'`.
+`ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
 
 ## AI Features
 
-- **Agent panel**: Always-on agent mode — the AI can propose document changes in response to any message. When the AI returns a `<proposed_document>` block, the editor is replaced by an inline diff view (via `DiffView.jsx`). The context bar switches to Accept/Reject buttons with "Reviewing changes…" status. Accepting applies the change to the editor and triggers auto-save; rejecting discards it and appends "Changes rejected." to the chat. While in diff view, the AI chat panel is hidden (wrapped in `<div className={pendingProposal ? 'hidden' : 'contents'}>` — `display: contents` keeps ChatPanel as a direct flex item when visible; `display: none` hides it while keeping it mounted so the ref and chat state are preserved for the reject path).
-- **Inline diff view**: LCS-based line diff rendered in `DiffView.jsx`. Removed lines shown in red with strikethrough; added lines in green. Equal lines shown in muted gray (`text-gray-500`) to visually de-emphasise unchanged content. Blank lines rendered with `min-h-[1rem]`. A subtle `border-t border-gray-100` separator appears when returning from a changed block to unchanged text. All lines have `py-0.5` spacing. Gutter symbols (`+`/`-`/space) are `w-4 font-mono text-xs`. On mount, `DiffView` auto-scrolls to the first changed line (`scrollIntoView({ behavior: 'smooth', block: 'center' })`). The diff occupies the same flex slot as the editor.
-- **Edit/Preview toggle**: Segmented control in the Editor panel header (right-aligned) switches between the raw markdown textarea (`edit`) and `MarkdownPreview.jsx` (`preview`). Hidden when a diff is pending; DiffView always shows in that case regardless of mode. `Editor.jsx` accepts `editorMode` and `onEditorModeChange` props.
-- **Markdown preview**: `MarkdownPreview.jsx` is a custom renderer (no external deps) supporting h1–h3, bold, italic, inline code, fenced code blocks, unordered lists, paragraphs, and URLs.
-- **Rewrite button**: Each document tree node shows a "Rewrite" button on hover. Clicking it calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` in `Document.jsx`, which pre-fills the chat input with "Rewrite this section.", sets the section as `localContext` (with the heading as label), and focuses the textarea. The user can edit the instruction before sending. The send flow then handles the API call, stop button, context label, and diff view exactly as a normal message with context.
-- **Context scoping**: When context is attached (selected editor text, a section from the attachment popup, or an evidence source), the AI is instructed to change only that section and return the complete document with only that part replaced. When no context is attached, the AI can propose changes to the whole document. `ignore_history: bool` on `ChatRequest` is set to `true` whenever context is attached (ensuring a fresh response uninfluenced by prior conversation).
-- **Evidence base**: Supports file uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, and other documents as sources. All evidence is injected into AI context automatically. Document-type sources have a sync toggle: sync=on fetches live content from the source document at chat time; sync=off uses a stored snapshot. "Sync now" (context bar) manually refreshes the snapshot (only available when sync=off). URL sources carry two extra fields: `last_fetched_at` (ISO timestamp, set on add and on every successful refresh) and `last_fetch_error` (short string or null). `POST /documents/{doc_id}/evidence/{evidence_id}/refresh` re-fetches the URL using `_fetch_url`, updates content + `last_fetched_at` on success, sets `last_fetch_error` on failure (HTTP status errors, timeouts, other), and triggers re-embedding on success. Frontend: "Update source" button in Source Detail panel header (URL sources only) with "Last updated: [relative time]" timestamp; amber warning banner below header when `last_fetch_error` is set; "Update sources" button in Sources panel header (shown when any URL source exists) runs all URL sources in sequence. Duplicate URL detection: if the selected URL source shares its URL with another source in the same document, an amber banner appears below the Source Detail panel header.
-- **Embeddings and RAG**: Evidence sources are chunked (2000 chars, 200 overlap) and embedded via Ollama (`nomic-embed-text`) in background threads. Embeddings stored at `{DATA_DIR}/embeddings/{user_id}/{doc_id}.json`. At chat/action time, if total non-live evidence content exceeds 8000 characters and embeddings exist, top-5 semantically relevant chunks are retrieved (cosine similarity, no threshold) instead of the full dump. Live sync-on document sources are always included directly. If Ollama is unavailable, falls back to full truncated dump silently. `POST /documents/{doc_id}/evidence/reindex` triggers a fire-and-forget reindex of all eligible sources. Implemented in `backend/embeddings.py` (pure Python, no numpy). Per-document threading locks prevent race conditions during concurrent indexing. `OLLAMA_HOST` env var configures the Ollama endpoint.
-- **Document actions**: Whole-document AI actions in two dropdowns inside the **ChatPanel header** (not the context bar). **Redraft** actions (Rewrite, Restructure, Expand, Condense, Simplify, Formalise) show a compact inline instruction bar below the header for optional instructions, then fire via `fireInsightInternal(prompt)`. **Insights** actions (Summarise · Find contradictions · Extract themes) fire immediately. Both are self-contained inside `ChatPanel.jsx` — `REDRAFT_PROMPTS`, `INSIGHTS_PROMPTS`, `REDRAFT_LABELS`, `handleActionSelect`, and `runAction` all live in `ChatPanel.jsx`. `INSIGHTS_PROMPTS` is built from `SHARED_INSIGHT_ACTIONS` (imported from `insightPrompts.js`). Both dropdowns are disabled when `pendingProposal` is truthy. `Home.jsx` description generation still calls `api.documentAction` directly. Both `ChatPanel` and `EvidenceChatPanel` share identical header styling (`h-9 bg-white border-b border-gray-200`, label `text-xs font-semibold text-gray-500 uppercase tracking-wide`, "AI Chat"). **Important routing note**: Redraft actions in `ChatPanel` are implemented as chat prompts routed through `fireInsightInternal` → `handleSend` → `api.chatMessage` → `chat.py`. They do NOT call `api.documentAction` / `actions.py`. Only `Home.jsx` description generation calls `api.documentAction`.
-- **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. After `Editor.jsx` applies it, `onContentOverrideApplied` fires immediately to clear it back to `null`, preventing re-application on subsequent renders.
-- **LLM abstraction layer**: All LLM calls are routed through `backend/llm.py` (`complete()` → `_complete_anthropic` or `_complete_ollama`). The active provider is controlled by the `LLM_PROVIDER` env var (default: `anthropic`). Ollama is fully supported as an alternative provider. `_complete_ollama` uses `httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=10.0)` and raises `HTTPException` on `ConnectError` (503), `ReadTimeout` (504), and other errors (500) with descriptive messages. The `provider` field in chat/action request bodies can override the env var per-request.
-- **Provider toggle UI**: `ProviderToggle.jsx` exists and uses `SegmentedControl` to switch between Anthropic and Ollama. It is not currently exposed in the Document view — reserved for a future enterprise/self-hosted tier. The underlying backend and `api.js` plumbing remains intact.
-- **Backend model**: Anthropic path uses `claude-sonnet-4-20250514`. Ollama path uses `OLLAMA_CHAT_MODEL` env var (default: `llama3.2`). Anthropic API key stored in `.env` as `ANTHROPIC_API_KEY`.
-- **Evidence chat**: `EvidenceChatPanel.jsx` is a persistent chat panel on the Evidence page for interrogating individual sources. The `+` button opens a `SourcePickerPopup` (evidence sources only — no section option); the first item is "📚 All sources" which fetches all sources in parallel, concatenates them with `--- Source: {title} ({type}) ---` separators, and sets label to "All sources (N sources)"; individual sources call `api.getEvidence(docId, evidenceId)` to fetch full content. All attached content is truncated to 6000 chars (amber chip shown if original exceeded 3000 chars). An **Insights** dropdown in the panel header (Summarise · Find contradictions · Extract themes, shared with ChatPanel via `insightPrompts.js`) is disabled when no source is attached; clicking an item fires the prompt automatically. History is stored as `evidence_chat_history` on the document JSON and loaded/reset on `document.id` change. `ignore_history` is set to `true` when context is attached (fresh response per source). Backend endpoint: `POST /documents/{doc_id}/evidence-chat` in `backend/evidence_chat.py`. Never modifies the document — returns `{ message }` only.
-- **Token limits**: `chat.py` and `actions.py` both use `max_tokens=4096` to prevent truncated `<proposed_document>` responses. Known limitation: very large attachments (sections or evidence sources) can still cause truncation if the combined prompt + response exceeds the model's context window. Workaround: attach smaller sections rather than entire large documents. Future fix: streaming responses or context summarisation.
-- **Document templates**: Users can create documents from built-in templates or their own saved templates. Built-in templates (Meeting Notes, Research Report, Project Brief, Weekly Update, Decision Log) are defined as `BUILT_IN_TEMPLATES` in `frontend/src/data/templates.js`. User templates are stored at `/var/speedwrite/templates/{user_id}/{template_id}.json` and managed via `backend/templates.py` (GET /templates, GET /templates/{id}, POST /templates, DELETE /templates/{id}). The Library view Documents panel has two stacked full-width buttons: `+ New Document` (primary, existing behaviour) and `From template…` (secondary) which opens `TemplatePickerOverlay.jsx`. The overlay has two screens: (1) template grid (two tabs: Built-in / My Templates, 2-column card grid; My Templates cards have an instant-delete × button); (2) AI pre-fill step — template name in header, optional description textarea, "Create without AI" and "Create with AI" buttons. Built-in template content comes from the frontend constant; user template content is fetched via `GET /templates/{id}` on card select. "Create with AI" is disabled when description is empty; both buttons show "Creating…" and are disabled while the request is in flight. `POST /templates/prefill` calls `llm.complete()` (respects `LLM_PROVIDER`, max_tokens=2048) and returns `{ content }`. Both creation paths navigate to `/document/:id` on success. Document view context bar order: Rename · Save as template · Evidence · Close. "Save as template" opens an inline bar below the context bar (same slot as `activeBar` state: `null | 'save-template'`), with title input (pre-filled from doc title), description input, Save/Cancel buttons; on save shows "Template saved" status for 3 seconds.
-- **Document export**: Two export formats available from the Document view ContextBar. `GET /documents/{doc_id}/export/txt` strips all markdown syntax (headings, bold, italic, lists, code blocks, links, blockquotes) using regex while collapsing consecutive blank lines to a single blank line, then returns a UTF-8 plain text download. `GET /documents/{doc_id}/export/pdf` converts markdown to HTML via the `markdown` Python library (`extra` extension), applies basic print CSS (Georgia font, 2.5cm margins, styled headings/code blocks), and renders to PDF via `weasyprint`. Both endpoints require auth, sanitise the document title for the filename (`re.sub` strips non-word chars, spaces become underscores), and set `Content-Disposition: attachment`. Implemented in `backend/export.py`. Frontend: `api.downloadExport(docId, format)` performs an authenticated fetch, receives the binary response as a blob, extracts the filename from the `Content-Disposition` header, and triggers a download via a temporary `<a>` element with a blob URL. Dockerfile: requires `libpango-1.0-0`, `libpangoft2-1.0-0`, `libharfbuzz0b`, `shared-mime-info`, `fonts-liberation` apt packages (weasyprint 60+ uses pydyf instead of Cairo — no `libcairo2` or `libgdk-pixbuf` needed).
-- **Global search**: `POST /search` (`backend/search.py`) performs case-insensitive substring search across all of the user's documents — document titles and content, evidence source titles and content, and `chat_history` messages (not `evidence_chat_history`). Returns up to 5 results per group (documents, evidence, chat). Excerpt helper extracts ~200 chars around the first match, padded with `…`. Frontend: `SearchOverlay.jsx` is an overlay (fixed inset-0 z-50, bg-black bg-opacity-40) with a centered panel (max-w-2xl mt-24). Triggered by Cmd/Ctrl+K or the search icon in TopBar. State managed via `SearchContext.jsx` (`SearchProvider` + `useSearch()` hook); `AppRoutes` in `App.jsx` registers the keyboard listener and renders the overlay. Search-as-you-type with 300ms debounce. Idle state ("Start typing…") shown when query < 2 chars; "Searching…" while loading; "No results found" on empty results. Match terms highlighted inline in the frontend (split on match, wrap in `<strong>`). Evidence results navigate to `/document/:id/evidence` with `{ state: { evidenceId } }`; `Evidence.jsx` reads `location.state.evidenceId` on items-load to pre-select the source (one-shot via `initialSelectDoneRef`). **Known performance limitation**: search does full in-memory substring scan across all documents, evidence content, and chat history on every debounced keystroke — fine for typical dataset sizes but will slow down with very large evidence corpora. Future fix: index-based search or SQLite FTS.
+- **Agent panel**: AI can propose document changes in any message. `<proposed_document>` block triggers diff view. Chat panel is hidden via `display: none` (not unmounted) so ref and chat state survive the reject path — `className={pendingProposal ? 'hidden' : 'contents'}`.
+- **Inline diff** (`DiffView.jsx`): LCS-based. Removed = red strikethrough; added = green; equal = muted gray. Auto-scrolls to first change on mount. Occupies the same flex slot as the editor.
+- **Rewrite button**: On tree node hover. Calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` in `Document.jsx` — pre-fills input with section as context and "Rewrite this section.", focuses textarea so user can edit before sending.
+- **Context scoping**: When context is attached, AI is instructed to change only that section and return the full document with only that part replaced. `ignore_history: true` is set whenever context is attached.
+- **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. `onContentOverrideApplied` fires immediately after `Editor.jsx` applies it to clear it back to `null`.
+- **Document actions routing (important)**: Redraft actions in `ChatPanel` go through `fireInsightInternal` → `handleSend` → `api.chatMessage` → `chat.py`. They do **NOT** call `api.documentAction` / `actions.py`. Only `Home.jsx` description generation calls `api.documentAction`.
+- **Redraft vs Insights**: Both dropdowns in ChatPanel header, both disabled when `pendingProposal` is truthy. Redraft shows `InstructionBar` for optional instructions before firing. Insights fire immediately. Both use `SHARED_INSIGHT_ACTIONS` from `insightPrompts.js`.
+- **Evidence base**: File uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, other documents. URL sources carry `last_fetched_at` and `last_fetch_error`. `POST .../evidence/{id}/refresh` updates content and re-embeds on success. "Update sources" in Sources panel header runs all URL sources sequentially. Duplicate URL detection shows amber banner in SourceDetail.
+- **Embeddings/RAG**: Chunked (2000 chars, 200 overlap), embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved (cosine similarity) instead of full dump. Per-source RAG preflight in ChatPanel/EvidenceChatPanel: `api.ragQuery` → `POST .../evidence/{id}/rag-query`; if `used_rag: true`, chunks replace context. Falls back silently if Ollama unreachable.
+- **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. `LLM_PROVIDER` env var controls default; `provider` field on request body overrides per-request. Anthropic model: `claude-sonnet-4-20250514`. Ollama model: `OLLAMA_CHAT_MODEL` (default `llama3.2`).
+- **ProviderToggle.jsx** exists but is not exposed in the Document view — reserved for a future enterprise tier. Backend and api.js plumbing is intact.
+- **Evidence chat** (`EvidenceChatPanel.jsx`): Persistent chat on Evidence page. "All sources" option concatenates all sources. `ignore_history: true` when context attached. Backend: `POST /documents/{doc_id}/evidence-chat` in `evidence_chat.py`. Never modifies the document.
+- **Token limits**: `max_tokens=4096` in `chat.py` and `actions.py`. Large attachments can still cause truncation if total prompt + response exceeds model context window.
+- **Document templates**: Built-in templates in `frontend/src/data/templates.js`. User templates at `/var/speedwrite/templates/{user_id}/{template_id}.json` via `backend/templates.py`. `TemplatePickerOverlay.jsx` two screens: grid picker → AI pre-fill step. `POST /templates/prefill` calls `llm.complete()` (max_tokens=2048). "Save as template" opens inline bar (same `activeBar` state slot as other inline bars).
+- **Document export**: `GET .../export/txt` strips markdown to plain text. `GET .../export/pdf` uses `markdown` Python lib + `weasyprint`. Both auth-required, filename-sanitised, `Content-Disposition: attachment`. Frontend: `api.downloadExport` fetches as blob, extracts filename from header, triggers download via temporary `<a>`. Dockerfile apt packages: `libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b shared-mime-info fonts-liberation`.
+- **Global search**: `POST /search` substring search across all user docs (titles, content, evidence, chat history — not evidence_chat_history). Returns ≤5 per group. Frontend: `SearchOverlay.jsx` triggered by Cmd/Ctrl+K or search icon. 300ms debounce. Evidence results navigate to Evidence view with `{ state: { evidenceId } }`; `Evidence.jsx` pre-selects on load via `initialSelectDoneRef` (one-shot).
 
 ## Document Tree
 
-- Hovering a tree node highlights that node and all its child nodes (bg-blue-50).
-- One button appears on hover: **Rewrite** — pre-fills the chat input with the section as context and "Rewrite this section." as the message, then focuses the textarea so the user can edit before sending. Hidden for protected headings. The former "Add" button was removed — section attachment is now handled via the + button in the chat input (see Chat Panel).
-- Protected headings shown with `bg-gray-100` background and a lock icon (🔒). Lock icon for unlocked headings shown faintly on hover only.
-- Clicking the heading text scrolls the editor to that heading (via `useImperativeHandle` on Editor).
-- When the document has no `##` headings, `DocumentSidebar.jsx` shows a placeholder: "No structure yet. Add ## headings to build a document tree." `parseHeadings` is exported from `DocumentTree.jsx` for use by the sidebar.
-- `SegmentedControl.jsx` is used for the Edit/Preview toggle in `Editor.jsx` (panel header) and internally by `ProviderToggle.jsx`. Styling: `text-xs rounded px-3 py-1`; active segment is `bg-blue-600 text-white hover:bg-blue-700`; inactive is `bg-white text-gray-600 hover:bg-gray-50`; container has `border border-gray-200 rounded overflow-hidden`.
+- Hover highlights node + all children (`bg-blue-50`).
+- **Rewrite** button on hover (hidden for protected headings). Former "Add" button removed — use + in chat input.
+- Protected headings: `bg-gray-100` + lock icon. Unlocked headings show lock icon faintly on hover only.
+- Clicking heading scrolls editor to it via `useImperativeHandle` on Editor.
+- No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
 
 ## Chat Panel
 
-- Single agent mode — no chat/agent toggle.
-- **Attachment system**: A **+** button beside the textarea opens `AttachmentPopup.jsx` — a two-screen popup (type selector → section or evidence picker). Section picker lists document headings (H1–H3) parsed via `parseHeadingsWithContent` in `Document.jsx`; evidence picker lists all sources from `doc.evidence`. Selecting an item sets it as context (`localContext` state in `ChatPanel`) and closes the popup. The popup closes on outside click (anchor-ref-aware, so clicking + toggles cleanly) or Escape.
-- **Context chip**: shows the attachment label (e.g. `📄 Introduction`) or `Selected text (N chars)` for editor selections. Displays character count as `{originalLength} / 6000 chars`. If the original content was truncated (exceeded 6000 chars), the chip switches to amber styling (`bg-amber-50 border-amber-200`) and shows `⚠ {N} / 6000 chars (truncated)` with a tooltip. Dismissed with ×. No emoji prefix — the chip styling makes the attachment nature clear.
-- **Attachment limits**: truncation limit (6000 chars) and amber warning threshold (6000 chars) are defined as `ATTACHMENT_TRUNCATION_LIMIT` and `ATTACHMENT_WARNING_THRESHOLD` in `frontend/src/constants/attachmentLimits.js` and imported by `ChatPanel.jsx` and `EvidenceChatPanel.jsx`. Amber warning fires only when content is actually truncated (both constants equal 6000).
-- **Context truncation**: `truncateContext()` in `ChatPanel.jsx` truncates content to the last complete line before 6000 chars and appends `\n[truncated]`. Amber warning fires at 3000 chars original length (as a signal of a large attachment), but hard truncation is at 6000 chars. Truncation happens in `handleAttach` (for popup attachments) and at send time (for `contextText` prop). `originalLength` is stored pre-truncation so the chip always shows the original size. `AttachmentPopup` passes raw untruncated content — all truncation is handled in `ChatPanel`.
-- **Per-source RAG**: When an evidence source is attached (popup-selected individual source, not "All sources" or a section), `ChatPanel` and `EvidenceChatPanel` run a RAG preflight before sending: `api.ragQuery(docId, evidenceId, userMessage, signal)` → `POST /documents/{doc_id}/evidence/{evidence_id}/rag-query`. If `used_rag: true` and chunks are returned, the chunks (joined `\n---\n`) replace `contextSnapshot.text` for that send. On success, `ragActive` state is set `true` and a `✦ RAG` badge appears near the Stop button for the duration of the request. `ragActive` is cleared in the `finally` block and by the Stop handler. Failures (including abort) fall back silently to the full context. Backend: `retrieve_relevant_chunks` in `embeddings.py` accepts an optional `evidence_id` param to filter chunks before ranking.
-- **Context priority**: `localContext` (popup attachment) takes priority over `contextText` prop (editor selection / "Add to chat"). When `contextText` is set externally, `localContext` is cleared. On send, both are cleared.
-- **Context label**: When a message is sent with context attached, a `context_label` string is stored alongside it — `localContext.label` (e.g. `📄 Introduction`) for popup attachments, `'Selected text'` for editor selections. The label is stored in `chat_history` on the backend (`context_label` field on user entries) and loaded back on mount. User messages with a `context_label` display a small label tag above the message bubble, right-aligned (no emoji prefix). `DocumentTree` passes `(content, h.text)` to `onSectionRewrite`; `Document.jsx` forwards `h.text` as `context_label` to the API.
-- **Assistant message rendering**: assistant messages are rendered via `MarkdownPreview` (wrapped to strip `p-8`, `max-w-3xl`, `overflow-y-auto`, `bg-white`, `flex-1` from its container). User messages remain plain `whitespace-pre-wrap` text.
-- Chat history is loaded (and reset) whenever `document?.id` changes. This fires once per document, so mid-conversation saves (which update the document prop without changing its ID) do not overwrite in-flight messages. On load, a `setTimeout(..., 0)` scrolls to the bottom after the DOM updates.
-- **Note on double fetches in development**: `React.StrictMode` is enabled in `main.jsx`. In React 18 development mode, this intentionally mounts → unmounts → remounts every component, causing each effect to fire twice. Two `GET /documents/:id` requests on page load is expected behaviour in dev and does not happen in production builds.
-- When the AI returns `<proposed_document>` tags, the extracted content is passed to `Document.jsx` via `onProposedChange`. The chat panel only ever shows the explanation text — proposed content is never rendered inside the chat.
-- `ChatPanel` is a `forwardRef` component. It exposes `appendMessages(userMsg, assistantMsg)` via `useImperativeHandle` so `Document.jsx` can inject messages (e.g. after a Rewrite or Reject). If `userMsg` is `null`, only the assistant message is appended.
-- **Stop button**: While a chat request is in flight, the Send button is replaced by a red "■ Stop" button. Clicking it calls `AbortController.abort()`, which cancels the fetch. `AbortError` is caught silently (no error message). The `AbortController` is stored in `abortControllerRef` and cleared in the `finally` block. `api.js`'s `request()` accepts an optional `signal` param forwarded to `fetch()`.
-- Enter key behaviour is user-configurable: "↵ on" sends on Enter (Shift+Enter for newline); "↵ off" reverts to Ctrl/Cmd+Enter only. Preference persisted in `localStorage` as `logbooklm_submit_on_enter` (key kept as-is for backwards compatibility with existing user preferences). The Send button uses `onClick={() => handleSend()}` (not `onClick={handleSend}`) to prevent the click event being passed as the `textOverride` argument.
-- A "↓ Latest" button appears between the messages area and the input when the user has scrolled more than 100px from the bottom. Auto-scroll only fires when already near the bottom.
+- **Attachment**: `AttachmentPopup.jsx` (+ button). Section picker uses `parseHeadingsWithContent` from `Document.jsx`; evidence picker uses `doc.evidence`. Popup closes on outside click (anchor-ref-aware) or Escape.
+- **Context chip**: shows label + char count. Amber styling + `⚠` when truncated. Hard truncation at 6000 chars (`ATTACHMENT_TRUNCATION_LIMIT`), amber warning threshold also 6000. `originalLength` stored pre-truncation. `AttachmentPopup` passes raw content — truncation all happens in `ChatPanel`.
+- **Context priority**: `localContext` (popup) takes priority over `contextText` prop (editor selection). `contextText` being set clears `localContext`. Both cleared on send.
+- **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
+- **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
+- **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
+- **Enter key**: configurable. `localStorage` key is `logbooklm_submit_on_enter` (kept as-is for backwards compatibility). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`.
+- **RAG badge**: `✦ RAG` appears near Stop button when per-source RAG is active. Cleared in `finally` and by Stop handler.
+- **Double fetches in dev**: React 18 StrictMode causes intentional double-mount. Two `GET /documents/:id` on load is expected in dev, not a bug.
 
 ## Document History
 
-- Version snapshots stored as `history: list` on each document JSON; max 50 entries (oldest dropped when limit exceeded).
-- `save_count: int` on each document tracks auto-saves and is incremented on every PUT — a snapshot is taken when `save_count % 10 == 0`.
-- `add_snapshot(doc, trigger, label)` helper in `documents.py` appends a `{ id, timestamp, trigger, label, content }` entry.
-- Four snapshot triggers: **auto** (every 10 saves, label "Auto save"), **rewrite** (after accepting AI rewrite, label "AI rewrite"), **restore** (after accepting a version restore, label "Version restored"), **manual** (user clicks "Save version" in context bar, label "Manual checkpoint").
-- `POST /documents/{doc_id}/snapshot` — body `{ label: string, trigger: string }`. Empty/missing label defaults to "Manual checkpoint"; empty/missing trigger defaults to "manual". Trigger is passed explicitly by the frontend — no server-side string inference. Returns new entry.
-- `GET /documents/{doc_id}/history` — returns list newest-first, **without** `content` field for performance.
-- `GET /documents/{doc_id}/history/{snapshot_id}` — returns full snapshot including content.
-- Frontend: `History.jsx` at `/document/:id/history`. Left panel lists snapshots with trigger icons (💾 auto / 🤖 rewrite / 📌 manual / 🔄 restore) and `timeAgo()` relative timestamps. Right panel shows metadata + MarkdownPreview + "Restore this version" button.
-- **Restore flow**: clicking "Restore this version" navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on doc load, sets it as `pendingProposal` (triggers diff view), stores `restoreSnapshotId`/`restoreSnapshotLabel` in state, sets `pendingProposalReason` to `'restore'`, then clears location state via `window.history.replaceState`. Accept → document restored; Reject → current content unchanged.
-- **`pendingProposalReason` state**: `'ai_rewrite'` (default) or `'restore'`. Controls what `handleAccept` does: restore path creates a `trigger='restore'` snapshot (with `source_snapshot_id`/`source_snapshot_label`); AI rewrite path creates a `trigger='rewrite'` snapshot. Reset to `'ai_rewrite'` after accept.
-- **After accepting a rewrite**: `Document.jsx` fires `api.createSnapshot(id, 'AI rewrite', 'rewrite')` fire-and-forget in `handleAccept`.
-- **`flashStatus` prop on `Editor.jsx`**: passed from `Document.jsx` to show brief messages ("Version saved", "Template saved") in the Editor panel header, overriding save status for 3 seconds.
-- `api.js` methods: `listHistory(docId)`, `getSnapshot(docId, snapshotId)`, `createSnapshot(docId, label = '', trigger = 'manual', sourceSnapshotId = null, sourceSnapshotLabel = null)`. Snapshot body: `{ label, trigger, source_snapshot_id, source_snapshot_label }`.
-- Context bar tabs updated in all three document sub-views (Document / Evidence / History).
+- Snapshots: `history: list` on doc JSON; max 50 (oldest dropped).
+- `save_count` incremented on every PUT; snapshot taken when `save_count % 10 == 0`.
+- Four triggers: `auto` ("Auto save"), `rewrite` ("AI rewrite"), `restore` ("Version restored"), `manual` ("Manual checkpoint").
+- `POST /documents/{doc_id}/snapshot` — body `{ label, trigger }`. Returns new entry.
+- `GET /documents/{doc_id}/history` — list newest-first, **no** `content` field.
+- `GET /documents/{doc_id}/history/{snapshot_id}` — full snapshot with content.
+- Restore flow: History.jsx navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on load, sets `pendingProposal`, sets `pendingProposalReason: 'restore'`, clears location state via `window.history.replaceState`. Accept → `trigger='restore'` snapshot created; Reject → unchanged.
+- `pendingProposalReason`: `'ai_rewrite'` (default) or `'restore'`. Controls snapshot trigger in `handleAccept`. Reset to `'ai_rewrite'` after accept.
+- `flashStatus` prop on `Editor.jsx`: shows brief messages ("Version saved", "Template saved") in Editor header, overriding save status for 3 seconds.
 
 ## Section Locking
 
-- `protected_sections: list` on each document stores locked heading texts.
-- Backend enforces via system prompt in `chat.py` (`_build_protected_block`) — AI instructed never to modify locked sections and never to offer to unlock them.
-- `POST /documents/{doc_id}/protect` adds a heading; `DELETE /documents/{doc_id}/protect` removes one.
-- Frontend: optimistic update in `Document.jsx` with error revert. `DocumentTree.jsx` shows lock icons and applies `bg-gray-100` to protected nodes.
-- `MarkdownPreview.jsx` and `DiffView.jsx` both highlight protected blocks visually.
+- `protected_sections: list` on doc stores locked heading texts.
+- Backend enforces via system prompt in `chat.py` (`_build_protected_block`) — AI instructed never to modify or offer to unlock locked sections.
+- `POST /documents/{doc_id}/protect` adds; `DELETE` removes.
+- Frontend: optimistic update with error revert in `Document.jsx`. `DocumentTree.jsx` shows lock icons, `bg-gray-100` on protected nodes. `MarkdownPreview.jsx` and `DiffView.jsx` both highlight protected blocks visually.
 
 ## Structure Locking
 
-Structure locking is a **separate, independent feature** from per-section locking. It prevents the AI from changing the document's structure (adding, removing, reordering, or renaming sections) while still allowing content rewrites within existing sections. The user can always change the structure manually — the lock applies to AI behaviour only.
+Separate and independent from per-section locking. Prevents AI from changing document structure (add/remove/reorder/rename sections) while allowing content rewrites.
 
-- `structure_locked: bool` on each document (default `False`). Existing documents without the field default to unlocked via `doc.get('structure_locked', False)`.
-- `POST /documents/{doc_id}/lock-structure` and `POST /documents/{doc_id}/unlock-structure` — dedicated endpoints following the same pattern as protect/unprotect. No request body needed.
-- Backend: `_build_structure_lock_block(structure_locked: bool)` in `chat.py` returns the instruction string when locked, empty string otherwise. Instruction text: "The document structure is locked. Do not add, remove, reorder, or rename any sections. Rewrite the content within sections freely, except where individual sections are also locked. Locks are constraints — always proceed with the rewrite, doing as much as permitted." Injected into `scope_instruction` in `chat.py` (between the protected block and the scoped/unscoped instruction) and into the system prompt in `actions.py`. Both `ChatRequest` and `ActionRequest` accept `structure_locked: bool = False`.
-- Frontend: `structureLocked` state in `Document.jsx`, loaded from `data.structure_locked ?? false` on document load. `handleToggleStructureLock` uses optimistic update with error revert (same pattern as `handleToggleProtection`).
-- UI: icon-only toggle button (🔒/🔓) right-aligned in the **Structure panel header** (Tier 3). Locked state: `text-gray-700`; unlocked state: `text-gray-300 hover:text-gray-500` (muted when off). Tooltip describes current state and clarifies that section content can still be rewritten. **No visual treatment on individual tree nodes** — lock state is communicated only via the panel header toggle, to avoid collision with per-section lock styling.
-- When `structureLocked` is true, heading lines are visually highlighted in **DiffView** (`~` gutter, `bg-gray-100`, `border-l-2 border-gray-300`) and in **MarkdownPreview** (`bg-gray-50 border-l-2 border-gray-200 pl-4`) using the same render paths as per-section locked content. `DiffView` adds heading line indices (matching `/^#{1,6}\s/`) to its `protectedLineSet` when `structureLocked` is true; `MarkdownPreview` detects heading blocks via their generated HTML. Raw textarea edit mode cannot show per-line styling (browser limitation). `Editor.jsx` accepts and forwards `structureLocked` to both components; `Document.jsx` passes it through.
-- `ChatPanel` receives `structureLocked` prop and passes it to `api.chatMessage`. All chat messages and Redraft actions (which route through `handleSend`) carry the flag automatically.
-- `api.js` methods: `lockStructure(docId)`, `unlockStructure(docId)`. `chatMessage` and `documentAction` both accept `structureLocked = false` as a trailing parameter.
+- `structure_locked: bool` on doc (default `False`). `doc.get('structure_locked', False)` for existing docs.
+- `POST /documents/{doc_id}/lock-structure` and `POST .../unlock-structure`.
+- Instruction text injected into `chat.py` `scope_instruction` and `actions.py` system prompt: *"The document structure is locked. Do not add, remove, reorder, or rename any sections. Rewrite the content within sections freely, except where individual sections are also locked. Locks are constraints — always proceed with the rewrite, doing as much as permitted."*
+- UI: icon-only 🔒/🔓 toggle in Structure panel header. No visual treatment on tree nodes — avoids collision with per-section lock styling.
+- When `structureLocked` is true, heading lines highlighted in `DiffView` (`~` gutter, `bg-gray-100`, `border-l-2 border-gray-300`) and `MarkdownPreview` (`bg-gray-50 border-l-2 border-gray-200 pl-4`). `DiffView` matches `/^#{1,6}\s/` lines.
+- `ChatPanel` receives and forwards `structureLocked` on every message (including Redraft actions, which route through `handleSend`).
 
 ## Data Storage
 
@@ -291,41 +224,33 @@ JSON files on disk — no database.
 | Path | Purpose |
 |------|---------|
 | `/var/speedwrite/users.json` | All user accounts |
-| `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data including content, evidence, chat history, protected sections, version history, and save_count |
+| `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data: content, evidence, chat history, protected sections, version history, save_count |
 | `/var/speedwrite/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
-| `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources in a document |
-| `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved document templates |
+| `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources |
+| `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved templates |
 
-> **Note**: The canonical data directory is `/var/speedwrite`. The existing VPS deployment and local dev Docker volume (`dev_logbooklm_data`) still mount to `/var/logbooklm` — migrate by updating the volume mount and `DATA_DIR` env var when provisioning a fresh VPS.
+> **Note**: Canonical data dir is `/var/speedwrite`. Existing VPS and local dev volume (`dev_logbooklm_data`) still mount to `/var/logbooklm` — update volume mount and `DATA_DIR` env var when provisioning fresh.
 
 ## Environment Variables
 
 | Variable | Purpose |
 |----------|---------|
 | `JWT_SECRET` | JWT signing secret |
-| `ANTHROPIC_API_KEY` | Anthropic API key for AI features |
-| `LLM_PROVIDER` | Default LLM provider: `anthropic` (default) or `ollama` |
-| `OLLAMA_HOST` | Ollama base URL for both embeddings and chat (default: `http://host.docker.internal:11434`) |
-| `OLLAMA_CHAT_MODEL` | Ollama model for chat completions (default: `llama3.2`) |
+| `ANTHROPIC_API_KEY` | Anthropic API key |
+| `LLM_PROVIDER` | `anthropic` (default) or `ollama` |
+| `OLLAMA_HOST` | Ollama base URL (default: `http://host.docker.internal:11434`) |
+| `OLLAMA_CHAT_MODEL` | Ollama chat model (default: `llama3.2`) |
 
-## Ollama Setup (for local LLM and/or embeddings)
+## Ollama Setup
 
-Ollama runs outside Docker on the host machine. The Docker container reaches it via `host.docker.internal`.
+Ollama runs outside Docker; reached via `host.docker.internal`.
 
 ```bash
-# Install Ollama: https://ollama.com
 ollama pull nomic-embed-text   # required for embeddings/RAG
 ollama pull llama3.2           # required if LLM_PROVIDER=ollama
 ```
 
-Set in `.env`:
-```
-LLM_PROVIDER=ollama            # optional — omit to keep Anthropic for chat
-OLLAMA_CHAT_MODEL=llama3.2     # optional — defaults to llama3.2
-OLLAMA_HOST=http://host.docker.internal:11434   # default, no change needed on Mac/Linux
-```
-
-Embeddings are always attempted via Ollama regardless of `LLM_PROVIDER`. If Ollama is unreachable, the embedding step is skipped silently and RAG falls back to a full context dump.
+Embeddings always attempted via Ollama regardless of `LLM_PROVIDER`. If unreachable, skipped silently and RAG falls back to full context dump.
 
 ## Running Locally
 
@@ -334,25 +259,13 @@ cp .env.example .env   # populate JWT_SECRET and ANTHROPIC_API_KEY
 docker compose up --build
 ```
 
-- App: http://localhost
-- Backend API: http://localhost:8000
-- API docs: http://localhost:8000/docs
-- Health check: http://localhost:8000/health
-
-`docker-compose.override.yml` is automatically merged locally. It:
-- Exposes the backend on port 8000
-- Uses a local named volume (`dev_logbooklm_data`) mounted at `/var/logbooklm` instead of the host path
-- Replaces the nginx SSL config with a plain HTTP config
-- Suppresses `nginx/default.conf` to avoid routing conflicts
+- App: http://localhost · Backend API: http://localhost:8000 · Docs: http://localhost:8000/docs
 
 ## Deploying to Production
 
 ```bash
-# First time only — run as root on a fresh Ubuntu 24.04 VPS
-bash bootstrap.sh   # set EMAIL variable inside the script first
-
-# Subsequent deploys
-bash deploy.sh
+bash bootstrap.sh   # first time only — set EMAIL inside the script first
+bash deploy.sh      # subsequent deploys
 ```
 
 ## Key Commands
