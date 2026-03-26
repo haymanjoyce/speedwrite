@@ -163,9 +163,13 @@ export default function Evidence() {
           { label: 'Evidence', active: true, onClick: () => {} },
           { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
         ]}
-        controls={reindexStatus ? <span className="text-xs text-gray-400">{reindexStatus}</span> : null}
         actions={[
-          ...(items.length > 0 ? [{ label: 'Reindex', onClick: handleReindex, variant: 'default' }] : []),
+          ...(items.length > 0 ? [{
+            label: reindexStatus === 'Reindexing…' ? 'Reindexing…' : reindexStatus === 'Reindexed' ? 'Reindexed ✓' : 'Reindex',
+            onClick: handleReindex,
+            variant: 'default',
+            disabled: reindexStatus === 'Reindexing…',
+          }] : []),
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
           ...(selectedItem ? [{ label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' }] : []),
           { label: 'Close', onClick: () => navigate('/'), variant: 'default' },

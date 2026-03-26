@@ -16,12 +16,14 @@ export default function ContextBar({ actions = [], controls, tabs = [] }) {
           </button>
         ))}
       </div>
+      {controls}
       <div className="ml-auto flex items-center gap-3">
         {actions.map((action, i) => (
           <button
             key={i}
             onClick={action.onClick}
-            className={`text-xs rounded px-3 py-1 transition-colors cursor-pointer ${
+            disabled={action.disabled}
+            className={`text-xs rounded px-3 py-1 transition-colors ${action.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${
               action.variant === 'primary'
                 ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
                 : action.variant === 'danger'
@@ -32,7 +34,6 @@ export default function ContextBar({ actions = [], controls, tabs = [] }) {
             {action.label}
           </button>
         ))}
-        {controls}
       </div>
     </div>
   )
