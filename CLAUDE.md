@@ -147,7 +147,7 @@ Main views:
 
 1. **Library** (`/`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
 2. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
-3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right.
+3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right. Reindex status (`reindexStatus`) is shown via `ContextBar`'s `controls` prop as a muted text label — "Reindexing…" while in flight, "Reindexed" on success, "Reindex failed" on error; auto-clears after 3s.
 4. **History** (`/document/:id/history`) — snapshot list left, snapshot detail + MarkdownPreview right.
 5. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
 6. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
@@ -200,7 +200,7 @@ Main views:
 - **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
 - **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
 - **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
-- **Enter key**: configurable. `localStorage` key is `logbooklm_submit_on_enter` (kept as-is for backwards compatibility). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`.
+- **Enter key**: configurable. `localStorage` key is `logbooklm_submit_on_enter` (kept as-is for backwards compatibility). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
 - **RAG badge**: `✦ RAG` appears near Stop button when per-source RAG is active. Cleared in `finally` and by Stop handler.
 - **Double fetches in dev**: React 18 StrictMode causes intentional double-mount. Two `GET /documents/:id` on load is expected in dev, not a bug.
 

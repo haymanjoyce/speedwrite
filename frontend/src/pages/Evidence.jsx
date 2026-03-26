@@ -107,9 +107,10 @@ export default function Evidence() {
   }
 
   const handleReindex = async () => {
+    setReindexStatus('Reindexing…')
     try {
       await api.reindexEvidence(id)
-      setReindexStatus('Reindex started')
+      setReindexStatus('Reindexed')
     } catch (err) {
       setReindexStatus('Reindex failed')
     } finally {
@@ -162,6 +163,7 @@ export default function Evidence() {
           { label: 'Evidence', active: true, onClick: () => {} },
           { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
         ]}
+        controls={reindexStatus ? <span className="text-xs text-gray-400">{reindexStatus}</span> : null}
         actions={[
           ...(items.length > 0 ? [{ label: 'Reindex', onClick: handleReindex, variant: 'default' }] : []),
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
