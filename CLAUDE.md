@@ -76,7 +76,8 @@ speedwrite/
 │   ├── templates.py
 │   ├── export.py
 │   ├── models.py
-│   └── storage.py
+│   ├── storage.py
+│   └── cleanup.py
 ├── frontend/
 │   └── src/
 │       ├── context/
@@ -297,6 +298,16 @@ docker compose up --build
 bash bootstrap.sh   # first time only — set EMAIL inside the script first
 bash deploy.sh      # subsequent deploys
 ```
+
+## Maintenance
+
+`backend/cleanup.py` is a standalone script that clears expired reset tokens from `users.json`. It imports `load_users`/`save_users` from `storage`, iterates all users, nulls out `reset_token` and `reset_token_expires` where the expiry has passed or is unparseable, saves if any changed, and exits 0.
+
+Run via cron (installed by `bootstrap.sh`):
+```
+0 3 * * * docker exec speedwrite-app python cleanup.py >> /var/log/speedwrite-cleanup.log 2>&1
+```
+`bootstrap.sh` writes the current crontab to a temp file, appends the job if not already present, and reloads with `crontab`.
 
 ## Key Commands
 

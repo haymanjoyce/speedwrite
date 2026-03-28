@@ -132,6 +132,19 @@ fi
 mkdir -p "${DATA_DIR}"
 chown -R "${ADMIN_USER}:${ADMIN_USER}" "${DATA_DIR}"
 
+echo "==> Installing cleanup cron job (daily at 3am)"
+CRON_JOB="0 3 * * * docker exec speedwrite-app python cleanup.py >> /var/log/speedwrite-cleanup.log 2>&1"
+CRON_TMP="$(mktemp)"
+crontab -l 2>/dev/null > "${CRON_TMP}" || true
+if ! grep -qF "${CRON_JOB}" "${CRON_TMP}"; then
+    echo "${CRON_JOB}" >> "${CRON_TMP}"
+    crontab "${CRON_TMP}"
+    echo "Cron job installed."
+else
+    echo "Cron job already present, skipping."
+fi
+rm -f "${CRON_TMP}"
+
 echo ""
 echo "Bootstrap complete!"
 echo ""
