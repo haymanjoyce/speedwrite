@@ -55,6 +55,8 @@ export const api = {
     request('POST', '/auth/update-profile', { display_name }),
   deleteAccount: (password) =>
     request('DELETE', '/auth/account', { password }),
+  saveByokKey: (api_key) => request('POST', '/auth/byok', { api_key }),
+  removeByokKey: () => request('DELETE', '/auth/byok'),
 
   // Documents
   listDocuments: () => request('GET', '/documents/'),

@@ -243,7 +243,8 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - **Update profile**: `POST /auth/update-profile` (auth required) — saves `display_name` on user record. `GET /auth/me` returns `display_name` (Optional, may be null).
 - **Delete account**: `DELETE /auth/account` (auth required) — verifies password, removes user from `users.json`, then `shutil.rmtree` on docs, embeddings, and templates dirs for that user.
 - **Email sending**: `backend/mailer.py` wraps SendGrid. Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
-- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string). `plan` is written on register and read via `user.get("plan", "free")` so existing records without it default safely.
+- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `byok_key_encrypted` (optional, Fernet-encrypted Anthropic API key), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string). `plan` and `byok_key_encrypted` are read with `.get()` so existing records without them degrade safely.
+- **BYOK endpoints**: `POST /auth/byok` saves an encrypted key; `DELETE /auth/byok` removes it. `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked` (e.g. `sk-ant-••••••••1234`). Encryption uses Fernet (`cryptography` library); key comes from `ENCRYPTION_KEY` env var. `get_byok_key(user)` in `auth.py` returns the decrypted key or `None` (raises HTTP 500 if key is stored but decryption fails). All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`, `templates.py`) call `get_byok_key(user)` and pass the result to `complete()`.
 
 ## Data Storage
 
@@ -268,6 +269,7 @@ JSON files on disk — no database.
 | `SENDGRID_API_KEY` | SendGrid API key — required for password reset emails |
 | `EMAIL_FROM` | Sender address for reset emails (default: `noreply@speedwrite.app`) |
 | `APP_URL` | Public app URL used in reset email links (default: `http://localhost`) |
+| `ENCRYPTION_KEY` | Fernet key for encrypting BYOK API keys at rest — generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
 | `OLLAMA_HOST` | Ollama base URL (default: `http://172.17.0.1:11434`) — used for embeddings only. Local dev on Windows/Mac: `http://host.docker.internal:11434` |
 | `LLM_PROVIDER` | Dormant — commented out in `.env.example`. Set to `ollama` to activate Ollama chat path. |
 | `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. Ollama chat model (default `llama3.2`). |
@@ -301,11 +303,20 @@ bash deploy.sh      # subsequent deploys
 
 > **Warning:** `docker-compose.override.yml` must never run in production. `deploy.sh` explicitly passes `-f docker-compose.yml` to prevent Docker Compose from auto-merging it. The override file is for local dev only.
 
-## Monetisation (Sprint 1 scaffolding)
+## Monetisation
 
-- **Plan field**: `plan: str = "free"` added to `UserOut` (`models.py`) and written on register (`auth.py`). `GET /auth/me` returns it. Existing users without the field default to `"free"` via `user.get("plan", "free")`. No plan-based routing yet — that comes in Sprint 2 (BYOK).
-- **Model**: All users currently served by `FREE_MODEL` (`claude-haiku-4-5-20251001`). Plan-based model routing (free → Haiku, paid → Sonnet) is Sprint 2.
-- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 10` in `evidence.py`. All four add-evidence endpoints (file, url, text, document) check `len(doc["evidence"]) >= FREE_EVIDENCE_LIMIT` before adding and raise HTTP 400 if exceeded. Plan-based bypass comes in a later sprint.
+### Sprint 1 scaffolding
+- **Plan field**: `plan: str = "free"` on `UserOut` and written on register. Defaults safely via `.get("plan", "free")`.
+- **Model**: All users on `FREE_MODEL` (`claude-haiku-4-5-20251001`). `PAID_MODEL = "claude-sonnet-4-20250514"` is defined in `llm.py` for Sprint 2.
+- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 10` in `evidence.py`. All four add-evidence endpoints enforce it with HTTP 400. Plan-based bypass is a future sprint.
+
+### Sprint 2 — BYOK (Bring Your Own Key)
+- Users can save their own Anthropic API key via Account settings → "Anthropic API Key" section.
+- Key is Fernet-encrypted at rest using `ENCRYPTION_KEY` env var (`cryptography` library, `requirements.txt`).
+- `complete()` in `llm.py` accepts `byok_key=` parameter. When present, uses the user's key and `PAID_MODEL` (Sonnet); otherwise uses the app key and `FREE_MODEL` (Haiku).
+- `get_byok_key(user)` in `auth.py`: returns decrypted key, `None` if not set, raises HTTP 500 if stored but decryption fails (e.g. rotated `ENCRYPTION_KEY`).
+- All LLM call sites pass `byok_key=get_byok_key(user)` to `complete()`.
+- Frontend: `Account.jsx` shows input (no key) or masked key + Remove button (key set). `api.saveByokKey` / `api.removeByokKey` in `api.js`.
 
 ## Maintenance
 

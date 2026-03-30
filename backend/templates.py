@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from auth import get_current_user
+from auth import get_byok_key, get_current_user
 from llm import complete
 from storage import DATA_DIR
 
@@ -59,13 +59,14 @@ def list_templates(user=Depends(get_current_user)):
 
 @router.post("/prefill")
 def prefill_template(data: PrefillRequest, user=Depends(get_current_user)):
+    byok_key = get_byok_key(user)
     system = (
         "You are helping a user start a document. Fill in the template below with relevant, "
         "specific content based on the user's description. Keep the structure and headings intact. "
         "Replace placeholder text in brackets with actual content. Be specific and useful, not generic."
     )
     user_msg = f"Template:\n{data.template_content}\n\nDescription: {data.description}"
-    content = complete(system, [{"role": "user", "content": user_msg}], max_tokens=2048)
+    content = complete(system, [{"role": "user", "content": user_msg}], max_tokens=2048, byok_key=byok_key)
     return {"content": content}
 
 

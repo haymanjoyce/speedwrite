@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from auth import get_current_user
+from auth import get_byok_key, get_current_user
 from chat import _build_evidence_block, _build_protected_block, _build_structure_lock_block
 from llm import complete
 from storage import load_document
@@ -79,6 +79,7 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    byok_key = get_byok_key(user)
 
     query = f"{data.action} {data.instructions}".strip()
     evidence_block = _build_evidence_block(doc, query=query)
@@ -97,8 +98,9 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
     raw_text = complete(
         system=system_prompt,
         messages=[{"role": "user", "content": user_message}],
-        provider=data.provider,
         max_tokens=4096,
+        provider=data.provider,
+        byok_key=byok_key,
     )
 
     proposed_content: Optional[str] = None

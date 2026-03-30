@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from auth import get_current_user
+from auth import get_byok_key, get_current_user
 from embeddings import RAG_THRESHOLD_CHARS, load_chunks, retrieve_relevant_chunks
 from llm import complete
 from storage import load_document, save_document
@@ -152,6 +152,7 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    byok_key = get_byok_key(user)
     doc.setdefault("chat_history", [])
 
     context_block = ""
@@ -188,8 +189,9 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     raw_text = complete(
         system=system_prompt,
         messages=api_messages,
-        provider=data.provider,
         max_tokens=4096,
+        provider=data.provider,
+        byok_key=byok_key,
     )
 
     proposed_content: Optional[str] = None

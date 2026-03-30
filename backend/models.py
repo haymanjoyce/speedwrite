@@ -17,6 +17,8 @@ class UserOut(BaseModel):
     email: str
     display_name: Optional[str] = None
     plan: str = "free"
+    has_byok_key: bool = False
+    byok_key_masked: Optional[str] = None
 
 
 class ResetPasswordRequest(BaseModel):
@@ -44,6 +46,10 @@ class UpdateProfileRequest(BaseModel):
 
 class DeleteAccountRequest(BaseModel):
     password: str
+
+
+class ByokKeyRequest(BaseModel):
+    api_key: str
 
 
 class Token(BaseModel):

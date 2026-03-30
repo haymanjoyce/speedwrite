@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from cryptography.fernet import Fernet, InvalidToken
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -12,6 +13,7 @@ from passlib.context import CryptContext
 
 from mailer import send_password_reset_email
 from models import (
+    ByokKeyRequest,
     ChangeEmailRequest,
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -28,6 +30,31 @@ from storage import DATA_DIR, DOCS_DIR, load_users, save_users
 router = APIRouter(prefix="/auth")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def _get_fernet() -> Fernet:
+    key = os.getenv("ENCRYPTION_KEY", "")
+    if not key:
+        raise RuntimeError("ENCRYPTION_KEY environment variable is not set")
+    return Fernet(key.encode())
+
+
+def encrypt_byok_key(api_key: str) -> str:
+    return _get_fernet().encrypt(api_key.encode()).decode()
+
+
+def decrypt_byok_key(encrypted: str) -> str:
+    return _get_fernet().decrypt(encrypted.encode()).decode()
+
+
+def get_byok_key(user: dict) -> str | None:
+    encrypted = user.get("byok_key_encrypted")
+    if not encrypted:
+        return None
+    try:
+        return decrypt_byok_key(encrypted)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to decrypt API key — contact support")
 security = HTTPBearer()
 
 JWT_SECRET = os.getenv("JWT_SECRET", "changeme-set-a-real-secret-in-env")
@@ -98,7 +125,23 @@ def login(data: UserLogin):
 
 @router.get("/me", response_model=UserOut)
 def me(user=Depends(get_current_user)):
-    return UserOut(id=user["id"], email=user["email"], display_name=user.get("display_name"), plan=user.get("plan", "free"))
+    encrypted = user.get("byok_key_encrypted")
+    has_byok = bool(encrypted)
+    masked = None
+    if encrypted:
+        try:
+            raw = decrypt_byok_key(encrypted)
+            masked = raw[:7] + "••••••••" + raw[-4:] if len(raw) > 11 else "••••••••"
+        except Exception:
+            masked = "••••••••"
+    return UserOut(
+        id=user["id"],
+        email=user["email"],
+        display_name=user.get("display_name"),
+        plan=user.get("plan", "free"),
+        has_byok_key=has_byok,
+        byok_key_masked=masked,
+    )
 
 
 @router.post("/reset-password/request")
@@ -169,6 +212,26 @@ def update_profile(data: UpdateProfileRequest, user=Depends(get_current_user)):
     u["display_name"] = data.display_name
     save_users(users)
     return {"message": "Profile updated."}
+
+
+@router.post("/byok")
+def save_byok_key(data: ByokKeyRequest, user=Depends(get_current_user)):
+    if not data.api_key.strip():
+        raise HTTPException(status_code=400, detail="API key cannot be empty")
+    users = load_users()
+    u = next((u for u in users if u["id"] == user["id"]), None)
+    u["byok_key_encrypted"] = encrypt_byok_key(data.api_key.strip())
+    save_users(users)
+    return {"message": "API key saved."}
+
+
+@router.delete("/byok")
+def remove_byok_key(user=Depends(get_current_user)):
+    users = load_users()
+    u = next((u for u in users if u["id"] == user["id"]), None)
+    u.pop("byok_key_encrypted", None)
+    save_users(users)
+    return {"message": "API key removed."}
 
 
 @router.delete("/account")

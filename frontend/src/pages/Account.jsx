@@ -37,6 +37,14 @@ export default function Account() {
   const [passwordError, setPasswordError] = useState('')
   const flashPasswordSuccess = useFlash(setPasswordSuccess)
 
+  // BYOK
+  const [hasByokKey, setHasByokKey] = useState(false)
+  const [byokKeyMasked, setByokKeyMasked] = useState(null)
+  const [byokKey, setByokKey] = useState('')
+  const [byokSuccess, setByokSuccess] = useState('')
+  const [byokError, setByokError] = useState('')
+  const flashByokSuccess = useFlash(setByokSuccess)
+
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
@@ -46,6 +54,8 @@ export default function Account() {
     api.me().then((u) => {
       setUser(u)
       setDisplayName(u.display_name || '')
+      setHasByokKey(u.has_byok_key || false)
+      setByokKeyMasked(u.byok_key_masked || null)
     }).catch(() => {
       localStorage.removeItem('token')
       navigate('/login')
@@ -98,6 +108,33 @@ export default function Account() {
       setConfirmPassword('')
     } catch (err) {
       setPasswordError(err.message)
+    }
+  }
+
+  const handleByokSave = async (e) => {
+    e.preventDefault()
+    setByokError('')
+    try {
+      await api.saveByokKey(byokKey)
+      const updated = await api.me()
+      setHasByokKey(updated.has_byok_key)
+      setByokKeyMasked(updated.byok_key_masked)
+      setByokKey('')
+      flashByokSuccess('API key saved')
+    } catch (err) {
+      setByokError(err.message)
+    }
+  }
+
+  const handleByokRemove = async () => {
+    setByokError('')
+    try {
+      await api.removeByokKey()
+      setHasByokKey(false)
+      setByokKeyMasked(null)
+      flashByokSuccess('API key removed')
+    } catch (err) {
+      setByokError(err.message)
     }
   }
 
@@ -229,6 +266,40 @@ export default function Account() {
               {passwordSuccess && <span className="text-green-600 text-sm">{passwordSuccess}</span>}
             </div>
           </form>
+
+          <hr className="border-gray-100 my-6" />
+
+          {/* Anthropic API Key */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">Anthropic API Key</h2>
+            <p className="text-xs text-gray-400 mb-3">Bring your own Anthropic API key to use Sonnet and other models. Your key is encrypted at rest.</p>
+            {byokError && <p className="text-red-500 text-sm mb-2">{byokError}</p>}
+            {hasByokKey ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-700 font-mono">{byokKeyMasked}</span>
+                <button type="button" onClick={handleByokRemove} className="text-red-600 border border-red-300 rounded px-3 py-1.5 text-sm hover:bg-red-50 transition-colors">Remove</button>
+                {byokSuccess && <span className="text-green-600 text-sm">{byokSuccess}</span>}
+              </div>
+            ) : (
+              <form onSubmit={handleByokSave}>
+                <div className="mb-3">
+                  <label className="block text-sm text-gray-600 mb-1">API key</label>
+                  <input
+                    type="password"
+                    value={byokKey}
+                    onChange={(e) => setByokKey(e.target.value)}
+                    className={fieldCls}
+                    placeholder="sk-ant-..."
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="submit" className={outlinedBtn}>Save</button>
+                  {byokSuccess && <span className="text-green-600 text-sm">{byokSuccess}</span>}
+                </div>
+              </form>
+            )}
+          </div>
 
           <hr className="border-gray-100 my-6" />
 

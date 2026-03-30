@@ -6,20 +6,17 @@ import httpx
 from fastapi import HTTPException
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")
-FREE_MODEL = "claude-haiku-4-5-20251001"  # Sonnet: "claude-sonnet-4-20250514"
+FREE_MODEL = "claude-haiku-4-5-20251001"
+PAID_MODEL = "claude-sonnet-4-20250514"  # used when BYOK key is present
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
 OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_CHAT_MODEL", "llama3.2")
 
 
-def complete(
-    system: str,
-    messages: list[dict],
-    provider: Optional[str] = None,
-    max_tokens: int = 2048,
-) -> str:
+def complete(system, messages, max_tokens=4096, provider=None, byok_key=None):
     """
     Call the LLM and return the response text.
     provider overrides LLM_PROVIDER env var if set.
+    byok_key: if provided, uses the user's own Anthropic key and PAID_MODEL.
     messages format: [{"role": "user"|"assistant", "content": "string"}]
     """
     effective_provider = provider or LLM_PROVIDER
@@ -27,13 +24,15 @@ def complete(
     if effective_provider == "ollama":
         return _complete_ollama(system, messages, max_tokens)
     else:
+        if byok_key:
+            return _complete_anthropic(system, messages, max_tokens, api_key=byok_key, model=PAID_MODEL)
         return _complete_anthropic(system, messages, max_tokens)
 
 
-def _complete_anthropic(system: str, messages: list[dict], max_tokens: int) -> str:
-    client = anthropic.Anthropic()
+def _complete_anthropic(system: str, messages: list[dict], max_tokens: int, api_key: str = None, model: str = None) -> str:
+    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
     response = client.messages.create(
-        model=FREE_MODEL,
+        model=model or FREE_MODEL,
         max_tokens=max_tokens,
         system=system,
         messages=messages,

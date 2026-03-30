@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from auth import get_current_user
+from auth import get_byok_key, get_current_user
 from llm import complete
 from storage import load_document, save_document
 
@@ -37,6 +37,7 @@ def evidence_chat(doc_id: str, data: EvidenceChatRequest, user=Depends(get_curre
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    byok_key = get_byok_key(user)
     doc.setdefault("evidence_chat_history", [])
 
     context_block = ""
@@ -64,6 +65,7 @@ def evidence_chat(doc_id: str, data: EvidenceChatRequest, user=Depends(get_curre
         system=system_prompt,
         messages=api_messages,
         max_tokens=4096,
+        byok_key=byok_key,
     )
 
     now = datetime.utcnow().isoformat()
