@@ -299,6 +299,8 @@ bash bootstrap.sh   # first time only — set EMAIL inside the script first
 bash deploy.sh      # subsequent deploys
 ```
 
+> **Warning:** `docker-compose.override.yml` must never run in production. `deploy.sh` explicitly passes `-f docker-compose.yml` to prevent Docker Compose from auto-merging it. The override file is for local dev only.
+
 ## Monetisation (Sprint 1 scaffolding)
 
 - **Plan field**: `plan: str = "free"` added to `UserOut` (`models.py`) and written on register (`auth.py`). `GET /auth/me` returns it. Existing users without the field default to `"free"` via `user.get("plan", "free")`. No plan-based routing yet — that comes in Sprint 2 (BYOK).
