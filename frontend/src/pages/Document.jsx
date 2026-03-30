@@ -6,6 +6,7 @@ import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
 import TopBar from '../components/TopBar'
+import { FREE_ACTION_CAP } from '../constants/limits'
 
 function parseHeadingsWithContent(content) {
   const lines = (content || '').split('\n')
@@ -229,6 +230,8 @@ export default function Document() {
         isRenaming={isRenaming}
         onRenameSave={handleRenameSave}
         onRenameCancel={handleRenameCancel}
+        hasByokKey={user?.has_byok_key ?? false}
+        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
       />
       <ContextBar
         tabs={pendingProposal ? [] : contextBarTabs}
@@ -303,6 +306,8 @@ export default function Document() {
             evidenceCount={doc?.evidence?.length ?? 0}
             pendingProposal={pendingProposal}
             structureLocked={structureLocked}
+            actionsUsed={user?.ai_actions_used ?? 0}
+            hasByokKey={user?.has_byok_key ?? false}
           />
         </div>
       </div>

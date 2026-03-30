@@ -9,12 +9,12 @@ from pydantic import BaseModel
 
 from auth import get_current_user
 from embeddings import index_evidence_background, remove_evidence_chunks, retrieve_relevant_chunks
+from limits import FREE_EVIDENCE_LIMIT
 from storage import DOCS_DIR, load_document, save_document
 
 router = APIRouter(prefix="/documents")
 
 ALLOWED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx"}
-FREE_EVIDENCE_LIMIT = 10
 
 
 def _evidence_file_dir(user_id: str, doc_id: str) -> Path:

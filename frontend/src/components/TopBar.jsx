@@ -4,7 +4,7 @@ import { useSearch } from '../context/SearchContext'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
-export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel }) {
+export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel, hasByokKey = false, actionsRemaining = null }) {
   const { open: openSearch } = useSearch()
   const [inputValue, setInputValue] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -79,6 +79,14 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </button>
+        {user && hasByokKey && (
+          <span className="text-xs text-gray-400">Sonnet</span>
+        )}
+        {user && !hasByokKey && actionsRemaining !== null && (
+          <span className={`text-xs ${actionsRemaining === 0 ? 'text-amber-500' : 'text-gray-400'}`}>
+            Haiku · {actionsRemaining} actions left
+          </span>
+        )}
         {user && (
           <div className="relative" ref={dropdownRef}>
             <button

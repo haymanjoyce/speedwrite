@@ -4,7 +4,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from auth import get_byok_key, get_current_user
+from auth import get_actions_used, get_byok_key, get_current_user, increment_action_count
+from limits import FREE_ACTION_CAP
 from llm import complete
 from storage import load_document, save_document
 
@@ -38,6 +39,13 @@ def evidence_chat(doc_id: str, data: EvidenceChatRequest, user=Depends(get_curre
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     byok_key = get_byok_key(user)
+    if not byok_key:
+        actions_used = get_actions_used(user)
+        if actions_used >= FREE_ACTION_CAP:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Monthly limit of {FREE_ACTION_CAP} AI actions reached. Add your Anthropic API key in Account settings to continue."
+            )
     doc.setdefault("evidence_chat_history", [])
 
     context_block = ""
@@ -67,6 +75,7 @@ def evidence_chat(doc_id: str, data: EvidenceChatRequest, user=Depends(get_curre
         max_tokens=4096,
         byok_key=byok_key,
     )
+    increment_action_count(user["id"])
 
     now = datetime.utcnow().isoformat()
     doc["evidence_chat_history"].append({

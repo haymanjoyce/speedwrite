@@ -4,7 +4,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from auth import get_byok_key, get_current_user
+from auth import get_actions_used, get_byok_key, get_current_user, increment_action_count
+from limits import FREE_ACTION_CAP
 from chat import _build_evidence_block, _build_protected_block, _build_structure_lock_block
 from llm import complete
 from storage import load_document
@@ -80,6 +81,13 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     byok_key = get_byok_key(user)
+    if not byok_key:
+        actions_used = get_actions_used(user)
+        if actions_used >= FREE_ACTION_CAP:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Monthly limit of {FREE_ACTION_CAP} AI actions reached. Add your Anthropic API key in Account settings to continue."
+            )
 
     query = f"{data.action} {data.instructions}".strip()
     evidence_block = _build_evidence_block(doc, query=query)
@@ -102,6 +110,7 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
         provider=data.provider,
         byok_key=byok_key,
     )
+    increment_action_count(user["id"])
 
     proposed_content: Optional[str] = None
     result = raw_text

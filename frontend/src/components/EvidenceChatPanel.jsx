@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { ATTACHMENT_TRUNCATION_LIMIT, ATTACHMENT_WARNING_THRESHOLD } from '../constants/attachmentLimits'
+import { FREE_ACTION_CAP } from '../constants/limits'
 import { SHARED_INSIGHT_ACTIONS } from '../insightPrompts'
 import MarkdownPreview from './MarkdownPreview'
 
@@ -124,7 +126,9 @@ function SourcePickerPopup({ sources, onSelect, onClose, anchorRef }) {
   )
 }
 
-export default function EvidenceChatPanel({ docId, evidenceSources, document }) {
+export default function EvidenceChatPanel({ docId, evidenceSources, document, actionsUsed = 0, hasByokKey = false }) {
+  const isCapped = !hasByokKey && actionsUsed >= FREE_ACTION_CAP
+  const actionsRemaining = hasByokKey ? null : Math.max(0, FREE_ACTION_CAP - actionsUsed)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -275,9 +279,10 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
     } catch (err) {
       if (err.name !== 'AbortError') {
+        const isCapError = err.message.includes('Monthly limit')
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: `Error: ${err.message}` },
+          { role: 'assistant', content: isCapError ? err.message : `Error: ${err.message}` },
         ])
       }
     } finally {
@@ -401,6 +406,17 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
         </div>
       )}
 
+      {/* Cap banner */}
+      {isCapped && (
+        <div className="bg-amber-50 border-t border-amber-100 px-4 py-2 flex-shrink-0">
+          <p className="text-xs text-amber-800">
+            Monthly limit reached. Add your Anthropic API key in{' '}
+            <Link to="/account" className="underline hover:text-amber-900">Account settings</Link>
+            {' '}to continue.
+          </p>
+        </div>
+      )}
+
       {/* Input */}
       <div className="px-4 pb-4 flex-shrink-0">
         <div className="relative flex gap-2 bg-white border border-gray-200 rounded-lg p-2 focus-within:border-blue-300 transition-colors">
@@ -443,7 +459,8 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document }) 
             ) : (
               <button
                 onClick={() => handleSend()}
-                disabled={!input.trim()}
+                disabled={!input.trim() || isCapped}
+                title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
                 className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
               >
                 Send

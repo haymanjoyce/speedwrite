@@ -5,6 +5,7 @@ import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import TemplatePickerOverlay from '../components/TemplatePickerOverlay'
 import TopBar from '../components/TopBar'
+import { FREE_ACTION_CAP } from '../constants/limits'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -99,7 +100,12 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar user={user} onLogout={handleLogout} />
+      <TopBar
+        user={user}
+        onLogout={handleLogout}
+        hasByokKey={user?.has_byok_key ?? false}
+        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+      />
       <ContextBar actions={selectedDoc ? [
         { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: 'primary' },
         { label: 'Rename', onClick: handleRename, variant: 'default' },

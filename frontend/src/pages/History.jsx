@@ -4,6 +4,7 @@ import { api } from '../api'
 import ContextBar from '../components/ContextBar'
 import MarkdownPreview from '../components/MarkdownPreview'
 import TopBar from '../components/TopBar'
+import { FREE_ACTION_CAP } from '../constants/limits'
 
 const TRIGGER_ICONS = { auto: '💾', rewrite: '🤖', manual: '📌', restore: '🔄' }
 
@@ -78,7 +79,13 @@ export default function History() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
+      <TopBar
+        user={user}
+        onLogout={handleLogout}
+        docTitle={doc?.title}
+        hasByokKey={user?.has_byok_key ?? false}
+        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+      />
       <ContextBar
         tabs={[
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },

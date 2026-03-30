@@ -47,6 +47,39 @@ def decrypt_byok_key(encrypted: str) -> str:
     return _get_fernet().decrypt(encrypted.encode()).decode()
 
 
+def get_actions_used(user: dict) -> int:
+    """Return current month's action count, resetting if month has changed."""
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    reset_at_str = user.get("ai_actions_reset_at")
+    if reset_at_str:
+        reset_at = datetime.fromisoformat(reset_at_str)
+        if reset_at.year != now.year or reset_at.month != now.month:
+            return 0  # stale — will be reset on next increment
+    return user.get("ai_actions_used", 0)
+
+
+def increment_action_count(user_id: str) -> None:
+    """Increment ai_actions_used for the user, resetting if month has changed."""
+    from datetime import datetime, timezone
+    from storage import load_users, save_users
+    now = datetime.now(timezone.utc)
+    users = load_users()
+    u = next((u for u in users if u["id"] == user_id), None)
+    if not u:
+        return
+    reset_at_str = u.get("ai_actions_reset_at")
+    if reset_at_str:
+        reset_at = datetime.fromisoformat(reset_at_str)
+        if reset_at.year != now.year or reset_at.month != now.month:
+            u["ai_actions_used"] = 0
+            u["ai_actions_reset_at"] = now.isoformat()
+    else:
+        u["ai_actions_reset_at"] = now.isoformat()
+    u["ai_actions_used"] = u.get("ai_actions_used", 0) + 1
+    save_users(users)
+
+
 def get_byok_key(user: dict) -> str | None:
     encrypted = user.get("byok_key_encrypted")
     if not encrypted:
@@ -141,6 +174,8 @@ def me(user=Depends(get_current_user)):
         plan=user.get("plan", "free"),
         has_byok_key=has_byok,
         byok_key_masked=masked,
+        ai_actions_used=get_actions_used(user),
+        ai_actions_reset_at=user.get("ai_actions_reset_at"),
     )
 
 

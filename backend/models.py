@@ -19,6 +19,8 @@ class UserOut(BaseModel):
     plan: str = "free"
     has_byok_key: bool = False
     byok_key_masked: Optional[str] = None
+    ai_actions_used: int = 0
+    ai_actions_reset_at: Optional[str] = None
 
 
 class ResetPasswordRequest(BaseModel):

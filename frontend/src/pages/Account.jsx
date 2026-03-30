@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import TopBar from '../components/TopBar'
+import { FREE_ACTION_CAP } from '../constants/limits'
 
 function useFlash(setter) {
   const timer = useRef(null)
@@ -165,7 +166,12 @@ export default function Account() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar user={user} onLogout={handleLogout} />
+      <TopBar
+        user={user}
+        onLogout={handleLogout}
+        hasByokKey={user?.has_byok_key ?? false}
+        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+      />
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-lg mx-auto py-10 px-4">
           <Link to="/" className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 hover:border-gray-300 transition-colors mb-4">

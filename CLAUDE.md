@@ -77,6 +77,7 @@ speedwrite/
 │   ├── export.py
 │   ├── models.py
 │   ├── storage.py
+│   ├── limits.py
 │   └── cleanup.py
 ├── frontend/
 │   └── src/
@@ -115,7 +116,8 @@ speedwrite/
 │       │   ├── SourceDetail.jsx
 │       │   └── AddSourceModal.jsx
 │       ├── constants/
-│       │   └── attachmentLimits.js   # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
+│       │   ├── attachmentLimits.js   # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
+│       │   └── limits.js             # FREE_ACTION_CAP (50)
 │       ├── insightPrompts.js         # SHARED_INSIGHT_ACTIONS shared by ChatPanel and EvidenceChatPanel
 │       ├── data/
 │       │   └── templates.js          # BUILT_IN_TEMPLATES (5 built-in templates)
@@ -243,7 +245,7 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - **Update profile**: `POST /auth/update-profile` (auth required) — saves `display_name` on user record. `GET /auth/me` returns `display_name` (Optional, may be null).
 - **Delete account**: `DELETE /auth/account` (auth required) — verifies password, removes user from `users.json`, then `shutil.rmtree` on docs, embeddings, and templates dirs for that user.
 - **Email sending**: `backend/mailer.py` wraps SendGrid. Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
-- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `byok_key_encrypted` (optional, Fernet-encrypted Anthropic API key), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string). `plan` and `byok_key_encrypted` are read with `.get()` so existing records without them degrade safely.
+- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `byok_key_encrypted` (optional, Fernet-encrypted Anthropic API key), `ai_actions_used` (int, default 0), `ai_actions_reset_at` (optional UTC ISO string — month boundary for counter reset), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string). All optional fields are read with `.get()` so existing records degrade safely.
 - **BYOK endpoints**: `POST /auth/byok` saves an encrypted key; `DELETE /auth/byok` removes it. `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked` (e.g. `sk-ant-••••••••1234`). Encryption uses Fernet (`cryptography` library); key comes from `ENCRYPTION_KEY` env var. `get_byok_key(user)` in `auth.py` returns the decrypted key or `None` (raises HTTP 500 if key is stored but decryption fails). All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`, `templates.py`) call `get_byok_key(user)` and pass the result to `complete()`.
 
 ## Data Storage
@@ -308,7 +310,7 @@ bash deploy.sh      # subsequent deploys
 ### Sprint 1 scaffolding
 - **Plan field**: `plan: str = "free"` on `UserOut` and written on register. Defaults safely via `.get("plan", "free")`.
 - **Model**: All users on `FREE_MODEL` (`claude-haiku-4-5-20251001`). `PAID_MODEL = "claude-sonnet-4-20250514"` is defined in `llm.py` for Sprint 2.
-- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 10` in `evidence.py`. All four add-evidence endpoints enforce it with HTTP 400. Plan-based bypass is a future sprint.
+- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 10` — defined in `backend/limits.py` (moved from `evidence.py` in Sprint 3). All four add-evidence endpoints enforce it with HTTP 400.
 
 ### Sprint 2 — BYOK (Bring Your Own Key)
 - Users can save their own Anthropic API key via Account settings → "Anthropic API Key" section.
@@ -318,9 +320,17 @@ bash deploy.sh      # subsequent deploys
 - All LLM call sites pass `byok_key=get_byok_key(user)` to `complete()`.
 - Frontend: `Account.jsx` shows input (no key) or masked key + Remove button (key set). `api.saveByokKey` / `api.removeByokKey` in `api.js`.
 
+### Sprint 3 — AI action cap
+- **Limits module**: `backend/limits.py` holds `FREE_ACTION_CAP` and `FREE_EVIDENCE_LIMIT`. `frontend/src/constants/limits.js` exports `FREE_ACTION_CAP` for the frontend.
+- **Counter fields**: `ai_actions_used` (int) and `ai_actions_reset_at` (ISO string) on the user record. `GET /auth/me` returns both. `get_actions_used(user)` in `auth.py` returns the count, resetting to 0 if the stored month differs from now. `increment_action_count(user_id)` reloads users, resets if stale, increments, and saves.
+- **Cap enforcement**: `chat.py`, `evidence_chat.py`, and `actions.py` check cap before calling `complete()` (free users only — BYOK users bypass). Returns HTTP 429 with message `"Monthly limit of {FREE_ACTION_CAP} AI actions reached…"`. `increment_action_count` is called after each successful `complete()`. `templates.py` is intentionally excluded (one-time setup, not conversational).
+- **Frontend cap UI**: `ChatPanel` and `EvidenceChatPanel` accept `actionsUsed` and `hasByokKey` props. When capped: Send button disabled with tooltip, amber banner shown above input with link to Account settings. 429 cap errors are displayed as plain assistant messages (no "Error:" prefix).
+- **TopBar indicator**: Shows "Sonnet" (BYOK) or "Haiku · N actions left" (free) between the search icon and user dropdown on all pages. Turns amber at 0.
+- **Stale counter cleanup**: `cleanup.py` now also runs `reset_stale_action_counters()`, which zeroes `ai_actions_used` for any user whose `ai_actions_reset_at` is from a prior month.
+
 ## Maintenance
 
-`backend/cleanup.py` is a standalone script that clears expired reset tokens from `users.json`. It imports `load_users`/`save_users` from `storage`, iterates all users, nulls out `reset_token` and `reset_token_expires` where the expiry has passed or is unparseable, saves if any changed, and exits 0.
+`backend/cleanup.py` is a standalone script with two functions: `clear_expired_reset_tokens()` nulls out expired `reset_token`/`reset_token_expires` fields; `reset_stale_action_counters()` zeroes `ai_actions_used` for users whose counter month is in the past. Both run from `__main__` and exit 0.
 
 Run via cron (installed by `bootstrap.sh`):
 ```

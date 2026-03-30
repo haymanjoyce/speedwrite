@@ -7,6 +7,7 @@ import EvidenceSidebar from '../components/EvidenceSidebar'
 import SourceDetail from '../components/SourceDetail'
 import ContextBar from '../components/ContextBar'
 import TopBar from '../components/TopBar'
+import { FREE_ACTION_CAP } from '../constants/limits'
 
 export default function Evidence() {
   const navigate = useNavigate()
@@ -156,7 +157,13 @@ export default function Evidence() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <TopBar user={user} onLogout={handleLogout} docTitle={doc?.title} />
+      <TopBar
+        user={user}
+        onLogout={handleLogout}
+        docTitle={doc?.title}
+        hasByokKey={user?.has_byok_key ?? false}
+        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+      />
       <ContextBar
         tabs={[
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
@@ -209,7 +216,13 @@ export default function Evidence() {
           onRefresh={() => handleRefresh(selectedItem.id)}
           refreshing={refreshingId === selectedItem?.id}
         />
-        <EvidenceChatPanel docId={id} evidenceSources={items} document={doc} />
+        <EvidenceChatPanel
+          docId={id}
+          evidenceSources={items}
+          document={doc}
+          actionsUsed={user?.ai_actions_used ?? 0}
+          hasByokKey={user?.has_byok_key ?? false}
+        />
       </div>
       {showModal && (
         <AddSourceModal onAdd={handleAdd} onClose={() => setShowModal(false)} docId={id} />
