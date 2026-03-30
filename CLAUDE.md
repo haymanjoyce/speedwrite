@@ -167,7 +167,7 @@ Main views:
 - **Redraft vs Insights**: Both dropdowns in ChatPanel header, both disabled when `pendingProposal` is truthy. Redraft shows `InstructionBar` for optional instructions before firing. Insights fire immediately. Both use `SHARED_INSIGHT_ACTIONS` from `insightPrompts.js`.
 - **Evidence base**: File uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, other documents. URL sources carry `last_fetched_at` and `last_fetch_error`. `POST .../evidence/{id}/refresh` updates content and re-embeds on success. "Update sources" in Sources panel header runs all URL sources sequentially. Duplicate URL detection shows amber banner in SourceDetail.
 - **Embeddings/RAG**: Chunked (2000 chars, 200 overlap), embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved (cosine similarity) instead of full dump. Per-source RAG preflight in ChatPanel/EvidenceChatPanel: `api.ragQuery` → `POST .../evidence/{id}/rag-query`; if `used_rag: true`, chunks replace context. Falls back silently if Ollama unreachable.
-- **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. Anthropic is the only active path. `_complete_ollama()` is retained but dormant — no UI toggle and `LLM_PROVIDER`/`OLLAMA_CHAT_MODEL` are commented out in `.env.example`. `config.py` and `ProviderToggle.jsx` have been deleted. Anthropic model: `claude-sonnet-4-20250514`.
+- **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. Anthropic is the only active path. `_complete_ollama()` is retained but dormant — no UI toggle and `LLM_PROVIDER`/`OLLAMA_CHAT_MODEL` are commented out in `.env.example`. `config.py` and `ProviderToggle.jsx` have been deleted. Active model: `FREE_MODEL = "claude-haiku-4-5-20251001"` (module-level constant). Sonnet string retained as a comment for Sprint 2 plan-based routing.
 - **Evidence chat** (`EvidenceChatPanel.jsx`): Persistent chat on Evidence page. "All sources" option concatenates all sources. `ignore_history: true` when context attached. Backend: `POST /documents/{doc_id}/evidence-chat` in `evidence_chat.py`. Never modifies the document.
 - **Token limits**: `max_tokens=4096` in `chat.py` and `actions.py`. Large attachments can still cause truncation if total prompt + response exceeds model context window.
 - **Document templates**: Built-in templates in `frontend/src/data/templates.js`. User templates at `/var/speedwrite/templates/{user_id}/{template_id}.json` via `backend/templates.py`. `TemplatePickerOverlay.jsx` two screens: grid picker → AI pre-fill step. `POST /templates/prefill` calls `llm.complete()` (max_tokens=2048). "Save as template" opens inline bar (same `activeBar` state slot as other inline bars).
@@ -243,7 +243,7 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - **Update profile**: `POST /auth/update-profile` (auth required) — saves `display_name` on user record. `GET /auth/me` returns `display_name` (Optional, may be null).
 - **Delete account**: `DELETE /auth/account` (auth required) — verifies password, removes user from `users.json`, then `shutil.rmtree` on docs, embeddings, and templates dirs for that user.
 - **Email sending**: `backend/mailer.py` wraps SendGrid. Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
-- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string).
+- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string). `plan` is written on register and read via `user.get("plan", "free")` so existing records without it default safely.
 
 ## Data Storage
 
@@ -298,6 +298,12 @@ docker compose up --build
 bash bootstrap.sh   # first time only — set EMAIL inside the script first
 bash deploy.sh      # subsequent deploys
 ```
+
+## Monetisation (Sprint 1 scaffolding)
+
+- **Plan field**: `plan: str = "free"` added to `UserOut` (`models.py`) and written on register (`auth.py`). `GET /auth/me` returns it. Existing users without the field default to `"free"` via `user.get("plan", "free")`. No plan-based routing yet — that comes in Sprint 2 (BYOK).
+- **Model**: All users currently served by `FREE_MODEL` (`claude-haiku-4-5-20251001`). Plan-based model routing (free → Haiku, paid → Sonnet) is Sprint 2.
+- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 10` in `evidence.py`. All four add-evidence endpoints (file, url, text, document) check `len(doc["evidence"]) >= FREE_EVIDENCE_LIMIT` before adding and raise HTTP 400 if exceeded. Plan-based bypass comes in a later sprint.
 
 ## Maintenance
 

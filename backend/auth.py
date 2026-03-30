@@ -80,6 +80,7 @@ def register(data: UserCreate):
         "id": str(uuid.uuid4()),
         "email": data.email,
         "hashed_password": hash_password(data.password),
+        "plan": "free",
     }
     users.append(user)
     save_users(users)
@@ -97,7 +98,7 @@ def login(data: UserLogin):
 
 @router.get("/me", response_model=UserOut)
 def me(user=Depends(get_current_user)):
-    return UserOut(id=user["id"], email=user["email"], display_name=user.get("display_name"))
+    return UserOut(id=user["id"], email=user["email"], display_name=user.get("display_name"), plan=user.get("plan", "free"))
 
 
 @router.post("/reset-password/request")

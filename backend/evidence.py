@@ -14,6 +14,7 @@ from storage import DOCS_DIR, load_document, save_document
 router = APIRouter(prefix="/documents")
 
 ALLOWED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx"}
+FREE_EVIDENCE_LIMIT = 10
 
 
 def _evidence_file_dir(user_id: str, doc_id: str) -> Path:
@@ -138,6 +139,9 @@ async def add_evidence_file(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    if len(doc.get("evidence", [])) >= FREE_EVIDENCE_LIMIT:
+        raise HTTPException(status_code=400, detail=f"Free plan is limited to {FREE_EVIDENCE_LIMIT} evidence sources per document.")
+
     filename = file.filename or "upload"
     ext = Path(filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
@@ -188,6 +192,9 @@ def add_evidence_url(doc_id: str, data: AddUrlRequest, user=Depends(get_current_
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    if len(doc.get("evidence", [])) >= FREE_EVIDENCE_LIMIT:
+        raise HTTPException(status_code=400, detail=f"Free plan is limited to {FREE_EVIDENCE_LIMIT} evidence sources per document.")
+
     try:
         title, content = _fetch_url(data.url)
     except httpx.HTTPError as e:
@@ -222,6 +229,9 @@ def add_evidence_text(doc_id: str, data: AddTextRequest, user=Depends(get_curren
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    if len(doc.get("evidence", [])) >= FREE_EVIDENCE_LIMIT:
+        raise HTTPException(status_code=400, detail=f"Free plan is limited to {FREE_EVIDENCE_LIMIT} evidence sources per document.")
+
     evidence_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
     item = {
@@ -246,6 +256,9 @@ def add_evidence_document(doc_id: str, data: AddDocumentRequest, user=Depends(ge
     doc = load_document(user["id"], doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    if len(doc.get("evidence", [])) >= FREE_EVIDENCE_LIMIT:
+        raise HTTPException(status_code=400, detail=f"Free plan is limited to {FREE_EVIDENCE_LIMIT} evidence sources per document.")
 
     source = load_document(user["id"], data.source_doc_id)
     if not source:

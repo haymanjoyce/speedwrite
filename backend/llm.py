@@ -6,6 +6,7 @@ import httpx
 from fastapi import HTTPException
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")
+FREE_MODEL = "claude-haiku-4-5-20251001"  # Sonnet: "claude-sonnet-4-20250514"
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
 OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_CHAT_MODEL", "llama3.2")
 
@@ -32,7 +33,7 @@ def complete(
 def _complete_anthropic(system: str, messages: list[dict], max_tokens: int) -> str:
     client = anthropic.Anthropic()
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model=FREE_MODEL,
         max_tokens=max_tokens,
         system=system,
         messages=messages,

@@ -16,6 +16,7 @@ class UserOut(BaseModel):
     id: str
     email: str
     display_name: Optional[str] = None
+    plan: str = "free"
 
 
 class ResetPasswordRequest(BaseModel):
