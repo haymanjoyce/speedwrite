@@ -135,12 +135,6 @@ export default function History() {
           { label: 'History', active: true, onClick: () => {} },
         ]}
         actions={[
-          {
-            label: shareToken ? 'Shared ✓' : 'Share version',
-            onClick: handleShare,
-            disabled: !selectedSnapshot || !!shareToken || sharing,
-            variant: 'default',
-          },
           { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
         ]}
       />

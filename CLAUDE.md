@@ -155,7 +155,7 @@ Main views:
 1. **Library** (`/`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
 2. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right. Reindex status is shown inline on the Reindex button label: "Reindexing…" (disabled) → "Reindexed ✓" → auto-clears to "Reindex" after 3s.
-4. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Share version · Close. "Share version" is always rendered but disabled when no snapshot selected; shows "Shared ✓" (disabled, non-destructive) when the selected snapshot is already shared.
+4. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Close only. The share action lives exclusively in the COMMENTS panel header.
 5. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
 6. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
 7. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
@@ -236,7 +236,7 @@ Sharing is tied to History snapshots (immutable), not to the live document. Anyo
 - **Public read**: `GET /shared/{token}` — no auth. `_find_snapshot_by_token()` scans all users' documents via `load_users()` + `list_documents()`. Returns `doc_title`, `label`, `timestamp`, `content`, `comments`.
 - **Comments**: `POST /shared/{token}/comments` — no auth; validates name ≤100 chars and body ≤2000 chars (both non-empty after strip); appends with UUID. `DELETE /documents/{doc_id}/history/{snapshot_id}/comments/{comment_id}` — auth required; 404 if not found.
 - **Share URL**: built in the frontend as `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
-- **History.jsx share state**: `shareToken` and `shareComments` loaded from `getSnapshot` response when a snapshot is selected. Updated in local state directly after share/unshare/delete-comment — no full list reload. Comments panel header shows copy-icon + "Revoke" (red) when shared, "Share this version" (blue) when not.
+- **History.jsx share state**: `shareToken` and `shareComments` loaded from `getSnapshot` response when a snapshot is selected. Updated in local state directly after share/unshare/delete-comment — no full list reload. Comments panel header is the sole share entry point: shows "Share this version" (blue) when not shared, copy-icon + "Revoke" (red) when shared.
 
 ## Section Locking
 
