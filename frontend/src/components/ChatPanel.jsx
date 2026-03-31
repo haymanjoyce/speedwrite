@@ -49,7 +49,7 @@ const INSIGHTS_PROMPTS = Object.fromEntries(SHARED_INSIGHT_ACTIONS.map((a) => [a
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
   headings, evidenceSources, pendingProposal, evidenceCount = 0, structureLocked = false,
-  actionsUsed = 0, hasByokKey = false,
+  actionsUsed = 0, hasByokKey = false, onActionComplete = null,
 }, ref) {
   const isCapped = !hasByokKey && actionsUsed >= FREE_ACTION_CAP
   const actionsRemaining = hasByokKey ? null : Math.max(0, FREE_ACTION_CAP - actionsUsed)
@@ -217,6 +217,7 @@ const ChatPanel = forwardRef(function ChatPanel({
 
       const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
+      onActionComplete?.()
       if (res.proposed_content) {
         onProposedChange(res.proposed_content)
       }

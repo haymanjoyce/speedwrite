@@ -126,7 +126,7 @@ function SourcePickerPopup({ sources, onSelect, onClose, anchorRef }) {
   )
 }
 
-export default function EvidenceChatPanel({ docId, evidenceSources, document, actionsUsed = 0, hasByokKey = false }) {
+export default function EvidenceChatPanel({ docId, evidenceSources, document, actionsUsed = 0, hasByokKey = false, onActionComplete = null }) {
   const isCapped = !hasByokKey && actionsUsed >= FREE_ACTION_CAP
   const actionsRemaining = hasByokKey ? null : Math.max(0, FREE_ACTION_CAP - actionsUsed)
   const [messages, setMessages] = useState([])
@@ -277,6 +277,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
         docId, text, context, contextLabel, hasContext, abortControllerRef.current.signal
       )
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
+      onActionComplete?.()
     } catch (err) {
       if (err.name !== 'AbortError') {
         const isCapError = err.message.includes('Monthly limit')

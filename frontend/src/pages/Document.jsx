@@ -308,6 +308,7 @@ export default function Document() {
             structureLocked={structureLocked}
             actionsUsed={user?.ai_actions_used ?? 0}
             hasByokKey={user?.has_byok_key ?? false}
+            onActionComplete={() => { api.me().then(setUser).catch(() => {}) }}
           />
         </div>
       </div>

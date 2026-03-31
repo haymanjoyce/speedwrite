@@ -205,6 +205,7 @@ Main views:
 - **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
 - **Enter key**: configurable. `localStorage` key is `speedwrite_submit_on_enter`. Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
 - **RAG badge**: `✦ RAG` appears near Stop button when per-source RAG is active. Cleared in `finally` and by Stop handler.
+- **onActionComplete**: Optional callback prop (default `null`) on both `ChatPanel` and `EvidenceChatPanel`. Called after each successful AI response (fire-and-forget, no await). Pages pass `() => { api.me().then(setUser).catch(() => {}) }` so the TopBar usage counter refreshes live after each action.
 - **Double fetches in dev**: React 18 StrictMode causes intentional double-mount. Two `GET /documents/:id` on load is expected in dev, not a bug.
 
 ## Document History
