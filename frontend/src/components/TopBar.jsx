@@ -4,7 +4,7 @@ import { useSearch } from '../context/SearchContext'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
-export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel, hasByokKey = false, actionsRemaining = null }) {
+export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel, pageTitle = null, hasByokKey = false, actionsRemaining = null }) {
   const { open: openSearch } = useSearch()
   const [inputValue, setInputValue] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -33,7 +33,7 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
     }
   }, [dropdownOpen])
 
-  const breadcrumbTitle = docTitle ? `SpeedWrite / ${docTitle}` : 'SpeedWrite'
+  const breadcrumbTitle = docTitle ? `SpeedWrite / ${docTitle}` : pageTitle ? `SpeedWrite / ${pageTitle}` : 'SpeedWrite'
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); onRenameSave?.(inputValue.trim()) }
@@ -64,6 +64,14 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
             ) : (
               <span className="text-gray-900 truncate max-w-xs">{docTitle}</span>
             )}
+          </>
+        ) : pageTitle ? (
+          <>
+            <Link to="/" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
+              SpeedWrite
+            </Link>
+            <span className="mx-2 flex-shrink-0" />
+            <span className="text-gray-900 truncate max-w-xs">{pageTitle}</span>
           </>
         ) : (
           <span className="text-gray-900 font-semibold tracking-tight">SpeedWrite</span>
