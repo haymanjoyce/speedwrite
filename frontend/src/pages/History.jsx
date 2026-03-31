@@ -207,7 +207,7 @@ export default function History() {
             {selectedSnapshot && shareToken && (
               <button
                 onClick={handleUnshare}
-                className="text-xs text-red-600 border border-red-200 hover:bg-red-50 rounded px-2 py-1 transition-colors cursor-pointer"
+                className="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-2 py-1 transition-colors cursor-pointer"
               >
                 Revoke
               </button>
@@ -216,7 +216,7 @@ export default function History() {
               <button
                 onClick={handleShare}
                 disabled={sharing}
-                className="text-xs text-blue-600 border border-blue-200 hover:bg-blue-50 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Share this version
               </button>
