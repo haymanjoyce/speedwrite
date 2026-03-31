@@ -163,6 +163,11 @@ export default function History() {
                   <span className="text-sm font-medium truncate">{snap.label}</span>
                 </div>
                 <div className="text-xs text-gray-400 mt-0.5">{timeAgo(snap.timestamp)}</div>
+                {(snap.is_shared || snap.comment_count > 0) && (
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {[snap.is_shared ? 'Shared' : null, snap.comment_count > 0 ? `${snap.comment_count} comments` : null].filter(Boolean).join(' · ')}
+                  </div>
+                )}
               </div>
             ))}
           </div>

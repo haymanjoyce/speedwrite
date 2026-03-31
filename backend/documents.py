@@ -137,7 +137,14 @@ def list_history(doc_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Document not found")
     history = doc.get("history", [])
     stripped = [
-        {"id": e["id"], "timestamp": e["timestamp"], "trigger": e["trigger"], "label": e["label"]}
+        {
+            "id": e["id"],
+            "timestamp": e["timestamp"],
+            "trigger": e["trigger"],
+            "label": e["label"],
+            "is_shared": bool(e.get("share_token")),
+            "comment_count": len(e.get("comments", [])),
+        }
         for e in reversed(history)
     ]
     return stripped
