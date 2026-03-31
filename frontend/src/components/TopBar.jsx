@@ -106,6 +106,15 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
             </button>
             {dropdownOpen && (
               <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 shadow-sm rounded z-50 min-w-[160px]">
+                {user.is_admin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setDropdownOpen(false)}
+                    className="text-sm text-gray-700 hover:bg-gray-50 px-4 py-2 block"
+                  >
+                    Administration
+                  </Link>
+                )}
                 <Link
                   to="/account"
                   onClick={() => setDropdownOpen(false)}

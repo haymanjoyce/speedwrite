@@ -58,6 +58,9 @@ export const api = {
   saveByokKey: (api_key) => request('POST', '/auth/byok', { api_key }),
   removeByokKey: () => request('DELETE', '/auth/byok'),
 
+  // Admin
+  getAdminUsers: () => request('GET', '/admin/users'),
+
   // Documents
   listDocuments: () => request('GET', '/documents/'),
   getDocument: (id) => request('GET', `/documents/${id}?_=${Date.now()}`),

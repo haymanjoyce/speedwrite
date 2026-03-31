@@ -4,6 +4,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import SearchOverlay from './components/SearchOverlay'
 import { SearchProvider, useSearch } from './context/SearchContext'
 import Account from './pages/Account'
+import Admin from './pages/Admin'
 import Document from './pages/Document'
 import Evidence from './pages/Evidence'
 import History from './pages/History'
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/reset-password/request" element={<ErrorBoundary><ResetRequest /></ErrorBoundary>} />
         <Route path="/reset-password/confirm" element={<ErrorBoundary><ResetConfirm /></ErrorBoundary>} />
         <Route path="/account" element={<RequireAuth><ErrorBoundary><Account /></ErrorBoundary></RequireAuth>} />
+        <Route path="/admin" element={<RequireAuth><ErrorBoundary><Admin /></ErrorBoundary></RequireAuth>} />
         <Route
           path="/"
           element={

@@ -176,6 +176,7 @@ def me(user=Depends(get_current_user)):
         byok_key_masked=masked,
         ai_actions_used=get_actions_used(user),
         ai_actions_reset_at=user.get("ai_actions_reset_at"),
+        is_admin=user.get("is_admin", False),
     )
 
 

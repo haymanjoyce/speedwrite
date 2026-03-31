@@ -21,6 +21,7 @@ class UserOut(BaseModel):
     byok_key_masked: Optional[str] = None
     ai_actions_used: int = 0
     ai_actions_reset_at: Optional[str] = None
+    is_admin: bool = False
 
 
 class ResetPasswordRequest(BaseModel):

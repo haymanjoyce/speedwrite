@@ -78,7 +78,8 @@ speedwrite/
 │   ├── models.py
 │   ├── storage.py
 │   ├── limits.py
-│   └── cleanup.py
+│   ├── cleanup.py
+│   └── admin.py
 ├── frontend/
 │   └── src/
 │       ├── context/
@@ -92,7 +93,8 @@ speedwrite/
 │       │   ├── Register.jsx
 │       │   ├── Account.jsx
 │       │   ├── ResetRequest.jsx
-│       │   └── ResetConfirm.jsx
+│       │   ├── ResetConfirm.jsx
+│       │   └── Admin.jsx
 │       ├── components/
 │       │   ├── TopBar.jsx
 │       │   ├── ContextBar.jsx
@@ -155,6 +157,7 @@ Main views:
 5. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
 6. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
 7. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
+8. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
 
 `ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
 
@@ -246,7 +249,7 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - **Update profile**: `POST /auth/update-profile` (auth required) — saves `display_name` on user record. `GET /auth/me` returns `display_name` (Optional, may be null).
 - **Delete account**: `DELETE /auth/account` (auth required) — verifies password, removes user from `users.json`, then `shutil.rmtree` on docs, embeddings, and templates dirs for that user.
 - **Email sending**: `backend/mailer.py` wraps SendGrid. Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
-- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `byok_key_encrypted` (optional, Fernet-encrypted Anthropic API key), `ai_actions_used` (int, default 0), `ai_actions_reset_at` (optional UTC ISO string — month boundary for counter reset), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string). All optional fields are read with `.get()` so existing records degrade safely.
+- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `byok_key_encrypted` (optional, Fernet-encrypted Anthropic API key), `ai_actions_used` (int, default 0), `ai_actions_reset_at` (optional UTC ISO string — month boundary for counter reset), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string), `is_admin` (bool, default `False` — set manually in `users.json`). All optional fields are read with `.get()` so existing records degrade safely.
 - **BYOK endpoints**: `POST /auth/byok` saves an encrypted key; `DELETE /auth/byok` removes it. `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked` (e.g. `sk-ant-••••••••1234`). Encryption uses Fernet (`cryptography` library); key comes from `ENCRYPTION_KEY` env var. `get_byok_key(user)` in `auth.py` returns the decrypted key or `None` (raises HTTP 500 if key is stored but decryption fails). All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`, `templates.py`) call `get_byok_key(user)` and pass the result to `complete()`.
 
 ## Data Storage
