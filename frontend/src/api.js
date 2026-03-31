@@ -145,6 +145,18 @@ export const api = {
   createSnapshot: (docId, label = '', trigger = 'manual', sourceSnapshotId = null, sourceSnapshotLabel = null) =>
     request('POST', `/documents/${docId}/snapshot`, { label, trigger, source_snapshot_id: sourceSnapshotId, source_snapshot_label: sourceSnapshotLabel }),
 
+  // Sharing
+  shareSnapshot: (docId, snapshotId) =>
+    request('POST', `/documents/${docId}/history/${snapshotId}/share`),
+  unshareSnapshot: (docId, snapshotId) =>
+    request('POST', `/documents/${docId}/history/${snapshotId}/unshare`),
+  deleteComment: (docId, snapshotId, commentId) =>
+    request('DELETE', `/documents/${docId}/history/${snapshotId}/comments/${commentId}`),
+  getSharedVersion: (token) =>
+    request('GET', `/shared/${token}`),
+  postComment: (token, name, body) =>
+    request('POST', `/shared/${token}/comments`, { name, body }),
+
   // Export
   downloadExport: async (docId, format) => {
     const token = getToken()

@@ -13,6 +13,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import ResetConfirm from './pages/ResetConfirm'
 import ResetRequest from './pages/ResetRequest'
+import SharedView from './pages/SharedView'
 
 function RequireAuth({ children }) {
   return localStorage.getItem('token') ? children : <Navigate to="/login" replace />
@@ -74,6 +75,7 @@ function AppRoutes() {
             </RequireAuth>
           }
         />
+        <Route path="/shared/:token" element={<ErrorBoundary><SharedView /></ErrorBoundary>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

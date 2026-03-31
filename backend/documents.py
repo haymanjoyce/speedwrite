@@ -21,6 +21,8 @@ def add_snapshot(doc: dict, trigger: str, label: str) -> None:
         "trigger": trigger,
         "label": label,
         "content": doc.get("content", ""),
+        "share_token": None,
+        "comments": [],
     }
     history = doc.setdefault("history", [])
     history.append(entry)

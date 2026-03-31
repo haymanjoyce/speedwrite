@@ -79,6 +79,7 @@ speedwrite/
 │   ├── storage.py
 │   ├── limits.py
 │   ├── cleanup.py
+│   ├── sharing.py
 │   └── admin.py
 ├── frontend/
 │   └── src/
@@ -94,7 +95,8 @@ speedwrite/
 │       │   ├── Account.jsx
 │       │   ├── ResetRequest.jsx
 │       │   ├── ResetConfirm.jsx
-│       │   └── Admin.jsx
+│       │   ├── Admin.jsx
+│       │   └── SharedView.jsx
 │       ├── components/
 │       │   ├── TopBar.jsx
 │       │   ├── ContextBar.jsx
@@ -153,11 +155,12 @@ Main views:
 1. **Library** (`/`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
 2. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right. Reindex status is shown inline on the Reindex button label: "Reindexing…" (disabled) → "Reindexed ✓" → auto-clears to "Reindex" after 3s.
-4. **History** (`/document/:id/history`) — snapshot list left, snapshot detail + MarkdownPreview right.
+4. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Share version · Close. "Share version" is always rendered but disabled when no snapshot selected; shows "Shared ✓" (disabled, non-destructive) when the selected snapshot is already shared.
 5. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
 6. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
 7. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
-8. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
+8. **SharedView** (`/shared/:token`) — unauthenticated public page, no TopBar/ContextBar. Two columns: left (flex-1) shows document title, snapshot label + timestamp, rendered markdown via `MarkdownPreview`. Right (w-80, border-left) shows comment list and a submission form (name + message textarea + Submit). Shows 404 message if token not found. "Powered by SpeedWrite" link at bottom of right column.
+9. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
 
 `ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
 
@@ -216,12 +219,24 @@ Main views:
 - Snapshots: `history: list` on doc JSON; max 50 (oldest dropped).
 - `save_count` incremented on every PUT; snapshot taken when `save_count % 10 == 0`.
 - Four triggers: `auto` ("Auto save"), `rewrite` ("AI rewrite"), `restore` ("Version restored"), `manual` ("Manual checkpoint").
+- Each snapshot entry has: `id`, `timestamp`, `trigger`, `label`, `content`, `share_token` (string|null), `comments` (list). `share_token` and `comments` initialised in `add_snapshot()`; existing snapshots without them degrade safely via `.get()`.
 - `POST /documents/{doc_id}/snapshot` — body `{ label, trigger }`. Returns new entry.
-- `GET /documents/{doc_id}/history` — list newest-first, **no** `content` field.
-- `GET /documents/{doc_id}/history/{snapshot_id}` — full snapshot with content.
+- `GET /documents/{doc_id}/history` — list newest-first, **no** `content` field (strips to id/timestamp/trigger/label only — no share_token).
+- `GET /documents/{doc_id}/history/{snapshot_id}` — full snapshot with content, share_token, comments.
 - Restore flow: History.jsx navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on load, sets `pendingProposal`, sets `pendingProposalReason: 'restore'`, clears location state via `window.history.replaceState`. Accept → `trigger='restore'` snapshot created; Reject → unchanged.
 - `pendingProposalReason`: `'ai_rewrite'` (default) or `'restore'`. Controls snapshot trigger in `handleAccept`. Reset to `'ai_rewrite'` after accept.
 - `flashStatus` prop on `Editor.jsx`: shows brief messages ("Version saved", "Template saved") in Editor header, overriding save status for 3 seconds.
+
+## Version Sharing
+
+Sharing is tied to History snapshots (immutable), not to the live document. Anyone with a share link can view the snapshot and leave a comment (name + body). The document owner can delete comments.
+
+- **Backend**: `backend/sharing.py` — bare `APIRouter` (no prefix), registered last in `main.py`.
+- **Share/unshare**: `POST /documents/{doc_id}/history/{snapshot_id}/share` (idempotent — returns existing token if already set; generates `secrets.token_urlsafe(32)` otherwise). `POST .../unshare` sets `share_token = None`.
+- **Public read**: `GET /shared/{token}` — no auth. `_find_snapshot_by_token()` scans all users' documents via `load_users()` + `list_documents()`. Returns `doc_title`, `label`, `timestamp`, `content`, `comments`.
+- **Comments**: `POST /shared/{token}/comments` — no auth; validates name ≤100 chars and body ≤2000 chars (both non-empty after strip); appends with UUID. `DELETE /documents/{doc_id}/history/{snapshot_id}/comments/{comment_id}` — auth required; 404 if not found.
+- **Share URL**: built in the frontend as `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
+- **History.jsx share state**: `shareToken` and `shareComments` loaded from `getSnapshot` response when a snapshot is selected. Updated in local state directly after share/unshare/delete-comment — no full list reload. Comments panel header shows copy-icon + "Revoke" (red) when shared, "Share this version" (blue) when not.
 
 ## Section Locking
 

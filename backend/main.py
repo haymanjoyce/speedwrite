@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from actions import router as actions_router
+from sharing import router as sharing_router
 from admin import router as admin_router
 from export import router as export_router
 from auth import router as auth_router
@@ -25,6 +26,7 @@ app.include_router(evidence_chat_router)
 app.include_router(search_router)
 app.include_router(templates_router)
 app.include_router(admin_router, prefix="/admin")
+app.include_router(sharing_router)
 
 
 @app.get("/health")
