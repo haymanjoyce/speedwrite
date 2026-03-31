@@ -40,6 +40,9 @@ export default function History() {
   const [shareToken, setShareToken] = useState(null)
   const [shareComments, setShareComments] = useState([])
   const [sharing, setSharing] = useState(false)
+  const [ownerCommentBody, setOwnerCommentBody] = useState('')
+  const [ownerCommentSubmitting, setOwnerCommentSubmitting] = useState(false)
+  const [ownerCommentError, setOwnerCommentError] = useState(null)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -60,6 +63,8 @@ export default function History() {
     setSnapshotContent(null)
     setShareToken(null)
     setShareComments([])
+    setOwnerCommentBody('')
+    setOwnerCommentError(null)
     setLoadingContent(true)
     try {
       const full = await api.getSnapshot(id, snapshot.id)
@@ -110,8 +115,33 @@ export default function History() {
     try {
       await api.deleteComment(id, selectedSnapshot.id, commentId)
       setShareComments((prev) => prev.filter((c) => c.id !== commentId))
+      setSnapshots((prev) =>
+        prev.map((s) =>
+          s.id === selectedSnapshot.id ? { ...s, comment_count: Math.max(0, s.comment_count - 1) } : s
+        )
+      )
     } catch (err) {
       console.error('Failed to delete comment', err)
+    }
+  }
+
+  const handleOwnerComment = async () => {
+    if (!ownerCommentBody.trim()) return
+    setOwnerCommentSubmitting(true)
+    setOwnerCommentError(null)
+    try {
+      const comment = await api.postOwnerComment(id, selectedSnapshot.id, ownerCommentBody.trim())
+      setShareComments((prev) => [...prev, comment])
+      setOwnerCommentBody('')
+      setSnapshots((prev) =>
+        prev.map((s) =>
+          s.id === selectedSnapshot.id ? { ...s, comment_count: s.comment_count + 1 } : s
+        )
+      )
+    } catch (err) {
+      setOwnerCommentError(err.message)
+    } finally {
+      setOwnerCommentSubmitting(false)
     }
   }
 
@@ -228,9 +258,9 @@ export default function History() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {!selectedSnapshot ? null : (
-              <div className="flex flex-col h-full">
+              <>
                 {/* Share URL — only when shared */}
                 {shareToken && (
                   <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex-shrink-0">
@@ -252,18 +282,22 @@ export default function History() {
                 {/* Comments list */}
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
                   {!shareToken && shareComments.length === 0 && (
-                    <div className="h-full flex items-center justify-center p-6">
-                      <p className="text-sm text-gray-400 text-center">Share this version to collect feedback</p>
-                    </div>
+                    <p className="text-sm text-gray-400">Share this version to collect feedback</p>
                   )}
                   {shareToken && shareComments.length === 0 && (
                     <p className="text-sm text-gray-400">No comments yet.</p>
                   )}
                   {shareComments.map((c) => (
-                    <div key={c.id} className="text-sm group">
+                    <div
+                      key={c.id}
+                      className={`text-sm group rounded px-2 py-1.5 ${c.is_owner ? 'bg-blue-50' : ''}`}
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="font-semibold text-gray-900 truncate">{c.name}</span>
+                          {c.is_owner && (
+                            <span className="text-xs text-blue-500 flex-shrink-0">Owner</span>
+                          )}
                           <span className="text-xs text-gray-400 flex-shrink-0">{timeAgo(c.created_at)}</span>
                         </div>
                         <button
@@ -277,7 +311,28 @@ export default function History() {
                     </div>
                   ))}
                 </div>
-              </div>
+                {/* Owner comment form */}
+                <div className="border-t border-gray-200 p-4 flex-shrink-0">
+                  <textarea
+                    placeholder="Add a note…"
+                    value={ownerCommentBody}
+                    onChange={(e) => setOwnerCommentBody(e.target.value)}
+                    maxLength={2000}
+                    rows={3}
+                    className="w-full text-sm border border-gray-200 rounded px-3 py-1.5 mb-2 focus:outline-none focus:border-gray-400 resize-none"
+                  />
+                  {ownerCommentError && (
+                    <p className="text-xs text-red-600 mb-2">{ownerCommentError}</p>
+                  )}
+                  <button
+                    onClick={handleOwnerComment}
+                    disabled={ownerCommentSubmitting || !ownerCommentBody.trim()}
+                    className="w-full text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-3 py-1.5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {ownerCommentSubmitting ? 'Submitting…' : 'Submit'}
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>

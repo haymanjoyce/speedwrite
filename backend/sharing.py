@@ -70,6 +70,10 @@ class CommentRequest(BaseModel):
     body: str
 
 
+class OwnerCommentRequest(BaseModel):
+    body: str
+
+
 @router.post("/shared/{token}/comments")
 def post_comment(token: str, data: CommentRequest):
     name = data.name.strip()
@@ -92,12 +96,47 @@ def post_comment(token: str, data: CommentRequest):
         "name": name,
         "body": body,
         "created_at": datetime.utcnow().isoformat(),
+        "is_owner": False,
     }
     if "comments" not in entry:
         entry["comments"] = []
     entry["comments"].append(comment)
     save_document(doc)
     return comment
+
+
+@router.post("/documents/{doc_id}/history/{snapshot_id}/comments")
+def post_owner_comment(
+    doc_id: str, snapshot_id: str, data: OwnerCommentRequest, user=Depends(get_current_user)
+):
+    body = data.body.strip()
+    if not body:
+        raise HTTPException(status_code=422, detail="Message is required")
+    if len(body) > 2000:
+        raise HTTPException(status_code=422, detail="Message must be 2000 characters or fewer")
+
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    name = user.get("display_name") or user.get("email", "Owner")
+
+    for entry in doc.get("history", []):
+        if entry["id"] == snapshot_id:
+            comment = {
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "body": body,
+                "created_at": datetime.utcnow().isoformat(),
+                "is_owner": True,
+            }
+            if "comments" not in entry:
+                entry["comments"] = []
+            entry["comments"].append(comment)
+            save_document(doc)
+            return comment
+
+    raise HTTPException(status_code=404, detail="Snapshot not found")
 
 
 @router.delete("/documents/{doc_id}/history/{snapshot_id}/comments/{comment_id}")

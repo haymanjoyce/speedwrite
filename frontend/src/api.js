@@ -156,6 +156,8 @@ export const api = {
     request('GET', `/shared/${token}`),
   postComment: (token, name, body) =>
     request('POST', `/shared/${token}/comments`, { name, body }),
+  postOwnerComment: (docId, snapshotId, body) =>
+    request('POST', `/documents/${docId}/history/${snapshotId}/comments`, { body }),
 
   // Export
   downloadExport: async (docId, format) => {

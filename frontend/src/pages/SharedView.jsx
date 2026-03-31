@@ -98,9 +98,12 @@ export default function SharedView() {
             <p className="text-sm text-gray-400">No comments yet. Be the first!</p>
           )}
           {comments.map((c) => (
-            <div key={c.id} className="text-sm">
+            <div key={c.id} className={`text-sm rounded px-2 py-1.5 ${c.is_owner ? 'bg-blue-50' : ''}`}>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="font-semibold text-gray-900">{c.name}</span>
+                {c.is_owner && (
+                  <span className="text-xs text-blue-500">Owner</span>
+                )}
                 <span className="text-xs text-gray-400">{timeAgo(c.created_at)}</span>
               </div>
               <p className="text-gray-700 whitespace-pre-wrap">{c.body}</p>
