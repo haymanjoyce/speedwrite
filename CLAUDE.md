@@ -155,7 +155,7 @@ Main views:
 1. **Library** (`/`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
 2. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right. Reindex status is shown inline on the Reindex button label: "Reindexing…" (disabled) → "Reindexed ✓" → auto-clears to "Reindex" after 3s.
-4. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Close only. The share action lives exclusively in the COMMENTS panel header.
+4. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" button (right-aligned) when a snapshot is selected; panel body starts directly with MarkdownPreview. The share action lives exclusively in the COMMENTS panel header.
 5. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
 6. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
 7. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
@@ -221,7 +221,7 @@ Main views:
 - Four triggers: `auto` ("Auto save"), `rewrite` ("AI rewrite"), `restore` ("Version restored"), `manual` ("Manual checkpoint").
 - Each snapshot entry has: `id`, `timestamp`, `trigger`, `label`, `content`, `share_token` (string|null), `comments` (list). `share_token` and `comments` initialised in `add_snapshot()`; existing snapshots without them degrade safely via `.get()`.
 - `POST /documents/{doc_id}/snapshot` — body `{ label, trigger }`. Returns new entry.
-- `GET /documents/{doc_id}/history` — list newest-first, **no** `content` field (strips to id/timestamp/trigger/label only — no share_token).
+- `GET /documents/{doc_id}/history` — list newest-first, strips to `id`, `timestamp`, `trigger`, `label`, `is_shared` (bool), `comment_count` (int). No `content` or `share_token` in list.
 - `GET /documents/{doc_id}/history/{snapshot_id}` — full snapshot with content, share_token, comments.
 - Restore flow: History.jsx navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on load, sets `pendingProposal`, sets `pendingProposalReason: 'restore'`, clears location state via `window.history.replaceState`. Accept → `trigger='restore'` snapshot created; Reject → unchanged.
 - `pendingProposalReason`: `'ai_rewrite'` (default) or `'restore'`. Controls snapshot trigger in `handleAccept`. Reset to `'ai_rewrite'` after accept.
@@ -234,9 +234,11 @@ Sharing is tied to History snapshots (immutable), not to the live document. Anyo
 - **Backend**: `backend/sharing.py` — bare `APIRouter` (no prefix), registered last in `main.py`.
 - **Share/unshare**: `POST /documents/{doc_id}/history/{snapshot_id}/share` (idempotent — returns existing token if already set; generates `secrets.token_urlsafe(32)` otherwise). `POST .../unshare` sets `share_token = None`.
 - **Public read**: `GET /shared/{token}` — no auth. `_find_snapshot_by_token()` scans all users' documents via `load_users()` + `list_documents()`. Returns `doc_title`, `label`, `timestamp`, `content`, `comments`.
-- **Comments**: `POST /shared/{token}/comments` — no auth; validates name ≤100 chars and body ≤2000 chars (both non-empty after strip); appends with UUID. `DELETE /documents/{doc_id}/history/{snapshot_id}/comments/{comment_id}` — auth required; 404 if not found.
-- **Share URL**: built in the frontend as `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
-- **History.jsx share state**: `shareToken` and `shareComments` loaded from `getSnapshot` response when a snapshot is selected. Updated in local state directly after share/unshare/delete-comment — no full list reload. Comments panel header is the sole share entry point: shows "Share this version" (blue) when not shared, copy-icon + "Revoke" (red) when shared.
+- **Public comments**: `POST /shared/{token}/comments` — no auth; validates name ≤100 chars and body ≤2000 chars; sets `is_owner: False`. `DELETE /documents/{doc_id}/history/{snapshot_id}/comments/{comment_id}` — auth required; 404 if not found.
+- **Owner comments**: `POST /documents/{doc_id}/history/{snapshot_id}/comments` — auth required; body only (name derived from `display_name || email`); sets `is_owner: True`; validates body ≤2000 chars.
+- **`is_owner` field**: present on all new comment entries; existing comments without it default to `False` via `.get()`. Owner comments rendered with `bg-blue-50` + "Owner" badge in both History.jsx and SharedView.jsx.
+- **Share URL**: built as `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
+- **History.jsx COMMENTS panel**: header shows "Share this version" (grey outlined) when not shared, "Revoke" (grey outlined) when shared. Body is `flex flex-col`: scrollable comments list (top) + pinned owner comment form (bottom, always visible when snapshot selected). `comment_count` in snapshot list state is incremented on owner comment add and decremented on delete. Snapshot list items show `is_shared` / `comment_count` as a third line when either is non-zero.
 
 ## Section Locking
 
