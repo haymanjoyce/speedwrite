@@ -229,33 +229,34 @@ export default function History() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {!selectedSnapshot || !shareToken ? (
-              selectedSnapshot && !shareToken ? (
-                <div className="h-full flex items-center justify-center p-6">
-                  <p className="text-sm text-gray-400 text-center">Share this version to collect feedback</p>
-                </div>
-              ) : null
-            ) : (
+            {!selectedSnapshot ? null : (
               <div className="flex flex-col h-full">
-                {/* Share URL */}
-                <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <input
-                      readOnly
-                      value={window.location.origin + '/shared/' + shareToken}
-                      className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-gray-600 min-w-0"
-                    />
-                    <button
-                      onClick={handleCopyLink}
-                      className="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-2 py-1.5 transition-colors cursor-pointer flex-shrink-0"
-                    >
-                      Copy
-                    </button>
+                {/* Share URL — only when shared */}
+                {shareToken && (
+                  <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <input
+                        readOnly
+                        value={window.location.origin + '/shared/' + shareToken}
+                        className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-gray-600 min-w-0"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        className="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-2 py-1.5 transition-colors cursor-pointer flex-shrink-0"
+                      >
+                        Copy
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
                 {/* Comments list */}
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-                  {shareComments.length === 0 && (
+                  {!shareToken && shareComments.length === 0 && (
+                    <div className="h-full flex items-center justify-center p-6">
+                      <p className="text-sm text-gray-400 text-center">Share this version to collect feedback</p>
+                    </div>
+                  )}
+                  {shareToken && shareComments.length === 0 && (
                     <p className="text-sm text-gray-400">No comments yet.</p>
                   )}
                   {shareComments.map((c) => (
