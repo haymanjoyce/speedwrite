@@ -16,21 +16,13 @@ Existing `audit_log` arrays in document JSON files are harmless and simply ignor
 
 ### Rewrite operates at section level, not selected-text level
 
-The Rewrite button lives on tree node hover and operates on the full section under a heading, not on arbitrary selected text.
-
-**Why:** We experimented with adding a Rewrite pill to the context bar that fired when the user selected text in the editor. This was reverted because:
-
-1. LLMs are unreliable at precise mid-paragraph text substitution — asking the model to find and replace an exact sentence within a larger document produces inconsistent results
-2. Section-level rewrites work reliably because the heading provides an unambiguous boundary — the AI knows exactly what to replace
-3. For sentence-level edits, the chat panel (attach text as context, ask for suggestions) is a better workflow — the user sees the suggestion in chat and applies it manually
-
-**Implication:** Do not add Rewrite to the context bar for text selections. If sentence-level rewriting is needed in future, it should be implemented via backend text substitution (AI rewrites only the selected text, backend does the replacement) rather than asking the AI to return a full document with the replacement embedded.
+The Rewrite button lives on tree node hover and operates on the full section under a heading, not on arbitrary selected text. Do not add Rewrite to the context bar for text selections — LLMs are unreliable at mid-paragraph substitution. If sentence-level rewriting is needed, implement via backend text substitution (AI rewrites only the selection, backend does the replacement), not by asking the AI to return a full document with the replacement embedded.
 
 ## UI Conventions
 
 ### Three-tier navigation hierarchy
 
-**Tier 1 — Global bar (TopBar):** Always visible. App name/logo, breadcrumb, search icon, user dropdown. Breadcrumb shows "SpeedWrite" (→ /) and document title when open — no sub-page labels in breadcrumb. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`, `onFeedbackClick`. The user area shows `display_name || email` as a dropdown trigger (▾); dropdown items: "Give feedback" (when `onFeedbackClick` provided) · "Account settings" (→ `/account`) · "Sign out". Dropdown closes on outside click or Escape. `pageTitle` (string, default `null`) is for non-document pages (Account, Admin, etc.) — when set and `docTitle` is absent, renders SpeedWrite (linked to /) + separator + static gray-900 title, same styling as `docTitle` but without rename/edit functionality. `docTitle` takes priority if both are set. `Account.jsx` uses `pageTitle="Account Settings"` and has no Back button — navigation home is via the SpeedWrite link in TopBar.
+**Tier 1 — Global bar (TopBar):** Always visible. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`, `onFeedbackClick`. SpeedWrite logo links to `/home`. User dropdown: "Give feedback" (when `onFeedbackClick` provided) · "Administration" (admins only) · "Account settings" · "Sign out"; closes on outside click or Escape. `pageTitle` is for non-document pages; `docTitle` takes priority if both are set.
 
 **Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row).
 - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
@@ -55,7 +47,7 @@ The Rewrite button lives on tree node hover and operates on the full section und
 The app avoids modals — actions happen inline or in panels. The **one intentional exception** is `SearchOverlay.jsx` (global search). Do not add further modals without equally strong justification.
 
 ### Delete confirmations
-Destructive deletes use an inline confirmation bar below the context bar (`bg-red-50 border-red-100`), not `window.confirm()`. Warning text left, Delete + Cancel buttons right. Escape/Cancel dismisses. `pendingDelete` boolean controls visibility; cleared on selection change and on success. Applies to: document delete (`Home.jsx`) and evidence delete (`Evidence.jsx`).
+Destructive deletes use an inline confirmation bar below the context bar, not `window.confirm()`. Warning text left, Delete + Cancel buttons right. Escape/Cancel dismisses. `pendingDelete` boolean controls visibility; cleared on selection change and on success. Applies to: document delete (`Home.jsx`) and evidence delete (`Evidence.jsx`).
 
 ## Repository Structure
 
@@ -158,12 +150,12 @@ Main views:
 1. **Landing** (`/`) — public, no auth, no TopBar/ContextBar. Nav bar + hero + three feature columns + footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
 2. **Library** (`/home`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
 3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
-4. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right. Reindex status is shown inline on the Reindex button label: "Reindexing…" (disabled) → "Reindexed ✓" → auto-clears to "Reindex" after 3s.
-5. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" button (right-aligned) when a snapshot is selected; panel body starts directly with MarkdownPreview. The share action lives exclusively in the COMMENTS panel header.
-6. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
-7. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
-8. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
-9. **SharedView** (`/shared/:token`) — unauthenticated public page, no TopBar/ContextBar. Two columns: left (flex-1) shows document title, snapshot label + timestamp, rendered markdown via `MarkdownPreview`. Right (w-80, border-left) shows comment list and a submission form (name + message textarea + Submit). Shows 404 message if token not found. "Powered by SpeedWrite" link at bottom of right column.
+4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right. Reindex status shown inline on the button: "Reindexing…" → "Reindexed ✓" → auto-clears after 3s.
+5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.
+6. **Account** (`/account`) — no ContextBar. Sections: Profile, Change email, Change password, Delete account — each an independent form with inline success/error.
+7. **ResetRequest** (`/reset-password/request`) — unauthenticated. Always returns 200 (does not reveal whether email exists).
+8. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. Token read from URL query param.
+9. **SharedView** (`/shared/:token`) — unauthenticated, no TopBar/ContextBar. Left: document title, snapshot label + timestamp, rendered markdown. Right: comment list + submission form (name + body). Shows 404 if token not found.
 10. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
 
 `ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
@@ -178,32 +170,28 @@ Main views:
 - **Document actions routing (important)**: Redraft actions in `ChatPanel` go through `fireInsightInternal` → `handleSend` → `api.chatMessage` → `chat.py`. They do **NOT** call `api.documentAction` / `actions.py`. Only `Home.jsx` description generation calls `api.documentAction`.
 - **Redraft vs Insights**: Both dropdowns in ChatPanel header, both disabled when `pendingProposal` is truthy. Redraft shows `InstructionBar` for optional instructions before firing. Insights fire immediately. Both use `SHARED_INSIGHT_ACTIONS` from `insightPrompts.js`.
 - **Evidence base**: File uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, other documents. URL sources carry `last_fetched_at` and `last_fetch_error`. `POST .../evidence/{id}/refresh` updates content and re-embeds on success. "Update sources" in Sources panel header runs all URL sources sequentially. Duplicate URL detection shows amber banner in SourceDetail.
-- **Embeddings/RAG**: Chunked (2000 chars, 200 overlap), embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved (cosine similarity) instead of full dump. Per-source RAG preflight in ChatPanel/EvidenceChatPanel: `api.ragQuery` → `POST .../evidence/{id}/rag-query`; if `used_rag: true`, chunks replace context. Falls back silently if Ollama unreachable.
+- **Embeddings/RAG**: Embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved instead of full context dump. Per-source RAG preflight in ChatPanel/EvidenceChatPanel: `api.ragQuery` → `POST .../evidence/{id}/rag-query`; if `used_rag: true`, chunks replace context. Falls back silently if Ollama unreachable.
 - **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. Anthropic is the only active path. `_complete_ollama()` is retained but dormant — no UI toggle and `LLM_PROVIDER`/`OLLAMA_CHAT_MODEL` are commented out in `.env.example`. `config.py` and `ProviderToggle.jsx` have been deleted. Active model: `FREE_MODEL = "claude-haiku-4-5-20251001"` (module-level constant). Sonnet string retained as a comment for Sprint 2 plan-based routing.
 - **Evidence chat** (`EvidenceChatPanel.jsx`): Persistent chat on Evidence page. "All sources" option concatenates all sources. `ignore_history: true` when context attached. Backend: `POST /documents/{doc_id}/evidence-chat` in `evidence_chat.py`. Never modifies the document.
 - **Token limits**: `max_tokens=4096` in `chat.py` and `actions.py`. Large attachments can still cause truncation if total prompt + response exceeds model context window.
 - **Document templates**: Built-in templates in `frontend/src/data/templates.js`. User templates at `/var/speedwrite/templates/{user_id}/{template_id}.json` via `backend/templates.py`. `TemplatePickerOverlay.jsx` two screens: grid picker → AI pre-fill step. `POST /templates/prefill` calls `llm.complete()` (max_tokens=2048). "Save as template" opens inline bar (same `activeBar` state slot as other inline bars).
-- **Document export**: `GET .../export/txt` strips markdown to plain text. `GET .../export/pdf` uses `markdown` Python lib + `weasyprint`. Both auth-required, filename-sanitised, `Content-Disposition: attachment`. Frontend: `api.downloadExport` fetches as blob, extracts filename from header, triggers download via temporary `<a>`. Dockerfile apt packages: `libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b shared-mime-info fonts-liberation`.
-- **Global search**: `POST /search` substring search across all user docs (titles, content, evidence, chat history — not evidence_chat_history). Returns ≤5 per group. Frontend: `SearchOverlay.jsx` triggered by Cmd/Ctrl+K or search icon. 300ms debounce. Evidence results navigate to Evidence view with `{ state: { evidenceId } }`; `Evidence.jsx` pre-selects on load via `initialSelectDoneRef` (one-shot).
+- **Document export**: `GET .../export/txt` strips markdown to plain text. `GET .../export/pdf` uses `markdown` + `weasyprint`. Both auth-required, filename-sanitised. Frontend: `api.downloadExport` fetches as blob, extracts filename from header, triggers download via temporary `<a>`.
+- **Global search**: `POST /search` — searches titles, content, evidence, chat history (not evidence_chat_history); ≤5 results per group. `SearchOverlay.jsx` triggered by Cmd/Ctrl+K or search icon. Evidence results navigate to Evidence view with `{ state: { evidenceId } }`; `Evidence.jsx` pre-selects on load via `initialSelectDoneRef` (one-shot).
 
 ## Document Tree
 
-- Hover highlights node + all children (`bg-blue-50`).
+- Hover highlights node + all children.
 - **Rewrite** button on hover (hidden for protected headings). Former "Add" button removed — use + in chat input.
-- Protected headings: `bg-gray-100` + lock icon. Unlocked headings show lock icon faintly on hover only.
+- Protected headings highlighted + lock icon. Unlocked headings show lock icon faintly on hover only.
 - Clicking heading scrolls editor to it via `useImperativeHandle` on Editor.
 - No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
 
 ## Editor Find Bar
 
-- Triggered by the magnifying glass icon button in the Editor panel header (left of the Edit/Preview segmented control) or Ctrl+F / Cmd+F while the textarea is focused. Only available in edit mode when `pendingProposal` is falsy.
-- Slim bar (`h-10`, `bg-gray-50`, `border-b`) rendered between the panel header and the textarea. Not shown in Preview or diff view.
-- Layout (left to right): search input · ↑ · ↓ · counter · flex spacer · ×.
-- Counter shows `X / Y` (blank when no query); no special treatment for zero results — just shows `0 / 0`.
-- Matches computed with `useMemo` (case-insensitive) to avoid stale-counter flicker. `findIndex` resets to 0 when `findQuery` changes.
-- Navigation selects the match via `setSelectionRange` and scrolls to it using the mirror div technique (same as `scrollToHeading`), subtracting 60px padding.
-- Enter / Shift+Enter on the input navigate next/prev. Escape closes the bar. Switching to Preview mode closes and resets the bar. Closing returns focus to the textarea.
-- State: `findOpen`, `findQuery`, `findIndex` (useState); `findMatches` (useMemo).
+- Only available in edit mode when `pendingProposal` is falsy. Not shown in Preview or diff view.
+- Triggered by magnifying glass button in Editor header or Ctrl+F / Cmd+F when textarea is focused.
+- Enter / Shift+Enter navigate next/prev. Escape closes. Switching to Preview closes and resets. Closing returns focus to textarea.
+- `findMatches` is `useMemo` (case-insensitive) to avoid stale-counter flicker on rapid typing.
 
 ## Chat Panel
 
@@ -238,9 +226,9 @@ Sharing is tied to History snapshots (immutable), not to the live document. Anyo
 - **Public read**: `GET /shared/{token}` — no auth. `_find_snapshot_by_token()` scans all users' documents via `load_users()` + `list_documents()`. Returns `doc_title`, `label`, `timestamp`, `content`, `comments`.
 - **Public comments**: `POST /shared/{token}/comments` — no auth; validates name ≤100 chars and body ≤2000 chars; sets `is_owner: False`. `DELETE /documents/{doc_id}/history/{snapshot_id}/comments/{comment_id}` — auth required; 404 if not found.
 - **Owner comments**: `POST /documents/{doc_id}/history/{snapshot_id}/comments` — auth required; body only (name derived from `display_name || email`); sets `is_owner: True`; validates body ≤2000 chars.
-- **`is_owner` field**: present on all new comment entries; existing comments without it default to `False` via `.get()`. Owner comments rendered with `bg-blue-50` + "Owner" badge in both History.jsx and SharedView.jsx.
-- **Share URL**: built as `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
-- **History.jsx COMMENTS panel**: header shows "Share this version" (grey outlined) when not shared, "Revoke" (grey outlined) when shared. Body is `flex flex-col`: scrollable comments list (top) + pinned owner comment form (bottom, always visible when snapshot selected). `comment_count` in snapshot list state is incremented on owner comment add and decremented on delete. Snapshot list items show `is_shared` / `comment_count` as a third line when either is non-zero.
+- **`is_owner` field**: present on all new comments; old entries without it default to `False` via `.get()`. Owner comments get distinct styling + "Owner" badge in both History.jsx and SharedView.jsx.
+- **Share URL**: `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
+- **History.jsx COMMENTS panel**: "Share this version" / "Revoke" in header. Owner comment form pinned at bottom, always visible when snapshot selected. `comment_count` in snapshot list state updated optimistically on add/delete.
 
 ## Feedback
 
@@ -267,7 +255,7 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - `POST /documents/{doc_id}/lock-structure` and `POST .../unlock-structure`.
 - Instruction text injected into `chat.py` `scope_instruction` and `actions.py` system prompt: *"The document structure is locked. Do not add, remove, reorder, or rename any sections. Rewrite the content within sections freely, except where individual sections are also locked. Locks are constraints — always proceed with the rewrite, doing as much as permitted."*
 - UI: icon-only 🔒/🔓 toggle in Structure panel header. No visual treatment on tree nodes — avoids collision with per-section lock styling.
-- When `structureLocked` is true, heading lines highlighted in `DiffView` (`~` gutter, `bg-gray-100`, `border-l-2 border-gray-300`) and `MarkdownPreview` (`bg-gray-50 border-l-2 border-gray-200 pl-4`). `DiffView` matches `/^#{1,6}\s/` lines.
+- When `structureLocked` is true, heading lines highlighted in both `DiffView` and `MarkdownPreview`. `DiffView` matches `/^#{1,6}\s/`.
 - `ChatPanel` receives and forwards `structureLocked` on every message (including Redraft actions, which route through `handleSend`).
 
 ## Auth & Account Management
@@ -278,7 +266,7 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - **Update profile**: `POST /auth/update-profile` (auth required) — saves `display_name` on user record. `GET /auth/me` returns `display_name` (Optional, may be null).
 - **Delete account**: `DELETE /auth/account` (auth required) — verifies password, removes user from `users.json`, then `shutil.rmtree` on docs, embeddings, and templates dirs for that user.
 - **Email sending**: `backend/mailer.py` wraps SendGrid. Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
-- **User record fields**: `id`, `email`, `hashed_password`, `display_name` (optional), `plan` (string, default `"free"`), `byok_key_encrypted` (optional, Fernet-encrypted Anthropic API key), `ai_actions_used` (int, default 0), `ai_actions_reset_at` (optional UTC ISO string — month boundary for counter reset), `reset_token` (optional), `reset_token_expires` (optional UTC ISO string), `is_admin` (bool, default `False` — set manually in `users.json`). All optional fields are read with `.get()` so existing records degrade safely.
+- **User record fields**: `id`, `email`, `hashed_password`, `display_name`, `plan` (default `"free"`), `byok_key_encrypted`, `ai_actions_used`, `ai_actions_reset_at` (month boundary for reset), `reset_token`, `reset_token_expires`, `is_admin` (default `False` — set manually in `users.json`). All optional fields use `.get()` so existing records degrade safely.
 - **BYOK endpoints**: `POST /auth/byok` saves an encrypted key; `DELETE /auth/byok` removes it. `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked` (e.g. `sk-ant-••••••••1234`). Encryption uses Fernet (`cryptography` library); key comes from `ENCRYPTION_KEY` env var. `get_byok_key(user)` in `auth.py` returns the decrypted key or `None` (raises HTTP 500 if key is stored but decryption fails). All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`, `templates.py`) call `get_byok_key(user)` and pass the result to `complete()`.
 
 ## Data Storage
@@ -347,12 +335,8 @@ bash deploy.sh      # subsequent deploys
 - **Evidence limit**: `FREE_EVIDENCE_LIMIT = 10` — defined in `backend/limits.py` (moved from `evidence.py` in Sprint 3). All four add-evidence endpoints enforce it with HTTP 400.
 
 ### Sprint 2 — BYOK (Bring Your Own Key)
-- Users can save their own Anthropic API key via Account settings → "Anthropic API Key" section.
-- Key is Fernet-encrypted at rest using `ENCRYPTION_KEY` env var (`cryptography` library, `requirements.txt`).
-- `complete()` in `llm.py` accepts `byok_key=` parameter. When present, uses the user's key and `PAID_MODEL` (Sonnet); otherwise uses the app key and `FREE_MODEL` (Haiku).
-- `get_byok_key(user)` in `auth.py`: returns decrypted key, `None` if not set, raises HTTP 500 if stored but decryption fails (e.g. rotated `ENCRYPTION_KEY`).
-- All LLM call sites pass `byok_key=get_byok_key(user)` to `complete()`.
-- Frontend: `Account.jsx` shows input (no key) or masked key + Remove button (key set). `api.saveByokKey` / `api.removeByokKey` in `api.js`.
+- Users add their Anthropic API key in Account settings. BYOK users get `PAID_MODEL` (Sonnet); free users get `FREE_MODEL` (Haiku). See Auth section for encryption and endpoint details.
+- Frontend: `Account.jsx` shows input (no key) or masked key + Remove button. `api.saveByokKey` / `api.removeByokKey` in `api.js`.
 
 ### Sprint 3 — AI action cap
 - **Limits module**: `backend/limits.py` holds `FREE_ACTION_CAP` and `FREE_EVIDENCE_LIMIT`. `frontend/src/constants/limits.js` exports `FREE_ACTION_CAP` for the frontend.
@@ -364,13 +348,10 @@ bash deploy.sh      # subsequent deploys
 
 ## Maintenance
 
-`backend/cleanup.py` is a standalone script with two functions: `clear_expired_reset_tokens()` nulls out expired `reset_token`/`reset_token_expires` fields; `reset_stale_action_counters()` zeroes `ai_actions_used` for users whose counter month is in the past. Both run from `__main__` and exit 0.
-
-Run via cron (installed by `bootstrap.sh`):
+`backend/cleanup.py`: `clear_expired_reset_tokens()` and `reset_stale_action_counters()`. Runs from `__main__`. Installed as a daily cron by `bootstrap.sh`:
 ```
 0 3 * * * docker exec speedwrite-app python cleanup.py >> /var/log/speedwrite-cleanup.log 2>&1
 ```
-`bootstrap.sh` writes the current crontab to a temp file, appends the job if not already present, and reloads with `crontab`.
 
 ## Key Commands
 
