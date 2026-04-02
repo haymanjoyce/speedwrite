@@ -183,6 +183,9 @@ export const api = {
     URL.revokeObjectURL(url)
   },
 
+  // Feedback
+  submitFeedback: (message) => request('POST', '/feedback', { message }),
+
   // Section protection
   protectSection: (docId, heading) =>
     request('POST', `/documents/${docId}/protect`, { heading }),

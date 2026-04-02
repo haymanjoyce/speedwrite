@@ -4,7 +4,7 @@ import { useSearch } from '../context/SearchContext'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
-export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel, pageTitle = null, hasByokKey = false, actionsRemaining = null }) {
+export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel, pageTitle = null, hasByokKey = false, actionsRemaining = null, onFeedbackClick = null }) {
   const { open: openSearch } = useSearch()
   const [inputValue, setInputValue] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -114,6 +114,14 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
                   >
                     Administration
                   </Link>
+                )}
+                {onFeedbackClick && (
+                  <button
+                    onClick={() => { setDropdownOpen(false); onFeedbackClick() }}
+                    className="text-sm text-gray-700 hover:bg-gray-50 px-4 py-2 block w-full text-left cursor-pointer"
+                  >
+                    Give feedback
+                  </button>
                 )}
                 <Link
                   to="/account"

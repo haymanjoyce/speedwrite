@@ -5,6 +5,7 @@ import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
+import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
 
@@ -47,6 +48,7 @@ export default function Document() {
   const [restoreSnapshotLabel, setRestoreSnapshotLabel] = useState(null)
   const [isRenaming, setIsRenaming] = useState(false)
   const [activeBar, setActiveBar] = useState(null) // null | 'save-template'
+  const [showFeedback, setShowFeedback] = useState(false)
   const [saveTemplateTitle, setSaveTemplateTitle] = useState('')
   const [saveTemplateDesc, setSaveTemplateDesc] = useState('')
   const [flashStatus, setFlashStatus] = useState('')
@@ -232,7 +234,9 @@ export default function Document() {
         onRenameCancel={handleRenameCancel}
         hasByokKey={user?.has_byok_key ?? false}
         actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        onFeedbackClick={() => setShowFeedback(true)}
       />
+      {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar
         tabs={pendingProposal ? [] : contextBarTabs}
         actions={contextBarActions}

@@ -4,6 +4,7 @@ import { api } from '../api'
 import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import TemplatePickerOverlay from '../components/TemplatePickerOverlay'
+import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
 
@@ -17,6 +18,7 @@ export default function Home() {
   const [renameValue, setRenameValue] = useState('')
   const [pendingDelete, setPendingDelete] = useState(false)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
   const renameInputRef = useRef(null)
 
   useEffect(() => {
@@ -105,7 +107,9 @@ export default function Home() {
         onLogout={handleLogout}
         hasByokKey={user?.has_byok_key ?? false}
         actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        onFeedbackClick={() => setShowFeedback(true)}
       />
+      {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar actions={selectedDoc ? [
         { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: 'primary' },
         { label: 'Rename', onClick: handleRename, variant: 'default' },

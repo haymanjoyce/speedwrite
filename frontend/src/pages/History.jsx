@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import ContextBar from '../components/ContextBar'
+import FeedbackBar from '../components/FeedbackBar'
 import MarkdownPreview from '../components/MarkdownPreview'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
@@ -42,6 +43,7 @@ export default function History() {
   const [sharing, setSharing] = useState(false)
   const [ownerCommentBody, setOwnerCommentBody] = useState('')
   const [ownerCommentSubmitting, setOwnerCommentSubmitting] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
   const [ownerCommentError, setOwnerCommentError] = useState(null)
 
   useEffect(() => {
@@ -157,7 +159,9 @@ export default function History() {
         docTitle={doc?.title}
         hasByokKey={user?.has_byok_key ?? false}
         actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        onFeedbackClick={() => setShowFeedback(true)}
       />
+      {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar
         tabs={[
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },

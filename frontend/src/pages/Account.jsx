@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
 
@@ -16,6 +17,7 @@ function useFlash(setter) {
 export default function Account() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   // Profile
   const [displayName, setDisplayName] = useState('')
@@ -172,7 +174,9 @@ export default function Account() {
         pageTitle="Account Settings"
         hasByokKey={user?.has_byok_key ?? false}
         actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        onFeedbackClick={() => setShowFeedback(true)}
       />
+      {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-lg mx-auto py-10 px-4">
           <h1 className="text-xl font-semibold text-gray-900 mb-6">Account settings</h1>

@@ -30,7 +30,7 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 ### Three-tier navigation hierarchy
 
-**Tier 1 — Global bar (TopBar):** Always visible. App name/logo, breadcrumb, search icon, user dropdown. Breadcrumb shows "SpeedWrite" (→ /) and document title when open — no sub-page labels in breadcrumb. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`. The user area shows `display_name || email` as a dropdown trigger (▾); dropdown items: "Account settings" (→ `/account`) and "Sign out". Dropdown closes on outside click or Escape. `pageTitle` (string, default `null`) is for non-document pages (Account, Admin, etc.) — when set and `docTitle` is absent, renders SpeedWrite (linked to /) + separator + static gray-900 title, same styling as `docTitle` but without rename/edit functionality. `docTitle` takes priority if both are set. `Account.jsx` uses `pageTitle="Account Settings"` and has no Back button — navigation home is via the SpeedWrite link in TopBar.
+**Tier 1 — Global bar (TopBar):** Always visible. App name/logo, breadcrumb, search icon, user dropdown. Breadcrumb shows "SpeedWrite" (→ /) and document title when open — no sub-page labels in breadcrumb. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`, `onFeedbackClick`. The user area shows `display_name || email` as a dropdown trigger (▾); dropdown items: "Give feedback" (when `onFeedbackClick` provided) · "Account settings" (→ `/account`) · "Sign out". Dropdown closes on outside click or Escape. `pageTitle` (string, default `null`) is for non-document pages (Account, Admin, etc.) — when set and `docTitle` is absent, renders SpeedWrite (linked to /) + separator + static gray-900 title, same styling as `docTitle` but without rename/edit functionality. `docTitle` takes priority if both are set. `Account.jsx` uses `pageTitle="Account Settings"` and has no Back button — navigation home is via the SpeedWrite link in TopBar.
 
 **Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab `text-gray-900 font-semibold`, inactive `text-gray-400`. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true` (renders `opacity-60 cursor-not-allowed`). The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row).
 - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
@@ -65,6 +65,7 @@ speedwrite/
 │   ├── main.py
 │   ├── auth.py
 │   ├── mailer.py
+│   ├── feedback.py
 │   ├── documents.py
 │   ├── chat.py
 │   ├── evidence.py
@@ -98,6 +99,7 @@ speedwrite/
 │       │   ├── Admin.jsx
 │       │   └── SharedView.jsx
 │       ├── components/
+│       │   ├── FeedbackBar.jsx
 │       │   ├── TopBar.jsx
 │       │   ├── ContextBar.jsx
 │       │   ├── Sidebar.jsx          # Unused — kept in repo
@@ -240,6 +242,16 @@ Sharing is tied to History snapshots (immutable), not to the live document. Anyo
 - **Share URL**: built as `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
 - **History.jsx COMMENTS panel**: header shows "Share this version" (grey outlined) when not shared, "Revoke" (grey outlined) when shared. Body is `flex flex-col`: scrollable comments list (top) + pinned owner comment form (bottom, always visible when snapshot selected). `comment_count` in snapshot list state is incremented on owner comment add and decremented on delete. Snapshot list items show `is_shared` / `comment_count` as a third line when either is non-zero.
 
+## Feedback
+
+Users can submit feedback from any page via "Give feedback" in the TopBar user dropdown.
+
+- **Trigger**: `onFeedbackClick` prop on `TopBar`. All pages pass `() => setShowFeedback(true)`.
+- **UI**: `FeedbackBar.jsx` — slim bar rendered below TopBar (same pattern as inline confirmation bars). Single text input (maxLength 2000), Send button, × close. Escape also closes. Auto-closes 2s after successful send.
+- **Backend**: `POST /feedback` in `backend/feedback.py`, auth required. Validates message non-empty and ≤2000 chars. Sends email via `mailer.send_email()` to `FEEDBACK_EMAIL` (env var, defaults to `EMAIL_FROM`). Always returns `{"ok": true}` — email failures are logged but not surfaced to the user.
+- **`mailer.send_email()`**: Generic helper added to `mailer.py` to support feedback (and future transactional emails) beyond just password reset.
+- **`FEEDBACK_EMAIL`** env var: optional; defaults to `EMAIL_FROM` if not set.
+
 ## Section Locking
 
 - `protected_sections: list` on doc stores locked heading texts.
@@ -293,6 +305,7 @@ JSON files on disk — no database.
 | `EMAIL_FROM` | Sender address for reset emails (default: `noreply@speedwrite.app`) |
 | `APP_URL` | Public app URL used in reset email links (default: `http://localhost`) |
 | `ENCRYPTION_KEY` | Fernet key for encrypting BYOK API keys at rest — generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
+| `FEEDBACK_EMAIL` | Address to receive feedback emails (optional — defaults to `EMAIL_FROM`) |
 | `OLLAMA_HOST` | Ollama base URL (default: `http://172.17.0.1:11434`) — used for embeddings only. Local dev on Windows/Mac: `http://host.docker.internal:11434` |
 | `LLM_PROVIDER` | Dormant — commented out in `.env.example`. Set to `ollama` to activate Ollama chat path. |
 | `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. Ollama chat model (default `llama3.2`). |

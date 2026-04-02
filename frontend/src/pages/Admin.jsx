@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
 
@@ -9,6 +10,7 @@ export default function Admin() {
   const [user, setUser] = useState(null)
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   useEffect(() => {
     api.me().then((u) => {
@@ -40,7 +42,9 @@ export default function Admin() {
         pageTitle="Administration"
         hasByokKey={user?.has_byok_key ?? false}
         actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        onFeedbackClick={() => setShowFeedback(true)}
       />
+      {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto py-10 px-4">
           {error ? (

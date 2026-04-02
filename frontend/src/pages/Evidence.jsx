@@ -6,6 +6,7 @@ import EvidenceChatPanel from '../components/EvidenceChatPanel'
 import EvidenceSidebar from '../components/EvidenceSidebar'
 import SourceDetail from '../components/SourceDetail'
 import ContextBar from '../components/ContextBar'
+import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
 
@@ -18,6 +19,7 @@ export default function Evidence() {
   const [items, setItems] = useState([])
   const [selectedItem, setSelectedItem] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
   const [reindexStatus, setReindexStatus] = useState('')
   const [pendingDelete, setPendingDelete] = useState(false)
   const [refreshingId, setRefreshingId] = useState(null)
@@ -162,8 +164,10 @@ export default function Evidence() {
         onLogout={handleLogout}
         docTitle={doc?.title}
         hasByokKey={user?.has_byok_key ?? false}
+        onFeedbackClick={() => setShowFeedback(true)}
         actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
       />
+      {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar
         tabs={[
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
