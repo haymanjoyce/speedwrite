@@ -75,12 +75,12 @@ export default function Document() {
         setRestoreSnapshotLabel(location.state.restoreSnapshotLabel ?? null)
         window.history.replaceState({}, '', window.location.pathname)
       }
-    }).catch(() => navigate('/'))
+    }).catch(() => navigate('/home'))
   }, [id])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    navigate('/login')
+    navigate('/')
   }
 
   const handleUpdate = (updated) => {
@@ -219,7 +219,7 @@ export default function Document() {
         { label: 'Save as template', onClick: handleSaveAsTemplate, variant: 'default' },
         { label: 'Export (.txt)', onClick: () => handleExport('txt'), variant: 'default' },
         { label: 'Export (.pdf)', onClick: () => handleExport('pdf'), variant: 'default' },
-        { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
+        { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
       ]
 
 

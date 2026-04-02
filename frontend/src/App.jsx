@@ -9,6 +9,7 @@ import Document from './pages/Document'
 import Evidence from './pages/Evidence'
 import History from './pages/History'
 import Home from './pages/Home'
+import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ResetConfirm from './pages/ResetConfirm'
@@ -43,8 +44,9 @@ function AppRoutes() {
         <Route path="/reset-password/confirm" element={<ErrorBoundary><ResetConfirm /></ErrorBoundary>} />
         <Route path="/account" element={<RequireAuth><ErrorBoundary><Account /></ErrorBoundary></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth><ErrorBoundary><Admin /></ErrorBoundary></RequireAuth>} />
+        <Route path="/" element={<ErrorBoundary><LandingPage /></ErrorBoundary>} />
         <Route
-          path="/"
+          path="/home"
           element={
             <RequireAuth>
               <ErrorBoundary><Home /></ErrorBoundary>

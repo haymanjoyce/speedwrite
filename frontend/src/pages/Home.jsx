@@ -31,7 +31,7 @@ export default function Home() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    navigate('/login')
+    navigate('/')
   }
 
   const handleNewDocument = async () => {

@@ -87,6 +87,7 @@ speedwrite/
 │       ├── context/
 │       │   └── SearchContext.jsx
 │       ├── pages/
+│       │   ├── LandingPage.jsx
 │       │   ├── Home.jsx
 │       │   ├── Document.jsx
 │       │   ├── Evidence.jsx
@@ -154,15 +155,16 @@ Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the 
 
 Main views:
 
-1. **Library** (`/`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
-2. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
-3. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right. Reindex status is shown inline on the Reindex button label: "Reindexing…" (disabled) → "Reindexed ✓" → auto-clears to "Reindex" after 3s.
-4. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" button (right-aligned) when a snapshot is selected; panel body starts directly with MarkdownPreview. The share action lives exclusively in the COMMENTS panel header.
-5. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
-6. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
-7. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
-8. **SharedView** (`/shared/:token`) — unauthenticated public page, no TopBar/ContextBar. Two columns: left (flex-1) shows document title, snapshot label + timestamp, rendered markdown via `MarkdownPreview`. Right (w-80, border-left) shows comment list and a submission form (name + message textarea + Submit). Shows 404 message if token not found. "Powered by SpeedWrite" link at bottom of right column.
-9. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
+1. **Landing** (`/`) — public, no auth, no TopBar/ContextBar. Nav bar + hero + three feature columns + footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
+2. **Library** (`/home`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
+3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
+4. **Evidence** (`/document/:id/evidence`) — source list (260px) left, source detail (flex-1) middle, EvidenceChatPanel (380px) right. Reindex status is shown inline on the Reindex button label: "Reindexing…" (disabled) → "Reindexed ✓" → auto-clears to "Reindex" after 3s.
+5. **History** (`/document/:id/history`) — three panels: snapshot list (w-64) left, version detail + MarkdownPreview (flex-1) middle, sharing & comments (w-80) right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" button (right-aligned) when a snapshot is selected; panel body starts directly with MarkdownPreview. The share action lives exclusively in the COMMENTS panel header.
+6. **Account** (`/account`) — centered settings card (max-w-lg). No ContextBar. Sections: Profile (display name), Change email, Change password, Delete account. Each section is an independent form with inline success/error. Delete account uses an inline confirmation area (bg-red-50) with password confirmation.
+7. **ResetRequest** (`/reset-password/request`) — unauthenticated. Email field → sends reset link via SendGrid. Form replaced by success message on 200.
+8. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. New password + confirm fields. Token read from URL query param.
+9. **SharedView** (`/shared/:token`) — unauthenticated public page, no TopBar/ContextBar. Two columns: left (flex-1) shows document title, snapshot label + timestamp, rendered markdown via `MarkdownPreview`. Right (w-80, border-left) shows comment list and a submission form (name + message textarea + Submit). Shows 404 message if token not found. "Powered by SpeedWrite" link at bottom of right column.
+10. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
 
 `ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
 

@@ -51,13 +51,13 @@ export default function History() {
       localStorage.removeItem('token')
       navigate('/login')
     })
-    api.getDocument(id).then(setDoc).catch(() => navigate('/'))
+    api.getDocument(id).then(setDoc).catch(() => navigate('/home'))
     api.listHistory(id).then(setSnapshots).catch(console.error)
   }, [id])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    navigate('/login')
+    navigate('/')
   }
 
   const handleSelect = async (snapshot) => {
@@ -169,7 +169,7 @@ export default function History() {
           { label: 'History', active: true, onClick: () => {} },
         ]}
         actions={[
-          { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
+          { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
         ]}
       />
       <div className="flex flex-1 overflow-hidden">

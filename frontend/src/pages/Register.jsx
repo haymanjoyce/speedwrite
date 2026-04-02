@@ -19,7 +19,7 @@ export default function Register() {
     try {
       const data = await api.register(email, password)
       localStorage.setItem('token', data.access_token)
-      navigate('/')
+      navigate('/home')
     } catch (err) {
       setError(err.message)
     }

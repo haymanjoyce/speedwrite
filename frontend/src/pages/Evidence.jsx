@@ -31,7 +31,7 @@ export default function Evidence() {
       localStorage.removeItem('token')
       navigate('/login')
     })
-    api.getDocument(id).then(setDoc).catch(() => navigate('/'))
+    api.getDocument(id).then(setDoc).catch(() => navigate('/home'))
     api.listEvidence(id).then(setItems).catch(console.error)
   }, [id])
 
@@ -57,7 +57,7 @@ export default function Evidence() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    navigate('/login')
+    navigate('/')
   }
 
   const handleSelect = async (item) => {
@@ -183,7 +183,7 @@ export default function Evidence() {
           }] : []),
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
           ...(selectedItem ? [{ label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' }] : []),
-          { label: 'Close', onClick: () => navigate('/'), variant: 'default' },
+          { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
         ]}
       />
       {pendingDelete && selectedItem && (

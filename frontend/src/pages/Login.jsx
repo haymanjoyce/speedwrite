@@ -14,7 +14,7 @@ export default function Login() {
     try {
       const data = await api.login(email, password)
       localStorage.setItem('token', data.access_token)
-      navigate('/')
+      navigate('/home')
     } catch (err) {
       setError(err.message)
     }

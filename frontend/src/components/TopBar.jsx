@@ -45,7 +45,7 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
       <div className="flex items-center text-sm min-w-0 overflow-hidden whitespace-nowrap" title={breadcrumbTitle}>
         {docTitle ? (
           <>
-            <Link to="/" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
+            <Link to="/home" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
               SpeedWrite
             </Link>
             <span className="mx-2 flex-shrink-0" />
@@ -67,7 +67,7 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
           </>
         ) : pageTitle ? (
           <>
-            <Link to="/" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
+            <Link to="/home" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
               SpeedWrite
             </Link>
             <span className="mx-2 flex-shrink-0" />

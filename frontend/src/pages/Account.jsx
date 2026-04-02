@@ -67,7 +67,7 @@ export default function Account() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    navigate('/login')
+    navigate('/')
   }
 
   const handleProfileSubmit = async (e) => {
@@ -146,7 +146,7 @@ export default function Account() {
     try {
       await api.deleteAccount(deletePassword)
       localStorage.removeItem('token')
-      navigate('/login')
+      navigate('/')
     } catch (err) {
       setDeleteError(err.message)
     }
