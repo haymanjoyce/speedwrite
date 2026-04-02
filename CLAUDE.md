@@ -32,17 +32,17 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 **Tier 1 — Global bar (TopBar):** Always visible. App name/logo, breadcrumb, search icon, user dropdown. Breadcrumb shows "SpeedWrite" (→ /) and document title when open — no sub-page labels in breadcrumb. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`, `onFeedbackClick`. The user area shows `display_name || email` as a dropdown trigger (▾); dropdown items: "Give feedback" (when `onFeedbackClick` provided) · "Account settings" (→ `/account`) · "Sign out". Dropdown closes on outside click or Escape. `pageTitle` (string, default `null`) is for non-document pages (Account, Admin, etc.) — when set and `docTitle` is absent, renders SpeedWrite (linked to /) + separator + static gray-900 title, same styling as `docTitle` but without rename/edit functionality. `docTitle` takes priority if both are set. `Account.jsx` uses `pageTitle="Account Settings"` and has no Back button — navigation home is via the SpeedWrite link in TopBar.
 
-**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab `text-gray-900 font-semibold`, inactive `text-gray-400`. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true` (renders `opacity-60 cursor-not-allowed`). The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row).
+**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row).
 - Library (doc selected): no tabs · right: Open (primary) · Rename · Delete
 - Document: tabs (Document active) · right: Add to chat (conditional) · Save version · Rename · Save as template · Export .txt · Export PDF · Close; tabs replaced with Accept · Reject when proposal pending
 - Evidence: tabs (Evidence active) · right: Reindex (hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close
 
-**Tier 3 — Panel headers:** Slim headers (h-11, bg-white, border-b). Label text-xs font-semibold text-gray-500 uppercase tracking-wide, left-aligned. Panel-specific actions right-aligned in header or below it.
+**Tier 3 — Panel headers:** Slim headers, label uppercase small caps left-aligned, panel-specific actions right-aligned in header or below it.
 
 ### Control type rules
 
-- **Outlined buttons** (ContextBar, Tier 2): navigation actions, page-level CRUD, toggle states (Accept/Reject, Add to chat). Primary variant = blue; danger variant = red.
-- **Buttons** (panel headers or below): panel CRUD actions (Add Source, New Document). Full-width for primary panel action. Use `Button.jsx` with `variant='primary'/'secondary'`.
+- **Outlined buttons** (ContextBar, Tier 2): navigation actions, page-level CRUD, toggle states (Accept/Reject, Add to chat). Primary = blue; danger = red.
+- **Buttons** (panel headers or below): panel CRUD actions (Add Source, New Document). Full-width for primary panel action.
 - **Segmented controls** (`SegmentedControl.jsx`): mutually exclusive mode switches in a panel header. Example: Edit/Preview in Editor.
 - **Dropdowns** (`ActionsDropdown.jsx`): grouped AI/transform actions in a panel header. Open downward, right-aligned (`right-0`).
 
@@ -211,10 +211,8 @@ Main views:
 - **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
 - **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
 - **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
-- **Enter key**: configurable. `localStorage` key is `speedwrite_submit_on_enter`. Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
-- **RAG badge**: `✦ RAG` appears near Stop button when per-source RAG is active. Cleared in `finally` and by Stop handler.
+- **Enter key**: configurable via `localStorage` (`speedwrite_submit_on_enter`). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
 - **onActionComplete**: Optional callback prop (default `null`) on both `ChatPanel` and `EvidenceChatPanel`. Called after each successful AI response (fire-and-forget, no await). Pages pass `() => { api.me().then(setUser).catch(() => {}) }` so the TopBar usage counter refreshes live after each action.
-- **Double fetches in dev**: React 18 StrictMode causes intentional double-mount. Two `GET /documents/:id` on load is expected in dev, not a bug.
 
 ## Document History
 
