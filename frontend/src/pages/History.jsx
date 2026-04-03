@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
+import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import MarkdownPreview from '../components/MarkdownPreview'
@@ -212,12 +213,9 @@ export default function History() {
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex-1">Version</span>
             {selectedSnapshot && (
-              <button
-                onClick={handleRestore}
-                className="text-xs text-white bg-blue-600 border border-blue-600 hover:bg-blue-700 rounded px-3 py-1 transition-colors cursor-pointer"
-              >
+              <Button variant="primary" size="sm" onClick={handleRestore}>
                 Restore this version
-              </button>
+              </Button>
             )}
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -244,21 +242,14 @@ export default function History() {
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center gap-2 flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex-1">Comments</span>
             {selectedSnapshot && shareToken && (
-              <button
-                onClick={handleUnshare}
-                className="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-2 py-1 transition-colors cursor-pointer"
-              >
+              <Button variant="secondary" size="sm" onClick={handleUnshare}>
                 Revoke
-              </button>
+              </Button>
             )}
             {selectedSnapshot && !shareToken && (
-              <button
-                onClick={handleShare}
-                disabled={sharing}
-                className="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-2 py-1 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-              >
+              <Button variant="secondary" size="sm" onClick={handleShare} disabled={sharing}>
                 Share this version
-              </button>
+              </Button>
             )}
           </div>
 

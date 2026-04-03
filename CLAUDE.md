@@ -34,7 +34,7 @@ The Rewrite button lives on tree node hover and operates on the full section und
 ### Control type rules
 
 - **Outlined buttons** (ContextBar, Tier 2): navigation actions, page-level CRUD, toggle states (Accept/Reject, Add to chat). Primary = blue; danger = red.
-- **Buttons** (panel headers or below): panel CRUD actions (Add Source, New Document). Full-width for primary panel action.
+- **Buttons** (panel headers or below): panel CRUD actions and panel-specific actions. Use `Button.jsx` variants — `primary` for the main action in a panel (e.g. "Restore this version"), `secondary` for supporting actions (e.g. "Update source", "Share this version", "Revoke"). Full-width for primary panel action (e.g. Add Source).
 - **Segmented controls** (`SegmentedControl.jsx`): mutually exclusive mode switches in a panel header. Example: Edit/Preview in Editor.
 - **Dropdowns** (`ActionsDropdown.jsx`): grouped AI/transform actions in a panel header. Open downward, right-aligned (`right-0`).
 
@@ -147,7 +147,7 @@ Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the 
 
 Main views:
 
-1. **Landing** (`/`) — public, no auth, no TopBar/ContextBar. Nav bar + hero + three feature columns + footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
+1. **Landing** (`/`) — public, no auth, no TopBar/ContextBar. Minimal design: floating nav (logo left, "Sign in" link right) + centred process flow at golden-ratio position ("Create document → Add sources → Write with AI" + "Create account" CTA) + minimal footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
 2. **Library** (`/home`) — document list left, document detail right. ContextBar: Open · Rename · Delete when a doc is selected.
 3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right. Reindex status shown inline on the button: "Reindexing…" → "Reindexed ✓" → auto-clears after 3s.

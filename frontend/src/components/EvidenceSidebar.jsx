@@ -10,13 +10,9 @@ export default function EvidenceSidebar({ items, selectedId, onSelect, onAdd, on
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sources</span>
         {hasUrlSources(items) && (
-          <button
-            onClick={onUpdateAllSources}
-            disabled={updatingAllSources}
-            className="text-xs rounded px-2 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button variant="secondary" size="sm" onClick={onUpdateAllSources} disabled={updatingAllSources}>
             {updatingAllSources ? 'Updating…' : 'Update sources'}
-          </button>
+          </Button>
         )}
       </div>
       <div className="px-4 pt-3 pb-3 border-b border-gray-200">

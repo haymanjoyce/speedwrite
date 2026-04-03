@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Button from './Button'
 
 const TYPE_ICON = { file: '📄', url: '🔗', text: '📝', document: '📑' }
 const MAX_CONTENT = 2000
@@ -92,13 +93,9 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
             {item.last_fetched_at && (
               <span className="text-xs text-gray-400">Last updated: {timeAgo(item.last_fetched_at)}</span>
             )}
-            <button
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="text-xs rounded px-2 py-1 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button variant="secondary" size="sm" onClick={onRefresh} disabled={refreshing}>
               {refreshing ? 'Updating…' : 'Update source'}
-            </button>
+            </Button>
           </div>
         )}
       </div>
