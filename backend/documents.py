@@ -1,10 +1,14 @@
+import io
 import re
 import shutil
 import uuid
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+import html2text
+import mammoth
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from auth import get_current_user
@@ -40,6 +44,51 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
     now = datetime.utcnow().isoformat()
     content = data.content or ""
     title = data.title or extract_title(content) or "Untitled"
+    doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "title": title,
+        "content": content,
+        "description": "",
+        "created_at": now,
+        "updated_at": now,
+        "evidence": [],
+        "audit_log": [],
+        "shared_with": [],
+        "protected_sections": [],
+        "evidence_chat_history": [],
+        "history": [],
+        "save_count": 0,
+    }
+    save_document(doc)
+    return doc
+
+
+@router.post("/import", response_model=Document)
+async def import_document(file: UploadFile = File(...), user=Depends(get_current_user)):
+    if not file.filename or not file.filename.lower().endswith(".docx"):
+        raise HTTPException(status_code=400, detail="Only .docx files are supported")
+
+    raw_title = file.filename[:-5]  # strip .docx
+    title = raw_title.strip()[:200] or "Untitled"
+
+    data = await file.read()
+    source = io.BytesIO(data)
+
+    result = mammoth.convert_to_html(source)
+    html = result.value
+
+    converter = html2text.HTML2Text()
+    converter.ignore_links = False
+    converter.body_width = 0  # disable line wrapping
+    content = converter.handle(html).strip()
+
+    if not content:
+        source.seek(0)
+        raw = mammoth.extract_raw_text(source)
+        content = f"# {title}\n\n{raw.value.strip()}"
+
+    now = datetime.utcnow().isoformat()
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],

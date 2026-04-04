@@ -68,6 +68,29 @@ export const api = {
   updateDocument: (id, data) => request('PUT', `/documents/${id}`, data),
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
 
+  importDocument: async (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    const headers = {}
+    const token = getToken()
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${BASE_URL}/documents/import`, {
+      method: 'POST',
+      headers,
+      body: form,
+    })
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+      return
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Import failed' }))
+      throw new Error(err.detail || 'Import failed')
+    }
+    return res.json()
+  },
+
   // Chat
   chatMessage: (docId, message, context, ignoreHistory = false, provider = null, contextLabel = null, signal = null, structureLocked = false) =>
     request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider, context_label: contextLabel, structure_locked: structureLocked }, signal),

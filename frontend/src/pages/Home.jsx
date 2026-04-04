@@ -19,7 +19,10 @@ export default function Home() {
   const [pendingDelete, setPendingDelete] = useState(false)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState(null)
   const renameInputRef = useRef(null)
+  const importInputRef = useRef(null)
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -52,6 +55,23 @@ export default function Home() {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [pendingDelete])
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    e.target.value = ''
+    setImporting(true)
+    setImportError(null)
+    try {
+      const doc = await api.importDocument(file)
+      navigate(`/document/${doc.id}`)
+    } catch (err) {
+      setImportError(err.message || 'Import failed')
+      setTimeout(() => setImportError(null), 4000)
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const handleRename = () => {
     setRenameValue(selectedDoc.title)
@@ -145,6 +165,11 @@ export default function Home() {
             <Button variant="secondary" size="md" onClick={() => setShowTemplatePicker(true)} className="w-full">
               From template…
             </Button>
+            <Button variant="secondary" size="md" onClick={() => importInputRef.current.click()} disabled={importing} className="w-full">
+              {importing ? 'Importing…' : 'Import (.docx)'}
+            </Button>
+            <input ref={importInputRef} type="file" accept=".docx" className="hidden" onChange={handleImport} />
+            {importError && <p className="text-xs text-red-500">{importError}</p>}
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {documents.length === 0 && (
