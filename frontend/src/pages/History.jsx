@@ -265,12 +265,7 @@ export default function History() {
                         value={window.location.origin + '/shared/' + shareToken}
                         className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-gray-600 min-w-0"
                       />
-                      <button
-                        onClick={handleCopyLink}
-                        className="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-2 py-1.5 transition-colors cursor-pointer flex-shrink-0"
-                      >
-                        Copy
-                      </button>
+                      <Button variant="secondary" size="sm" onClick={handleCopyLink}>Copy</Button>
                     </div>
                   </div>
                 )}
@@ -319,13 +314,9 @@ export default function History() {
                   {ownerCommentError && (
                     <p className="text-xs text-red-600 mb-2">{ownerCommentError}</p>
                   )}
-                  <button
-                    onClick={handleOwnerComment}
-                    disabled={ownerCommentSubmitting || !ownerCommentBody.trim()}
-                    className="w-full text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded px-3 py-1.5 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
+                  <Button variant="secondary" size="sm" onClick={handleOwnerComment} disabled={ownerCommentSubmitting || !ownerCommentBody.trim()} className="w-full">
                     {ownerCommentSubmitting ? 'Submitting…' : 'Submit'}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

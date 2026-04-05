@@ -25,10 +25,10 @@ export default function ContextBar({ actions = [], controls, tabs = [] }) {
             disabled={action.disabled}
             className={`text-xs rounded px-3 py-1 transition-colors ${action.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${
               action.variant === 'primary'
-                ? 'text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
+                ? 'font-medium text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
                 : action.variant === 'danger'
-                ? 'text-red-600 border border-red-200 hover:bg-red-50'
-                : 'text-gray-600 border border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                ? 'font-medium text-red-600 border border-red-200 hover:bg-red-50'
+                : 'font-medium bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-200'
             }`}
           >
             {action.label}

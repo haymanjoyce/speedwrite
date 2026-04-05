@@ -223,7 +223,7 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
             <>
               {editorMode === 'edit' && (
                 <button
-                  className={btnCls}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                   onClick={openFindBar}
                   title="Find (Ctrl+F)"
                   aria-label="Find"

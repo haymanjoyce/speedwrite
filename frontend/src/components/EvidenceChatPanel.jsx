@@ -45,7 +45,7 @@ function InsightsDropdown({ disabled, onAction }) {
         className={`text-xs border rounded px-3 py-1 transition-colors ${
           disabled
             ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-            : 'text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer'
+            : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border-gray-200 font-medium cursor-pointer'
         }`}
       >
         Insights

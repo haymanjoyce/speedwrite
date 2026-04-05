@@ -7,8 +7,8 @@ export default function SegmentedControl({ options, value, onChange }) {
           onClick={() => onChange(opt.value)}
           className={`text-xs px-3 py-1 cursor-pointer ${
             value === opt.value
-              ? 'text-white bg-blue-600 hover:bg-blue-700'
-              : 'text-gray-600 bg-white hover:bg-gray-50 transition-colors'
+              ? 'font-medium text-white bg-blue-600 hover:bg-blue-700'
+              : 'font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors'
           }`}
         >
           {opt.label}

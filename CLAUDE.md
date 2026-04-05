@@ -33,7 +33,7 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 ### Control type rules
 
-- **Outlined buttons** (ContextBar, Tier 2): navigation actions, page-level CRUD, toggle states (Accept/Reject, Add to chat). Primary = blue; danger = red.
+- **ContextBar buttons** (Tier 2): navigation actions, page-level CRUD, toggle states (Accept/Reject, Add to chat). Use secondary style (`bg-gray-100 hover:bg-gray-200 font-medium`) by default; primary = blue; danger = red. `ActionsDropdown.jsx` trigger and `InsightsDropdown` trigger use the same secondary style.
 - **Buttons** (panel headers or below): panel CRUD actions and panel-specific actions. Use `Button.jsx` variants — `primary` for the main action in a panel (e.g. "Restore this version"), `secondary` for supporting actions (e.g. "Update source", "Share this version", "Revoke"). Full-width for primary panel action (e.g. Add Source).
 - **Segmented controls** (`SegmentedControl.jsx`): mutually exclusive mode switches in a panel header. Example: Edit/Preview in Editor.
 - **Dropdowns** (`ActionsDropdown.jsx`): grouped AI/transform actions in a panel header. Open downward, right-aligned (`right-0`).
