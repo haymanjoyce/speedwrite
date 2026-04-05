@@ -130,11 +130,16 @@ export default function Home() {
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
-      <ContextBar actions={selectedDoc ? [
-        { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: 'primary' },
-        { label: 'Rename', onClick: handleRename, variant: 'default' },
-        { label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' },
-      ] : []} />
+      <ContextBar actions={[
+        { label: 'Import (.docx)', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing },
+        { label: 'From template…', onClick: () => setShowTemplatePicker(true), variant: 'default' },
+        { label: 'New Document', onClick: handleNewDocument, variant: 'primary' },
+      ]} />
+      {importError && (
+        <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex-shrink-0">
+          <span className="text-xs text-red-600">{importError}</span>
+        </div>
+      )}
       {pendingDelete && selectedDoc && (
         <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex items-center gap-3 flex-shrink-0">
           <span className="text-sm text-red-700 flex-1">Delete "{selectedDoc.title}"? This cannot be undone.</span>
@@ -157,19 +162,6 @@ export default function Home() {
         <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Documents</span>
-          </div>
-          <div className="px-4 pt-3 pb-3 border-b border-gray-200 flex flex-col gap-2">
-            <Button variant="primary" size="md" onClick={handleNewDocument} className="w-full">
-              + New Document
-            </Button>
-            <Button variant="secondary" size="md" onClick={() => setShowTemplatePicker(true)} className="w-full">
-              From template…
-            </Button>
-            <Button variant="secondary" size="md" onClick={() => importInputRef.current.click()} disabled={importing} className="w-full">
-              {importing ? 'Importing…' : 'Import (.docx)'}
-            </Button>
-            <input ref={importInputRef} type="file" accept=".docx" className="hidden" onChange={handleImport} />
-            {importError && <p className="text-xs text-red-500">{importError}</p>}
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {documents.length === 0 && (
@@ -199,6 +191,13 @@ export default function Home() {
         <main className="flex-1 bg-white flex flex-col overflow-hidden">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Document Detail</span>
+            {selectedDoc && (
+              <div className="ml-auto flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setPendingDelete(true)}>Delete</Button>
+                <Button variant="secondary" size="sm" onClick={handleRename}>Rename</Button>
+                <Button variant="primary" size="sm" onClick={() => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } })}>Open</Button>
+              </div>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto">
           {!selectedDoc ? (
@@ -266,6 +265,7 @@ export default function Home() {
       {showTemplatePicker && (
         <TemplatePickerOverlay onClose={() => setShowTemplatePicker(false)} />
       )}
+      <input ref={importInputRef} type="file" accept=".docx" className="hidden" onChange={handleImport} />
     </div>
   )
 }
