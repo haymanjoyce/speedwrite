@@ -260,6 +260,7 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - Instruction text injected into `chat.py` `scope_instruction` and `actions.py` system prompt: *"The document structure is locked. Do not add, remove, reorder, or rename any sections. Rewrite the content within sections freely, except where individual sections are also locked. Locks are constraints — always proceed with the rewrite, doing as much as permitted."*
 - UI: icon-only 🔒/🔓 toggle in Structure panel header. No visual treatment on tree nodes — avoids collision with per-section lock styling.
 - When `structureLocked` is true, heading lines highlighted in both `DiffView` and `MarkdownPreview`. `DiffView` matches `/^#{1,6}\s/`.
+- `MarkdownPreview.jsx` uses `react-markdown` + `remark-gfm` (no hand-rolled renderer). Protected and structure-lock highlighting applied via custom `components` renderers using `node.position.start.line` (1-indexed, converted to 0-indexed to match `getProtectedLineSet`). `dangerouslySetInnerHTML` removed.
 - `ChatPanel` receives and forwards `structureLocked` on every message (including Redraft actions, which route through `handleSend`).
 
 ## Auth & Account Management

@@ -1,17 +1,5 @@
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
-
-function renderInline(text) {
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>')
-  text = text.replace(/`([^`]+)`/g, '<code class="font-mono bg-gray-100 rounded px-1 text-sm text-gray-800">$1</code>')
-  text = text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" class="text-blue-600 hover:underline" target="_blank" rel="noreferrer">$1</a>')
-  return text
-}
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 function getProtectedLineSet(content, protectedSections) {
   if (!protectedSections || protectedSections.length === 0) return new Set()
@@ -39,97 +27,101 @@ function getProtectedLineSet(content, protectedSections) {
   return protectedSet
 }
 
-function renderMarkdown(content, protectedLineSet) {
-  const lines = content.split('\n')
-  const blocks = [] // { html, startLine }
-  let i = 0
+const HIGHLIGHT = 'bg-gray-50 border-l-2 border-gray-200 pl-4 my-1'
 
-  while (i < lines.length) {
-    const startLine = i
-    const line = lines[i]
+function Highlight({ children }) {
+  return <div className={HIGHLIGHT}>{children}</div>
+}
 
-    // Fenced code block
-    if (line.startsWith('```')) {
-      const codeLines = []
-      i++
-      while (i < lines.length && !lines[i].startsWith('```')) {
-        codeLines.push(escapeHtml(lines[i]))
-        i++
-      }
-      blocks.push({
-        html: `<pre class="font-mono bg-gray-100 rounded p-4 text-sm overflow-x-auto mb-4"><code>${codeLines.join('\n')}</code></pre>`,
-        startLine,
-      })
-      i++
-      continue
-    }
-
-    // Headings
-    const h1 = line.match(/^#\s+(.+)/)
-    if (h1) {
-      blocks.push({ html: `<h1 class="text-3xl font-bold text-gray-900 mb-4 mt-6">${renderInline(escapeHtml(h1[1]))}</h1>`, startLine })
-      i++; continue
-    }
-    const h2 = line.match(/^##\s+(.+)/)
-    if (h2) {
-      blocks.push({ html: `<h2 class="text-2xl font-semibold text-gray-800 mb-3 mt-5">${renderInline(escapeHtml(h2[1]))}</h2>`, startLine })
-      i++; continue
-    }
-    const h3 = line.match(/^###\s+(.+)/)
-    if (h3) {
-      blocks.push({ html: `<h3 class="text-xl font-semibold text-gray-700 mb-2 mt-4">${renderInline(escapeHtml(h3[1]))}</h3>`, startLine })
-      i++; continue
-    }
-
-    // Unordered list
-    if (line.match(/^[-*]\s+/)) {
-      const items = []
-      const listStartLine = i
-      while (i < lines.length && lines[i].match(/^[-*]\s+/)) {
-        const text = lines[i].replace(/^[-*]\s+/, '')
-        items.push(`<li>${renderInline(escapeHtml(text))}</li>`)
-        i++
-      }
-      blocks.push({ html: `<ul class="list-disc pl-6 mb-4 text-gray-700">${items.join('')}</ul>`, startLine: listStartLine })
-      continue
-    }
-
-    // Blank line
-    if (line.trim() === '') { i++; continue }
-
-    // Paragraph
-    const paraLines = []
-    const paraStartLine = i
-    while (i < lines.length && lines[i].trim() !== '' && !lines[i].match(/^#{1,3}\s/) && !lines[i].match(/^[-*]\s+/) && !lines[i].startsWith('```')) {
-      paraLines.push(renderInline(escapeHtml(lines[i])))
-      i++
-    }
-    if (paraLines.length) {
-      blocks.push({ html: `<p class="text-gray-700 leading-relaxed mb-4">${paraLines.join('<br>')}</p>`, startLine: paraStartLine })
-    }
+function makeComponents(protectedLineSet, structureLocked) {
+  // node.position.start.line is 1-indexed; protectedLineSet is 0-indexed
+  function isProtected(node) {
+    return node?.position && protectedLineSet.has(node.position.start.line - 1)
   }
 
-  return blocks
+  function wrap(isHL, element) {
+    return isHL ? <Highlight>{element}</Highlight> : element
+  }
+
+  return {
+    h1({ node, children, ...props }) {
+      const el = <h1 className="text-3xl font-bold text-gray-900 mb-4 mt-6" {...props}>{children}</h1>
+      return wrap(isProtected(node) || structureLocked, el)
+    },
+    h2({ node, children, ...props }) {
+      const el = <h2 className="text-2xl font-semibold text-gray-800 mb-3 mt-5" {...props}>{children}</h2>
+      return wrap(isProtected(node) || structureLocked, el)
+    },
+    h3({ node, children, ...props }) {
+      const el = <h3 className="text-xl font-semibold text-gray-700 mb-2 mt-4" {...props}>{children}</h3>
+      return wrap(isProtected(node) || structureLocked, el)
+    },
+    h4({ node, children, ...props }) {
+      const el = <h4 className="text-lg font-semibold text-gray-700 mb-2 mt-3" {...props}>{children}</h4>
+      return wrap(isProtected(node), el)
+    },
+    h5({ node, children, ...props }) {
+      const el = <h5 className="text-base font-semibold text-gray-700 mb-1 mt-2" {...props}>{children}</h5>
+      return wrap(isProtected(node), el)
+    },
+    h6({ node, children, ...props }) {
+      const el = <h6 className="text-sm font-semibold text-gray-700 mb-1 mt-2" {...props}>{children}</h6>
+      return wrap(isProtected(node), el)
+    },
+    p({ node, children, ...props }) {
+      const el = <p className="text-gray-700 leading-relaxed mb-4" {...props}>{children}</p>
+      return wrap(isProtected(node), el)
+    },
+    ul({ node, children, ...props }) {
+      const el = <ul className="list-disc pl-6 mb-4 text-gray-700" {...props}>{children}</ul>
+      return wrap(isProtected(node), el)
+    },
+    ol({ node, children, ...props }) {
+      const el = <ol className="list-decimal pl-6 mb-4 text-gray-700" {...props}>{children}</ol>
+      return wrap(isProtected(node), el)
+    },
+    pre({ node, children, ...props }) {
+      const el = <pre className="font-mono bg-gray-100 rounded p-4 text-sm overflow-x-auto mb-4" {...props}>{children}</pre>
+      return wrap(isProtected(node), el)
+    },
+    code({ inline, children, ...props }) {
+      if (inline) {
+        return <code className="font-mono bg-gray-100 rounded px-1 text-sm text-gray-800" {...props}>{children}</code>
+      }
+      return <code {...props}>{children}</code>
+    },
+    table({ node, children, ...props }) {
+      const el = (
+        <div className="overflow-x-auto mb-4">
+          <table className="border-collapse w-full text-sm text-gray-700" {...props}>{children}</table>
+        </div>
+      )
+      return wrap(isProtected(node), el)
+    },
+    thead({ children, ...props }) {
+      return <thead className="bg-gray-100 font-semibold" {...props}>{children}</thead>
+    },
+    th({ children, ...props }) {
+      return <th className="border border-gray-300 px-3 py-2 text-left" {...props}>{children}</th>
+    },
+    td({ children, ...props }) {
+      return <td className="border border-gray-300 px-3 py-2" {...props}>{children}</td>
+    },
+    a({ children, ...props }) {
+      return <a className="text-blue-600 hover:underline" target="_blank" rel="noreferrer" {...props}>{children}</a>
+    },
+  }
 }
 
 export default function MarkdownPreview({ content, protectedSections = [], structureLocked = false }) {
   const protectedLineSet = getProtectedLineSet(content ?? '', protectedSections)
-  const blocks = renderMarkdown(content ?? '', protectedLineSet)
+  const components = makeComponents(protectedLineSet, structureLocked)
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-white max-w-3xl">
-      {blocks.map((block, idx) => {
-        const isProtected = protectedLineSet.has(block.startLine)
-        const isStructureLockedHeading = structureLocked && /^<h[123][\s>]/.test(block.html)
-        if (isProtected || isStructureLockedHeading) {
-          return (
-            <div key={idx} className="bg-gray-50 border-l-2 border-gray-200 pl-4 my-1">
-              <div dangerouslySetInnerHTML={{ __html: block.html }} />
-            </div>
-          )
-        }
-        return <div key={idx} dangerouslySetInnerHTML={{ __html: block.html }} />
-      })}
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content ?? ''}
+      </ReactMarkdown>
     </div>
   )
 }
