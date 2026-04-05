@@ -75,7 +75,7 @@ async def import_document(file: UploadFile = File(...), user=Depends(get_current
     data = await file.read()
     source = io.BytesIO(data)
 
-    result = mammoth.convert_to_html(source)
+    result = mammoth.convert_to_html(source, convert_image=mammoth.images.img_element(lambda image: {}))
     html = result.value
 
     converter = html2text.HTML2Text()
