@@ -33,10 +33,13 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 ### Control type rules
 
-- **ContextBar buttons** (Tier 2): navigation actions, page-level CRUD, toggle states (Accept/Reject, Add to chat). Use secondary style (`bg-gray-100 hover:bg-gray-200 font-medium`) by default; primary = blue; danger = red. `ActionsDropdown.jsx` trigger and `InsightsDropdown` trigger use the same secondary style.
-- **Buttons** (panel headers or below): panel CRUD actions and panel-specific actions. Use `Button.jsx` variants — `primary` for the main action in a panel (e.g. "Restore this version"), `secondary` for supporting actions (e.g. "Update source", "Share this version", "Revoke"). Full-width for primary panel action (e.g. Add Source).
-- **Segmented controls** (`SegmentedControl.jsx`): mutually exclusive mode switches in a panel header. Example: Edit/Preview in Editor.
-- **Dropdowns** (`ActionsDropdown.jsx`): grouped AI/transform actions in a panel header. Open downward, right-aligned (`right-0`).
+- **All buttons** use `Button.jsx` (variants: primary/secondary/danger/ghost) or `ContextBar.jsx` action objects. Do not hand-roll button styles.
+- **ContextBar actions** (Tier 2): use action objects with variant 'primary', 'danger', or 'default'. Default renders as secondary style (bg-gray-100 font-medium) matching Button.jsx secondary.
+- **Panel header buttons** (Tier 3): use `<Button variant="secondary" size="sm">` for standard actions, `<Button variant="primary" size="sm">` for the primary action on a panel (e.g. "Restore this version").
+- **Dropdown triggers** (`ActionsDropdown.jsx`, `InsightsDropdown` in EvidenceChatPanel): styled to match Button.jsx secondary — bg-gray-100 font-medium.
+- **Segmented controls** (`SegmentedControl.jsx`): active = blue, inactive = bg-gray-100 font-medium.
+- **Icon buttons** (e.g. find bar magnifying glass, TopBar search): ghost style — no background, no border, text-gray-400 hover:text-gray-600.
+- Destructive actions (Delete) always red; primary actions always blue; everything else secondary grey.
 
 ### General principles
 - Labels left, actions right — they never compete
@@ -147,8 +150,8 @@ Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the 
 
 Main views:
 
-1. **Landing** (`/`) — public, no auth, no TopBar/ContextBar. Minimal design: floating nav (logo left, "Sign in" link right) + centred process flow at golden-ratio position ("Create document → Add sources → Write with AI" + "Create account" CTA) + minimal footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
-2. **Library** (`/home`) — document list left, document detail right. ContextBar (always visible): Import (.docx) · From template… · New Document (primary). Document Detail panel header shows Delete · Rename · Open (sm buttons) right-aligned when a doc is selected. Import error shown as a slim red bar below the ContextBar. Import triggers a hidden `<input type="file">` at root JSX level → `api.importDocument()` → navigates to the new document on success.
+1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Minimal: SpeedWrite logo + Sign in top right; vertical process flow (Create document → Add sources → Write with AI) centred at golden ratio; Create account button below; © 2026 SpeedWrite footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
+2. **Library** (`/home`) — document list left, document detail right. ContextBar always shows: Import (.docx) · From template… · New Document (primary, rightmost). DOCUMENT DETAIL Tier 3 header shows Delete · Rename · Duplicate · Open (primary) when a document is selected. Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors. Import triggers a hidden `<input type="file">` at root JSX level → `api.importDocument()` → navigates to the new document on success.
 3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right. Reindex status shown inline on the button: "Reindexing…" → "Reindexed ✓" → auto-clears after 3s.
 5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.

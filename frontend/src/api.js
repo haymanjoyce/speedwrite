@@ -67,6 +67,7 @@ export const api = {
   createDocument: (data) => request('POST', '/documents/', data),
   updateDocument: (id, data) => request('PUT', `/documents/${id}`, data),
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
+  duplicateDocument: (id) => request('POST', `/documents/${id}/duplicate`),
 
   importDocument: async (file) => {
     const form = new FormData()

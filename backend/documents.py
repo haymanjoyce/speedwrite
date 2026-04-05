@@ -109,6 +109,34 @@ async def import_document(file: UploadFile = File(...), user=Depends(get_current
     return doc
 
 
+@router.post("/{doc_id}/duplicate", response_model=Document)
+def duplicate_document(doc_id: str, user=Depends(get_current_user)):
+    source = load_document(user["id"], doc_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Document not found")
+    now = datetime.utcnow().isoformat()
+    title = source.get("title", "Untitled") + " (copy)"
+    doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "title": title,
+        "content": source.get("content", ""),
+        "description": "",
+        "created_at": now,
+        "updated_at": now,
+        "evidence": [],
+        "audit_log": [],
+        "shared_with": [],
+        "protected_sections": list(source.get("protected_sections", [])),
+        "structure_locked": source.get("structure_locked", False),
+        "evidence_chat_history": [],
+        "history": [],
+        "save_count": 0,
+    }
+    save_document(doc)
+    return doc
+
+
 @router.get("/", response_model=list[Document])
 def list_user_documents(user=Depends(get_current_user)):
     return list_documents(user["id"])

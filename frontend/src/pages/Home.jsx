@@ -73,6 +73,17 @@ export default function Home() {
     }
   }
 
+  const handleDuplicate = async () => {
+    try {
+      const doc = await api.duplicateDocument(selectedDoc.id)
+      setDocuments((prev) => [doc, ...prev])
+      setSelectedDoc(doc)
+    } catch (err) {
+      setImportError(err.message || 'Duplicate failed')
+      setTimeout(() => setImportError(null), 4000)
+    }
+  }
+
   const handleRename = () => {
     setRenameValue(selectedDoc.title)
     setIsRenaming(true)
@@ -195,6 +206,7 @@ export default function Home() {
               <div className="ml-auto flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={() => setPendingDelete(true)}>Delete</Button>
                 <Button variant="secondary" size="sm" onClick={handleRename}>Rename</Button>
+                <Button variant="secondary" size="sm" onClick={handleDuplicate}>Duplicate</Button>
                 <Button variant="primary" size="sm" onClick={() => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } })}>Open</Button>
               </div>
             )}
