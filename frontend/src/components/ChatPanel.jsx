@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { ATTACHMENT_TRUNCATION_LIMIT, ATTACHMENT_WARNING_THRESHOLD } from '../constants/attachmentLimits'
 import { FREE_ACTION_CAP } from '../constants/limits'
-import { SHARED_INSIGHT_ACTIONS } from '../insightPrompts'
+import { DOCUMENT_INSIGHT_ACTIONS } from '../insightPrompts'
 import ActionsDropdown from './ActionsDropdown'
 import AttachmentPopup from './AttachmentPopup'
 import MarkdownPreview from './MarkdownPreview'
@@ -44,7 +44,7 @@ const REDRAFT_PROMPTS = {
   formalise: 'Rewrite this document in a more formal, professional tone. Remove casual language, tighten the writing, and ensure it is appropriate for a professional or academic audience.',
 }
 
-const INSIGHTS_PROMPTS = Object.fromEntries(SHARED_INSIGHT_ACTIONS.map((a) => [a.action, a.prompt]))
+const INSIGHTS_PROMPTS = Object.fromEntries(DOCUMENT_INSIGHT_ACTIONS.map((a) => [a.action, a.prompt]))
 
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
@@ -300,7 +300,7 @@ const ChatPanel = forwardRef(function ChatPanel({
         />
         <ActionsDropdown
           title="Insights"
-          actions={SHARED_INSIGHT_ACTIONS.map((a) => ({ label: a.label, action: a.action }))}
+          actions={DOCUMENT_INSIGHT_ACTIONS.map((a) => ({ label: a.label, action: a.action }))}
           onAction={(action) => handleActionSelect(action, '')}
           disabled={!!pendingProposal}
         />

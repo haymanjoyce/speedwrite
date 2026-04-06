@@ -67,6 +67,18 @@ revised document wrapped in XML tags:
 """
 
 
+_PRESERVE_INSTRUCTION = (
+    "CRITICAL INSTRUCTION — PRESERVE THESE ELEMENTS EXACTLY: You must return the following elements "
+    "completely unchanged in any proposed document. Do not rewrite, reformat, remove, summarise, or "
+    "paraphrase them under any circumstances. This rule overrides all other instructions:\n"
+    "- Markdown tables (pipe-delimited rows and separator lines)\n"
+    "- Markdown image references (![alt](url) syntax)\n"
+    "- Fenced code blocks (``` delimited, including the language tag)\n"
+    "- Blockquotes (> prefixed lines)\n"
+    "If any of these elements exist in the original document, they must appear verbatim in your proposed document."
+)
+
+
 def _build_mode_instruction(mode: str) -> str:
     if mode == "edit":
         return (
@@ -193,7 +205,7 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     structure_lock_block = _build_structure_lock_block(data.structure_locked)
     scope_instruction = protected_block + structure_lock_block + (_SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION)
 
-    system_prompt = _AGENT_SYSTEM.format(
+    system_prompt = _PRESERVE_INSTRUCTION + "\n\n" + _AGENT_SYSTEM.format(
         document_content=doc.get("content", ""),
         evidence_block=evidence_block,
         context_block=context_block,

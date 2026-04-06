@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from auth import get_actions_used, get_byok_key, get_current_user, increment_action_count
 from limits import FREE_ACTION_CAP
-from chat import _build_evidence_block, _build_protected_block, _build_structure_lock_block
+from chat import _build_evidence_block, _build_protected_block, _build_structure_lock_block, _PRESERVE_INSTRUCTION
 from llm import complete
 from storage import load_document
 
@@ -93,7 +93,7 @@ def run_document_action(doc_id: str, data: ActionRequest, user=Depends(get_curre
     evidence_block = _build_evidence_block(doc, query=query)
     protected_block = _build_protected_block(doc)
     structure_lock_block = _build_structure_lock_block(data.structure_locked)
-    system_prompt = _SYSTEM.format(
+    system_prompt = _PRESERVE_INSTRUCTION + "\n\n" + _SYSTEM.format(
         title=doc.get("title", "Untitled"),
         content=doc.get("content", ""),
         evidence_block=evidence_block,
