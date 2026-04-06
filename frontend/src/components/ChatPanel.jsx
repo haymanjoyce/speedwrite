@@ -178,14 +178,14 @@ const ChatPanel = forwardRef(function ChatPanel({
     onClearContext()
   }
 
-  const handleSend = async (textOverride) => {
+  const handleSend = async (textOverride, mode = 'chat') => {
     const text = (textOverride !== undefined ? textOverride : input).trim()
     if (!text || loading) return
 
     const contextSnapshot = localContext
     const hasContext = !!(contextSnapshot?.text || contextText)
     const contextLabel = contextSnapshot ? contextSnapshot.label : contextText ? 'Selected text' : null
-    setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])
+    setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel, mode }])
     setInput('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -215,7 +215,7 @@ const ChatPanel = forwardRef(function ChatPanel({
         }
       }
 
-      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked)
+      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked, mode)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       onActionComplete?.()
       if (res.proposed_content) {
@@ -260,7 +260,7 @@ const ChatPanel = forwardRef(function ChatPanel({
 
   const fireInsightInternal = (promptText) => {
     setInput(promptText)
-    setTimeout(() => handleSend(promptText), 0)
+    setTimeout(() => handleSend(promptText, 'edit'), 0)
   }
 
   const effectiveContext = localContext?.text || contextText
@@ -354,6 +354,9 @@ const ChatPanel = forwardRef(function ChatPanel({
                   <div className="text-xs text-gray-400 mb-1">
                     {msg.context_label}
                   </div>
+                )}
+                {msg.mode === 'edit' && (
+                  <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 mb-1">Edit</span>
                 )}
                 <div className="rounded-lg px-3 py-2 text-sm bg-blue-600 text-white">
                   {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
@@ -476,14 +479,24 @@ const ChatPanel = forwardRef(function ChatPanel({
                 ■ Stop
               </button>
             ) : (
-              <button
-                onClick={() => handleSend()}
-                disabled={!input.trim() || isCapped}
-                title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
-                className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
-              >
-                Send
-              </button>
+              <div className="flex gap-1 flex-shrink-0">
+                <button
+                  onClick={() => handleSend(undefined, 'edit')}
+                  disabled={!input.trim() || isCapped}
+                  title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
+                  className="text-xs bg-gray-100 hover:bg-gray-200 disabled:text-gray-400 text-gray-700 px-3 py-1.5 rounded transition-colors font-medium"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() || isCapped}
+                  title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
+                  className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors font-medium"
+                >
+                  Send
+                </button>
+              </div>
             )}
             <button
               onClick={toggleSubmitOnEnter}
