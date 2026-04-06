@@ -1,5 +1,35 @@
+import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+function AuthImage({ src, alt, ...props }) {
+  const [blobUrl, setBlobUrl] = useState(null)
+
+  useEffect(() => {
+    if (!src?.startsWith('/api/documents/')) return
+    const token = localStorage.getItem('token')
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    let objectUrl
+    fetch(src, { headers })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load image')
+        return res.blob()
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob)
+        setBlobUrl(objectUrl)
+      })
+      .catch(console.error)
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [src])
+
+  if (src?.startsWith('/api/documents/')) {
+    return blobUrl ? <img src={blobUrl} alt={alt} {...props} /> : null
+  }
+  return <img src={src} alt={alt} {...props} />
+}
 
 function getProtectedLineSet(content, protectedSections) {
   if (!protectedSections || protectedSections.length === 0) return new Set()
@@ -110,6 +140,7 @@ function makeComponents(protectedLineSet, structureLocked) {
     a({ children, ...props }) {
       return <a className="text-blue-600 hover:underline" target="_blank" rel="noreferrer" {...props}>{children}</a>
     },
+    img: AuthImage,
   }
 }
 

@@ -205,6 +205,7 @@ export default function Document() {
     { label: 'Document', active: true, onClick: () => {} },
     { label: 'Evidence', active: false, onClick: () => navigate(`/document/${id}/evidence`) },
     { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
+    { label: 'Images', active: false, onClick: () => navigate(`/document/${id}/images`) },
   ]
 
   const contextBarActions = pendingProposal

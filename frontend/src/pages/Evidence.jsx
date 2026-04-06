@@ -173,6 +173,7 @@ export default function Evidence() {
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
           { label: 'Evidence', active: true, onClick: () => {} },
           { label: 'History', active: false, onClick: () => navigate(`/document/${id}/history`) },
+          { label: 'Images', active: false, onClick: () => navigate(`/document/${id}/images`) },
         ]}
         actions={[
           ...(items.length > 0 ? [{

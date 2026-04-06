@@ -181,6 +181,10 @@ def delete_doc(doc_id: str, user=Depends(get_current_user)):
     if evidence_dir.exists():
         shutil.rmtree(evidence_dir)
 
+    images_dir = DOCS_DIR / user["id"] / doc_id / "images"
+    if images_dir.exists():
+        shutil.rmtree(images_dir)
+
     embeddings_file = DOCS_DIR.parent / "embeddings" / user["id"] / f"{doc_id}.json"
     if embeddings_file.exists():
         embeddings_file.unlink()

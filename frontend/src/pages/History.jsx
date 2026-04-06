@@ -168,6 +168,7 @@ export default function History() {
           { label: 'Document', active: false, onClick: () => navigate(`/document/${id}`) },
           { label: 'Evidence', active: false, onClick: () => navigate(`/document/${id}/evidence`) },
           { label: 'History', active: true, onClick: () => {} },
+          { label: 'Images', active: false, onClick: () => navigate(`/document/${id}/images`) },
         ]}
         actions={[
           { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },

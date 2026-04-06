@@ -11,6 +11,7 @@ from chat import router as chat_router
 from documents import router as documents_router
 from evidence import router as evidence_router
 from evidence_chat import router as evidence_chat_router
+from images import router as images_router
 from search import router as search_router
 from templates import router as templates_router
 
@@ -24,6 +25,7 @@ app.include_router(embeddings_router)
 app.include_router(chat_router)
 app.include_router(evidence_router)
 app.include_router(evidence_chat_router)
+app.include_router(images_router)
 app.include_router(search_router)
 app.include_router(templates_router)
 app.include_router(admin_router, prefix="/admin")

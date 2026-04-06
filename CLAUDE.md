@@ -76,6 +76,7 @@ speedwrite/
 │   ├── limits.py
 │   ├── cleanup.py
 │   ├── sharing.py
+│   ├── images.py
 │   └── admin.py
 ├── frontend/
 │   └── src/
@@ -87,6 +88,7 @@ speedwrite/
 │       │   ├── Document.jsx
 │       │   ├── Evidence.jsx
 │       │   ├── History.jsx
+│       │   ├── Images.jsx
 │       │   ├── Login.jsx
 │       │   ├── Register.jsx
 │       │   ├── Account.jsx
@@ -155,11 +157,12 @@ Main views:
 3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right. Reindex status shown inline on the button: "Reindexing…" → "Reindexed ✓" → auto-clears after 3s.
 5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.
-6. **Account** (`/account`) — no ContextBar. Sections: Profile, Change email, Change password, Delete account — each an independent form with inline success/error.
-7. **ResetRequest** (`/reset-password/request`) — unauthenticated. Always returns 200 (does not reveal whether email exists).
-8. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. Token read from URL query param.
-9. **SharedView** (`/shared/:token`) — unauthenticated, no TopBar/ContextBar. Left: document title, snapshot label + timestamp, rendered markdown. Right: comment list + submission form (name + body). Shows 404 if token not found.
-10. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
+6. **Images** (`/document/:id/images`) — image list left, image detail right. ContextBar: Document · Evidence · History · Images tabs + Upload Image · Close. Upload triggers a hidden file input → `api.uploadImage()` (multipart); on success selects the new image. Error shown as slim red bar below ContextBar. Selected image fetched as blob (auth header) → `createObjectURL` stored in component state; object URL revoked on change/unmount. IMAGE DETAIL Tier 3 header shows filename + Copy URL + Delete. Copy URL writes `![filename](/api/documents/{doc_id}/images/{filename})` to clipboard with "Copied!" feedback for 2 s. Delete uses inline confirmation bar pattern. Backend: `backend/images.py` — PNG/JPG/GIF/WebP only, 5 MB limit, numeric suffix deduplication, storage at `/var/speedwrite/documents/{user_id}/{doc_id}/images/`. Document delete also removes the images directory. Filenames URL-encoded in all API paths (`encodeURIComponent` on filename segment only). `MarkdownPreview.jsx` renders `![…](/api/documents/…)` images via `AuthImage` component (same fetch-as-blob pattern).
+7. **Account** (`/account`) — no ContextBar. Sections: Profile, Change email, Change password, Delete account — each an independent form with inline success/error.
+8. **ResetRequest** (`/reset-password/request`) — unauthenticated. Always returns 200 (does not reveal whether email exists).
+9. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. Token read from URL query param.
+10. **SharedView** (`/shared/:token`) — unauthenticated, no TopBar/ContextBar. Left: document title, snapshot label + timestamp, rendered markdown. Right: comment list + submission form (name + body). Shows 404 if token not found.
+11. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
 
 `ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
 
@@ -283,6 +286,7 @@ JSON files on disk — no database.
 | `/var/speedwrite/users.json` | All user accounts |
 | `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data: content, evidence, chat history, protected sections, version history, save_count |
 | `/var/speedwrite/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
+| `/var/speedwrite/documents/{user_id}/{doc_id}/images/` | Uploaded images (PNG/JPG/GIF/WebP) |
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources |
 | `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved templates |
 

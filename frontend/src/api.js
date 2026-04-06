@@ -219,4 +219,41 @@ export const api = {
     request('POST', `/documents/${docId}/lock-structure`),
   unlockStructure: (docId) =>
     request('POST', `/documents/${docId}/unlock-structure`),
+
+  // Images
+  listImages: (docId) => request('GET', `/documents/${docId}/images`),
+  getImageUrl: (docId, filename) => `${BASE_URL}/documents/${docId}/images/${encodeURIComponent(filename)}`,
+  uploadImage: async (docId, file) => {
+    const form = new FormData()
+    form.append('file', file)
+    const headers = {}
+    const token = getToken()
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${BASE_URL}/documents/${docId}/images`, {
+      method: 'POST',
+      headers,
+      body: form,
+    })
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+      return
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Upload failed' }))
+      throw new Error(err.detail || 'Upload failed')
+    }
+    return res.json()
+  },
+  fetchImageBlob: async (docId, filename) => {
+    const token = getToken()
+    const headers = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${BASE_URL}/documents/${docId}/images/${encodeURIComponent(filename)}`, { headers })
+    if (!res.ok) throw new Error('Failed to load image')
+    const blob = await res.blob()
+    return URL.createObjectURL(blob)
+  },
+  deleteImage: (docId, filename) =>
+    request('DELETE', `/documents/${docId}/images/${encodeURIComponent(filename)}`),
 }

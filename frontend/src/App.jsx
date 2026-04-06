@@ -8,6 +8,7 @@ import Admin from './pages/Admin'
 import Document from './pages/Document'
 import Evidence from './pages/Evidence'
 import History from './pages/History'
+import Images from './pages/Images'
 import Home from './pages/Home'
 import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
@@ -74,6 +75,14 @@ function AppRoutes() {
           element={
             <RequireAuth>
               <ErrorBoundary><History /></ErrorBoundary>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/document/:id/images"
+          element={
+            <RequireAuth>
+              <ErrorBoundary><Images /></ErrorBoundary>
             </RequireAuth>
           }
         />
