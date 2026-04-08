@@ -134,11 +134,11 @@ export default function Document() {
     setPendingProposal(null)
     if (pendingProposalReason === 'restore') {
       setPendingProposalReason('ai_rewrite')
-      api.createSnapshot(id, 'Version restored', 'restore', restoreSnapshotId, restoreSnapshotLabel).catch(() => {})
+      api.createSnapshot(id, 'Before restore', 'restore', restoreSnapshotId, restoreSnapshotLabel).catch(() => {})
       setRestoreSnapshotId(null)
       setRestoreSnapshotLabel(null)
     } else {
-      api.createSnapshot(id, 'AI rewrite', 'rewrite').catch(() => {})
+      api.createSnapshot(id, 'Before AI rewrite', 'rewrite').catch(() => {})
     }
   }
 

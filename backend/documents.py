@@ -164,6 +164,8 @@ def update_document(doc_id: str, data: DocumentUpdate, user=Depends(get_current_
                 doc["title"] = derived
     if data.title is not None:
         doc["title"] = data.title
+    if data.description is not None:
+        doc["description"] = data.description
     doc["updated_at"] = datetime.utcnow().isoformat()
     doc["save_count"] = doc.get("save_count", 0) + 1
     if doc["save_count"] % 10 == 0:

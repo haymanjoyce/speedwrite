@@ -119,11 +119,12 @@ export default function Home() {
     if (!selectedDoc) return
     setGeneratingDescription(true)
     try {
-      const res = await api.documentAction(selectedDoc.id, 'summarise')
+      const res = await api.documentAction(selectedDoc.id, 'generate_description')
       const description = res.result
       const updated = { ...selectedDoc, description }
       setSelectedDoc(updated)
       setDocuments((prev) => prev.map((d) => d.id === updated.id ? updated : d))
+      await api.updateDocument(selectedDoc.id, { description })
     } catch (err) {
       console.error('Generate description failed', err)
     } finally {

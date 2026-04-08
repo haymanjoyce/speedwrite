@@ -12,13 +12,17 @@ from storage import load_document
 
 router = APIRouter(prefix="/documents")
 
-CHAT_ACTIONS = {"summarise", "extract_key_points"}
+CHAT_ACTIONS = {"summarise", "extract_key_points", "generate_description"}
 DIFF_ACTIONS = {"rewrite", "restructure", "expand", "condense"}
 
 _USER_PROMPTS = {
     "summarise": (
         "Write a concise summary of this document in 3-4 sentences. "
         "Capture the main topic, key points, and purpose."
+    ),
+    "generate_description": (
+        "Write a 1-2 sentence plain-prose description of this document — what it is and what it covers. "
+        "No markdown, no bullet points, no headers. Plain sentences only."
     ),
     "extract_key_points": (
         "Extract the key points from this document as a bullet list. "

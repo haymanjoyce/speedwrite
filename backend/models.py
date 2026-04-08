@@ -68,6 +68,7 @@ class DocumentCreate(BaseModel):
 class DocumentUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
+    description: Optional[str] = None
 
 
 class Document(BaseModel):
