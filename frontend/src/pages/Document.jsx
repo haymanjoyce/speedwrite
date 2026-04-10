@@ -5,6 +5,7 @@ import ChatPanel from '../components/ChatPanel'
 import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
+import ActionsDropdown from '../components/ActionsDropdown'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
@@ -218,8 +219,6 @@ export default function Document() {
         { label: 'Save version', onClick: handleSaveVersion, variant: 'default' },
         { label: 'Rename', onClick: handleRename, variant: 'default' },
         { label: 'Save as template', onClick: handleSaveAsTemplate, variant: 'default' },
-        { label: 'Export (.txt)', onClick: () => handleExport('txt'), variant: 'default' },
-        { label: 'Export (.pdf)', onClick: () => handleExport('pdf'), variant: 'default' },
         { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
       ]
 
@@ -241,6 +240,16 @@ export default function Document() {
       <ContextBar
         tabs={pendingProposal ? [] : contextBarTabs}
         actions={contextBarActions}
+        rightControls={!pendingProposal ? (
+          <ActionsDropdown
+            title="Export ▾"
+            actions={[
+              { action: 'txt', label: '.txt' },
+              { action: 'pdf', label: '.pdf' },
+            ]}
+            onAction={(fmt) => handleExport(fmt)}
+          />
+        ) : null}
       />
       {activeBar === 'save-template' && (
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-2 flex items-center gap-3 flex-shrink-0">

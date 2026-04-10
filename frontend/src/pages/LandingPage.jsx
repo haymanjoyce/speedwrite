@@ -10,17 +10,14 @@ export default function LandingPage() {
         </Link>
       </nav>
 
-      <main className="flex-1 flex items-start justify-center pt-[18vh]">
-        <div className="flex flex-col items-center gap-0">
-          <span className="text-lg font-normal text-gray-900">Create document</span>
-          <span className="text-lg font-medium text-gray-900 py-3">↓</span>
-          <span className="text-lg font-normal text-gray-900">Add sources</span>
-          <span className="text-lg font-medium text-gray-900 py-3">↓</span>
-          <span className="text-lg font-normal text-gray-900">Write with AI</span>
-          <Link to="/register" className="mt-16 px-8 py-3 text-base bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
-            Create account
-          </Link>
-        </div>
+      <main className="flex-1 flex flex-col items-center">
+        <div className="flex-[1]" />
+        <span className="text-lg font-normal text-gray-900">AI-assisted document authoring tool.</span>
+        <div className="flex-[1.618]" />
+        <Link to="/register" className="-mt-12 px-8 py-3 text-base bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
+          Create account
+        </Link>
+        <div className="flex-[2.618]" />
       </main>
 
       <footer className="border-t border-gray-100 py-4 text-xs text-gray-400 text-center flex-shrink-0">

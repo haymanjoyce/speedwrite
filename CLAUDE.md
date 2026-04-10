@@ -24,9 +24,9 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 **Tier 1 — Global bar (TopBar):** Always visible. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`, `onFeedbackClick`. SpeedWrite logo links to `/home`. User dropdown: "Give feedback" (when `onFeedbackClick` provided) · "Administration" (admins only) · "Account settings" · "Sign out"; closes on outside click or Escape. `pageTitle` is for non-document pages; `docTitle` takes priority if both are set.
 
-**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row).
-- Library: no tabs · right: Import (.docx) · From template… · New Document (primary) — always visible, no selection required
-- Document: tabs (Document active) · right: Add to chat (conditional) · Save version · Rename · Save as template · Export .txt · Export PDF · Close; tabs replaced with Accept · Reject when proposal pending
+**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row). The optional `rightControls` prop renders inside the actions flex row, to the left of the action buttons — use this for dropdowns that must sit alongside action buttons.
+- Library: no tabs · right: Import ▾ dropdown (ActionsDropdown, via `rightControls`) · From template… · New Document (primary) — always visible, no selection required
+- Document: tabs (Document active) · right: Add to chat (conditional) · Save version · Rename · Save as template · Export ▾ dropdown (ActionsDropdown `.txt`/`.pdf`, via `rightControls`, hidden when proposal pending) · Close; tabs replaced with Accept · Reject when proposal pending
 - Evidence: tabs (Evidence active) · right: Reindex (hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close
 
 **Tier 3 — Panel headers:** Slim headers, label uppercase small caps left-aligned, panel-specific actions right-aligned in header or below it.
@@ -121,7 +121,7 @@ speedwrite/
 │       │   └── AddSourceModal.jsx
 │       ├── constants/
 │       │   ├── attachmentLimits.js   # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
-│       │   └── limits.js             # FREE_ACTION_CAP (50)
+│       │   └── limits.js             # FREE_ACTION_CAP (1000)
 │       ├── insightPrompts.js         # SHARED_INSIGHT_ACTIONS (EvidenceChatPanel) and DOCUMENT_INSIGHT_ACTIONS (ChatPanel)
 │       ├── data/
 │       │   └── templates.js          # BUILT_IN_TEMPLATES (5 built-in templates)
@@ -152,9 +152,9 @@ Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the 
 
 Main views:
 
-1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Minimal: SpeedWrite logo + Sign in top right; vertical process flow (Create document → Add sources → Write with AI) centred at golden ratio; Create account button below; © 2026 SpeedWrite footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
-2. **Library** (`/home`) — document list left, document detail right. ContextBar always shows: Import (.docx) · From template… · New Document (primary, rightmost). DOCUMENT DETAIL Tier 3 header shows Delete · Rename · Duplicate · Open (primary) when a document is selected. Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors. Import triggers a hidden `<input type="file">` at root JSX level → `api.importDocument()` → navigates to the new document on success.
-3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export .txt · Export PDF · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
+1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Minimal: SpeedWrite logo + Sign in top right; tagline "AI-assisted document authoring tool." and Create account button distributed vertically at golden ratio (flex spacers 1 : φ : φ²); © 2026 SpeedWrite footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
+2. **Library** (`/home`) — document list left, document detail right. ContextBar always shows: Import ▾ dropdown (via `rightControls`) · From template… · New Document (primary, rightmost). DOCUMENT DETAIL Tier 3 header shows Delete · Rename · Duplicate · Open (primary) when a document is selected. Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors. Import ▾ dropdown contains a single option ".docx"; selecting it triggers the hidden `<input type="file">` at root JSX level → `api.importDocument()` → navigates to the new document on success.
+3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export ▾ dropdown (`.txt` / `.pdf`, via `rightControls`, hidden when proposal pending) · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
 4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right. Reindex status shown inline on the button: "Reindexing…" → "Reindexed ✓" → auto-clears after 3s.
 5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.
 6. **Images** (`/document/:id/images`) — image list left, image detail right. ContextBar: Document · Evidence · History · Images tabs + Upload Image · Close. Upload triggers a hidden file input → `api.uploadImage()` (multipart); on success selects the new image. Error shown as slim red bar below ContextBar. Selected image fetched as blob (auth header) → `createObjectURL` stored in component state; object URL revoked on change/unmount. IMAGE DETAIL Tier 3 header shows filename + Copy URL + Delete. Copy URL writes `![filename](/api/documents/{doc_id}/images/{filename})` to clipboard with "Copied!" feedback for 2 s. Delete uses inline confirmation bar pattern. Backend: `backend/images.py` — PNG/JPG/GIF/WebP only, 5 MB limit, numeric suffix deduplication, storage at `/var/speedwrite/documents/{user_id}/{doc_id}/images/`. Document delete also removes the images directory. Filenames URL-encoded in all API paths (`encodeURIComponent` on filename segment only). `MarkdownPreview.jsx` renders `![…](/api/documents/…)` images via `AuthImage` component (same fetch-as-blob pattern).
@@ -343,7 +343,7 @@ bash deploy.sh      # subsequent deploys
 ### Sprint 1 scaffolding
 - **Plan field**: `plan: str = "free"` on `UserOut` and written on register. Defaults safely via `.get("plan", "free")`.
 - **Model**: All users on `FREE_MODEL` (`claude-haiku-4-5-20251001`). `PAID_MODEL = "claude-sonnet-4-20250514"` is defined in `llm.py` for Sprint 2.
-- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 10` — defined in `backend/limits.py` (moved from `evidence.py` in Sprint 3). All four add-evidence endpoints enforce it with HTTP 400.
+- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 50` — defined in `backend/limits.py` (moved from `evidence.py` in Sprint 3). All four add-evidence endpoints enforce it with HTTP 400.
 
 ### Sprint 2 — BYOK (Bring Your Own Key)
 - Users add their Anthropic API key in Account settings. BYOK users get `PAID_MODEL` (Sonnet); free users get `FREE_MODEL` (Haiku). See Auth section for encryption and endpoint details.

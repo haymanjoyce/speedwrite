@@ -7,6 +7,7 @@ import TemplatePickerOverlay from '../components/TemplatePickerOverlay'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
+import ActionsDropdown from '../components/ActionsDropdown'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -142,11 +143,20 @@ export default function Home() {
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
-      <ContextBar actions={[
-        { label: 'Import (.docx)', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing },
-        { label: 'From template…', onClick: () => setShowTemplatePicker(true), variant: 'default' },
-        { label: 'New Document', onClick: handleNewDocument, variant: 'primary' },
-      ]} />
+      <ContextBar
+        rightControls={
+          <ActionsDropdown
+            title="Import ▾"
+            actions={[{ action: 'docx', label: '.docx' }]}
+            onAction={() => importInputRef.current.click()}
+            disabled={importing}
+          />
+        }
+        actions={[
+          { label: 'From template…', onClick: () => setShowTemplatePicker(true), variant: 'default' },
+          { label: 'New Document', onClick: handleNewDocument, variant: 'primary' },
+        ]}
+      />
       {importError && (
         <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex-shrink-0">
           <span className="text-xs text-red-600">{importError}</span>

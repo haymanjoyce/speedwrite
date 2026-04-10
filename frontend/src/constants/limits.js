@@ -1,1 +1,1 @@
-export const FREE_ACTION_CAP = 50
+export const FREE_ACTION_CAP = 1000
