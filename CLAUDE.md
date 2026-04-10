@@ -24,21 +24,18 @@ The Rewrite button lives on tree node hover and operates on the full section und
 
 **Tier 1 — Global bar (TopBar):** Always visible. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`, `onFeedbackClick`. SpeedWrite logo links to `/home`. User dropdown: "Give feedback" (when `onFeedbackClick` provided) · "Administration" (admins only) · "Account settings" · "Sign out"; closes on outside click or Escape. `pageTitle` is for non-document pages; `docTitle` takes priority if both are set.
 
-**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row). The optional `rightControls` prop renders inside the actions flex row, to the left of the action buttons — use this for dropdowns that must sit alongside action buttons.
-- Library: no tabs · right: Import ▾ dropdown (ActionsDropdown, via `rightControls`) · From template… · New Document (primary) — always visible, no selection required
-- Document: tabs (Document active) · right: Add to chat (conditional) · Save version · Rename · Save as template · Export ▾ dropdown (ActionsDropdown `.txt`/`.pdf`, via `rightControls`, hidden when proposal pending) · Close; tabs replaced with Accept · Reject when proposal pending
-- Evidence: tabs (Evidence active) · right: Reindex (hidden when no sources) · Sync now (conditional) · Delete (conditional) · Close
+**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row). The optional `rightControls` prop renders inside the actions flex row, to the left of the action buttons — use this for dropdowns that must sit alongside action buttons. Per-page action inventories are in App Architecture below.
 
 **Tier 3 — Panel headers:** Slim headers, label uppercase small caps left-aligned, panel-specific actions right-aligned in header or below it.
 
 ### Control type rules
 
 - **All buttons** use `Button.jsx` (variants: primary/secondary/danger/ghost) or `ContextBar.jsx` action objects. Do not hand-roll button styles.
-- **ContextBar actions** (Tier 2): use action objects with variant 'primary', 'danger', or 'default'. Default renders as secondary style (bg-gray-100 font-medium) matching Button.jsx secondary.
-- **Panel header buttons** (Tier 3): use `<Button variant="secondary" size="sm">` for standard actions, `<Button variant="primary" size="sm">` for the primary action on a panel (e.g. "Restore this version").
-- **Dropdown triggers** (`ActionsDropdown.jsx`, `InsightsDropdown` in EvidenceChatPanel): styled to match Button.jsx secondary — bg-gray-100 font-medium.
-- **Segmented controls** (`SegmentedControl.jsx`): active = blue, inactive = bg-gray-100 font-medium.
-- **Icon buttons** (e.g. find bar magnifying glass, TopBar search): ghost style — no background, no border, text-gray-400 hover:text-gray-600.
+- **ContextBar actions** (Tier 2): use action objects with variant 'primary', 'danger', or 'default'. Default renders as secondary style.
+- **Panel header buttons** (Tier 3): use `<Button variant="secondary" size="sm">` for standard actions, `<Button variant="primary" size="sm">` for the primary action on a panel.
+- **Dropdown triggers** (`ActionsDropdown.jsx`, `InsightsDropdown` in EvidenceChatPanel): styled to match Button.jsx secondary.
+- **Segmented controls** (`SegmentedControl.jsx`): active = blue, inactive = gray.
+- **Icon buttons** (e.g. find bar magnifying glass, TopBar search): ghost style (no bg/border).
 - Destructive actions (Delete) always red; primary actions always blue; everything else secondary grey.
 
 ### General principles
@@ -50,7 +47,7 @@ The Rewrite button lives on tree node hover and operates on the full section und
 The app avoids modals — actions happen inline or in panels. The **one intentional exception** is `SearchOverlay.jsx` (global search). Do not add further modals without equally strong justification.
 
 ### Delete confirmations
-Destructive deletes use an inline confirmation bar below the context bar, not `window.confirm()`. Warning text left, Delete + Cancel buttons right. Escape/Cancel dismisses. `pendingDelete` boolean controls visibility; cleared on selection change and on success. Applies to: document delete (`Home.jsx`) and evidence delete (`Evidence.jsx`).
+Destructive deletes use an inline confirmation bar below the context bar, not `window.confirm()`. Escape/Cancel dismisses. `pendingDelete` boolean controls visibility; cleared on selection change and on success. Applies to: document delete (`Home.jsx`) and evidence delete (`Evidence.jsx`).
 
 ## Repository Structure
 
@@ -152,25 +149,25 @@ Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the 
 
 Main views:
 
-1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Minimal: SpeedWrite logo + Sign in top right; tagline "AI-assisted document authoring tool." and Create account button distributed vertically at golden ratio (flex spacers 1 : φ : φ²); © 2026 SpeedWrite footer. Links to `/register` and `/login`. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
-2. **Library** (`/home`) — document list left, document detail right. ContextBar always shows: Import ▾ dropdown (via `rightControls`) · From template… · New Document (primary, rightmost). DOCUMENT DETAIL Tier 3 header shows Delete · Rename · Duplicate · Open (primary) when a document is selected. Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors. Import ▾ dropdown contains a single option ".docx"; selecting it triggers the hidden `<input type="file">` at root JSX level → `api.importDocument()` → navigates to the new document on success.
-3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export ▾ dropdown (`.txt` / `.pdf`, via `rightControls`, hidden when proposal pending) · Close; switches to Accept · Reject during diff review. Redraft and Insights dropdowns live in the ChatPanel header. Edit/Preview segmented control lives in the Editor panel header.
-4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right. Reindex status shown inline on the button: "Reindexing…" → "Reindexed ✓" → auto-clears after 3s.
+1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Tagline + Create account button, vertically distributed at golden ratio. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
+2. **Library** (`/home`) — document list left, document detail right. ContextBar: Import ▾ dropdown (via `rightControls`) · From template… · New Document (primary). Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors.
+3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export ▾ dropdown (`.txt`/`.pdf`, via `rightControls`, hidden when proposal pending) · Close; switches to Accept · Reject during diff review.
+4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right.
 5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.
-6. **Images** (`/document/:id/images`) — image list left, image detail right. ContextBar: Document · Evidence · History · Images tabs + Upload Image · Close. Upload triggers a hidden file input → `api.uploadImage()` (multipart); on success selects the new image. Error shown as slim red bar below ContextBar. Selected image fetched as blob (auth header) → `createObjectURL` stored in component state; object URL revoked on change/unmount. IMAGE DETAIL Tier 3 header shows filename + Copy URL + Delete. Copy URL writes `![filename](/api/documents/{doc_id}/images/{filename})` to clipboard with "Copied!" feedback for 2 s. Delete uses inline confirmation bar pattern. Backend: `backend/images.py` — PNG/JPG/GIF/WebP only, 5 MB limit, numeric suffix deduplication, storage at `/var/speedwrite/documents/{user_id}/{doc_id}/images/`. Document delete also removes the images directory. Filenames URL-encoded in all API paths (`encodeURIComponent` on filename segment only). `MarkdownPreview.jsx` renders `![…](/api/documents/…)` images via `AuthImage` component (same fetch-as-blob pattern).
+6. **Images** (`/document/:id/images`) — image list left, image detail right. Selected image fetched as blob (auth header) → `createObjectURL`; Copy URL writes `![filename](/api/documents/{doc_id}/images/{filename})` to clipboard. Delete uses inline confirmation bar pattern. Backend: `backend/images.py` — PNG/JPG/GIF/WebP only, 5 MB limit, storage at `/var/speedwrite/documents/{user_id}/{doc_id}/images/`. Document delete also removes the images directory. Filenames URL-encoded in all API paths (`encodeURIComponent` on filename segment only). `MarkdownPreview.jsx` renders `![…](/api/documents/…)` images via `AuthImage` (same fetch-as-blob pattern).
 7. **Account** (`/account`) — no ContextBar. Sections: Profile, Change email, Change password, Delete account — each an independent form with inline success/error.
 8. **ResetRequest** (`/reset-password/request`) — unauthenticated. Always returns 200 (does not reveal whether email exists).
 9. **ResetConfirm** (`/reset-password/confirm?token=…`) — unauthenticated. Token read from URL query param.
 10. **SharedView** (`/shared/:token`) — unauthenticated, no TopBar/ContextBar. Left: document title, snapshot label + timestamp, rendered markdown. Right: comment list + submission form (name + body). Shows 404 if token not found.
-11. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). No ContextBar. Summary row (total users · total AI actions this month), then a table: Email · Plan · Actions used · Actions left · BYOK · Documents · Admin. "Actions left" shows "Unlimited" for BYOK users. Backend: `GET /admin/users` in `admin.py`, registered with `prefix="/admin"`. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link above "Account settings" when `user.is_admin` is true.
+11. **Admin** (`/admin`) — read-only admin interface. Auth required; renders "Access denied" if `user.is_admin` is false (backend also enforces 403). "Actions left" shows "Unlimited" for BYOK users. To grant access, set `"is_admin": true` on the user record in `users.json` directly — no UI for this. TopBar dropdown shows an "Administration" link when `user.is_admin` is true.
 
 `ErrorBoundary.jsx` wraps the router and each page route in `App.jsx` — two levels, so a crash in one page doesn't block navigation.
 
 ## AI Features
 
 - **Agent panel**: AI can propose document changes in any message. `<proposed_document>` block triggers diff view. Chat panel is hidden via `display: none` (not unmounted) so ref and chat state survive the reject path — `className={pendingProposal ? 'hidden' : 'contents'}`.
-- **Inline diff** (`DiffView.jsx`): LCS-based. Removed = red strikethrough; added = green; equal = muted gray. Auto-scrolls to first change on mount. Occupies the same flex slot as the editor.
-- **Rewrite button**: On tree node hover. Calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` in `Document.jsx` — pre-fills input with section as context and "Rewrite this section.", focuses textarea so user can edit before sending.
+- **Inline diff** (`DiffView.jsx`): LCS-based. Auto-scrolls to first change on mount. Occupies the same flex slot as the editor.
+- **Rewrite button**: On tree node hover. Calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` — cross-component call from `Document.jsx` to `ChatPanel`.
 - **Context scoping**: When context is attached, AI is instructed to change only that section and return the full document with only that part replaced. `ignore_history: true` is set whenever context is attached.
 - **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. `onContentOverrideApplied` fires immediately after `Editor.jsx` applies it to clear it back to `null`.
 - **Document actions routing (important)**: Redraft actions in `ChatPanel` go through `fireInsightInternal` → `handleSend` → `api.chatMessage` → `chat.py`. They do **NOT** call `api.documentAction` / `actions.py`. Only `Home.jsx` description generation calls `api.documentAction` (action: `generate_description`). After generation, `Home.jsx` persists the result via `api.updateDocument({ description })`. `DocumentUpdate` accepts an optional `description` field; `documents.py` sets it when present.
@@ -182,14 +179,13 @@ Main views:
 - **Token limits**: `max_tokens=4096` in `chat.py` and `actions.py`. Large attachments can still cause truncation if total prompt + response exceeds model context window.
 - **Document templates**: Built-in templates in `frontend/src/data/templates.js`. User templates at `/var/speedwrite/templates/{user_id}/{template_id}.json` via `backend/templates.py`. `TemplatePickerOverlay.jsx` two screens: grid picker → AI pre-fill step. `POST /templates/prefill` calls `llm.complete()` (max_tokens=2048). "Save as template" opens inline bar (same `activeBar` state slot as other inline bars).
 - **Document export**: `GET .../export/txt` strips markdown to plain text. `GET .../export/pdf` uses `markdown` + `weasyprint`. Both auth-required, filename-sanitised. Frontend: `api.downloadExport` fetches as blob, extracts filename from header, triggers download via temporary `<a>`.
-- **Document import**: `POST /documents/import` (multipart, auth required). Accepts `.docx` only (400 otherwise). Converts via `mammoth.convert_to_html()` with a no-op image handler (`mammoth.images.img_element(lambda image: {})`) to suppress base64 image data → `html2text` (wrapping disabled with `body_width=0`); falls back to `mammoth.extract_raw_text()` prefixed with `# {title}` if output is empty. Title derived from filename (stripped, truncated to 200 chars). Returns new document object. Route defined before `/{doc_id}` routes in `documents.py`. Dependencies: `mammoth==1.8.0`, `html2text==2024.2.26`.
+- **Document import**: `POST /documents/import` (multipart, auth required). Accepts `.docx` only (400 otherwise). Converts via mammoth → html2text; falls back to raw text if html empty. Title from filename, truncated to 200 chars. Route must be defined before `/{doc_id}` routes in `documents.py` (ordering constraint). Dependencies: `mammoth==1.8.0`, `html2text==2024.2.26`.
 - **Global search**: `POST /search` — searches titles, content, evidence, chat history (not evidence_chat_history); ≤5 results per group. `SearchOverlay.jsx` triggered by Cmd/Ctrl+K or search icon. Evidence results navigate to Evidence view with `{ state: { evidenceId } }`; `Evidence.jsx` pre-selects on load via `initialSelectDoneRef` (one-shot).
 
 ## Document Tree
 
-- Hover highlights node + all children.
 - **Rewrite** button on hover (hidden for protected headings). Former "Add" button removed — use + in chat input.
-- Protected headings highlighted + lock icon. Unlocked headings show lock icon faintly on hover only.
+- Protected nodes show lock icon; unlocked nodes show it faintly on hover.
 - Clicking heading scrolls editor to it via `useImperativeHandle` on Editor.
 - No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
 
@@ -215,9 +211,8 @@ Main views:
 
 ## Document History
 
-- Snapshots: `history: list` on doc JSON; max 50 (oldest dropped).
-- `save_count` incremented on every PUT; snapshot taken when `save_count % 10 == 0`.
-- Four triggers: `auto` ("Auto save"), `rewrite` ("Before AI rewrite"), `restore` ("Before restore"), `manual` ("Manual checkpoint").
+- Snapshots: `history: list` on doc JSON; max 50 (oldest dropped). Auto-snapshot every 10 saves.
+- Four triggers: `auto`, `rewrite`, `restore`, `manual`.
 - Each snapshot entry has: `id`, `timestamp`, `trigger`, `label`, `content`, `share_token` (string|null), `comments` (list). `share_token` and `comments` initialised in `add_snapshot()`; existing snapshots without them degrade safely via `.get()`.
 - `POST /documents/{doc_id}/snapshot` — body `{ label, trigger }`. Returns new entry.
 - `GET /documents/{doc_id}/history` — list newest-first, strips to `id`, `timestamp`, `trigger`, `label`, `is_shared` (bool), `comment_count` (int). No `content` or `share_token` in list.
@@ -230,14 +225,14 @@ Main views:
 
 Sharing is tied to History snapshots (immutable), not to the live document. Anyone with a share link can view the snapshot and leave a comment (name + body). The document owner can delete comments.
 
-- **Backend**: `backend/sharing.py` — bare `APIRouter` (no prefix), registered last in `main.py`.
-- **Share/unshare**: `POST /documents/{doc_id}/history/{snapshot_id}/share` (idempotent — returns existing token if already set; generates `secrets.token_urlsafe(32)` otherwise). `POST .../unshare` sets `share_token = None`.
+- **Backend**: `backend/sharing.py` — registered last in `main.py` (no prefix).
+- **Share/unshare**: `POST .../share` (idempotent — returns existing token if already set). `POST .../unshare` sets `share_token = None`.
 - **Public read**: `GET /shared/{token}` — no auth. `_find_snapshot_by_token()` scans all users' documents via `load_users()` + `list_documents()`. Returns `doc_title`, `label`, `timestamp`, `content`, `comments`.
-- **Public comments**: `POST /shared/{token}/comments` — no auth; validates name ≤100 chars and body ≤2000 chars; sets `is_owner: False`. `DELETE /documents/{doc_id}/history/{snapshot_id}/comments/{comment_id}` — auth required; 404 if not found.
-- **Owner comments**: `POST /documents/{doc_id}/history/{snapshot_id}/comments` — auth required; body only (name derived from `display_name || email`); sets `is_owner: True`; validates body ≤2000 chars.
+- **Public comments**: `POST /shared/{token}/comments` — no auth; sets `is_owner: False`. `DELETE .../comments/{comment_id}` — auth required; 404 if not found.
+- **Owner comments**: `POST .../comments` — auth required; name derived from `display_name || email`; sets `is_owner: True`.
 - **`is_owner` field**: present on all new comments; old entries without it default to `False` via `.get()`. Owner comments get distinct styling + "Owner" badge in both History.jsx and SharedView.jsx.
 - **Share URL**: `window.location.origin + '/shared/' + token` — never hardcoded to a domain.
-- **History.jsx COMMENTS panel**: "Share this version" / "Revoke" in header. Owner comment form pinned at bottom, always visible when snapshot selected. `comment_count` in snapshot list state updated optimistically on add/delete.
+- **History.jsx COMMENTS panel**: "Share this version" / "Revoke" in header. `comment_count` in snapshot list state updated optimistically on add/delete.
 
 ## Feedback
 
@@ -270,14 +265,14 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 
 ## Auth & Account Management
 
-- **Password reset flow**: `POST /auth/reset-password/request` (no auth) generates a `secrets.token_urlsafe(32)` token, stores `reset_token` + `reset_token_expires` (UTC ISO, 1 hour) on the user record, and emails a link via SendGrid (`mailer.py`). Always returns 200 — does not reveal whether email exists. SendGrid errors are logged but not surfaced. `POST /auth/reset-password/confirm` validates token + expiry, hashes new password, clears token fields.
-- **Change password**: `POST /auth/change-password` (auth required) — verifies current password before updating.
-- **Change email**: `POST /auth/change-email` (auth required) — verifies password, checks uniqueness.
-- **Update profile**: `POST /auth/update-profile` (auth required) — saves `display_name` on user record. `GET /auth/me` returns `display_name` (Optional, may be null).
-- **Delete account**: `DELETE /auth/account` (auth required) — verifies password, removes user from `users.json`, then `shutil.rmtree` on docs, embeddings, and templates dirs for that user.
-- **Email sending**: `backend/mailer.py` wraps SendGrid. Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
+- **Password reset flow**: Token TTL 1 hour. Always returns 200 — does not reveal whether email exists. SendGrid errors logged, not surfaced.
+- **Change password**: `POST /auth/change-password` — verifies current password before updating.
+- **Change email**: `POST /auth/change-email` — verifies password, checks uniqueness.
+- **Update profile**: `POST /auth/update-profile` — saves `display_name`; `GET /auth/me` returns it (may be null).
+- **Delete account**: `DELETE /auth/account` — verifies password, then `shutil.rmtree` on docs, embeddings, and templates dirs.
+- **Email sending**: Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
 - **User record fields**: `id`, `email`, `hashed_password`, `display_name`, `plan` (default `"free"`), `byok_key_encrypted`, `ai_actions_used`, `ai_actions_reset_at` (month boundary for reset), `reset_token`, `reset_token_expires`, `is_admin` (default `False` — set manually in `users.json`). All optional fields use `.get()` so existing records degrade safely.
-- **BYOK endpoints**: `POST /auth/byok` saves an encrypted key; `DELETE /auth/byok` removes it. `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked` (e.g. `sk-ant-••••••••1234`). Encryption uses Fernet (`cryptography` library); key comes from `ENCRYPTION_KEY` env var. `get_byok_key(user)` in `auth.py` returns the decrypted key or `None` (raises HTTP 500 if key is stored but decryption fails). All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`, `templates.py`) call `get_byok_key(user)` and pass the result to `complete()`.
+- **BYOK endpoints**: `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked`. Encryption uses Fernet; key from `ENCRYPTION_KEY` env var. `get_byok_key(user)` returns decrypted key or `None` — raises HTTP 500 if key is stored but decryption fails. All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`, `templates.py`) call `get_byok_key(user)` and pass the result to `complete()`.
 
 ## Data Storage
 
