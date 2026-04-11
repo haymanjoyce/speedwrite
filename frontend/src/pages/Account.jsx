@@ -172,6 +172,7 @@ export default function Account() {
         user={user}
         onLogout={handleLogout}
         pageTitle="Account Settings"
+        showBack={true}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}

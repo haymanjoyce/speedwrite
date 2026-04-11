@@ -40,6 +40,7 @@ export default function Admin() {
         user={user}
         onLogout={handleLogout}
         pageTitle="Administration"
+        showBack={true}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}

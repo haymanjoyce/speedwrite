@@ -5,7 +5,6 @@ import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
-import ActionsDropdown from '../components/ActionsDropdown'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -103,11 +102,11 @@ export default function Home() {
   const handleRenameCancel = () => setIsRenaming(false)
 
   const handleDelete = async () => {
+    setPendingDelete(false)
     try {
       await api.deleteDocument(selectedDoc.id)
       setDocuments((prev) => prev.filter((d) => d.id !== selectedDoc.id))
       setSelectedDoc(null)
-      setPendingDelete(false)
     } catch (err) {
       console.error('Delete failed', err)
     }
@@ -139,23 +138,15 @@ export default function Home() {
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar
-        rightControls={
-          <ActionsDropdown
-            title="Import ▾"
-            actions={[{ action: 'docx', label: '.docx' }]}
-            onAction={() => importInputRef.current.click()}
-            disabled={importing}
-          />
-        }
         actions={[
-          { label: 'New Document', onClick: handleNewDocument, variant: 'primary' },
+          { label: 'Rename', onClick: handleRename, variant: 'default', disabled: !selectedDoc },
+          { label: 'Duplicate', onClick: handleDuplicate, variant: 'default', disabled: !selectedDoc },
+          { label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default', disabled: !selectedDoc },
+          { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: selectedDoc ? 'primary' : 'default', disabled: !selectedDoc },
+          { label: 'Import', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing },
+          { label: 'New Document', onClick: handleNewDocument, variant: selectedDoc ? 'default' : 'primary' },
         ]}
       />
-      {importError && (
-        <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex-shrink-0">
-          <span className="text-xs text-red-600">{importError}</span>
-        </div>
-      )}
       {pendingDelete && selectedDoc && (
         <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex items-center gap-3 flex-shrink-0">
           <span className="text-sm text-red-700 flex-1">Delete "{selectedDoc.title}"? This cannot be undone.</span>
@@ -171,6 +162,11 @@ export default function Home() {
           >
             Cancel
           </button>
+        </div>
+      )}
+      {importError && (
+        <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex-shrink-0">
+          <span className="text-xs text-red-600">{importError}</span>
         </div>
       )}
       <div className="flex flex-1 overflow-hidden">
@@ -207,14 +203,6 @@ export default function Home() {
         <main className="flex-1 bg-white flex flex-col overflow-hidden">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Document Detail</span>
-            {selectedDoc && (
-              <div className="ml-auto flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setPendingDelete(true)}>Delete</Button>
-                <Button variant="secondary" size="sm" onClick={handleRename}>Rename</Button>
-                <Button variant="secondary" size="sm" onClick={handleDuplicate}>Duplicate</Button>
-                <Button variant="primary" size="sm" onClick={() => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } })}>Open</Button>
-              </div>
-            )}
           </div>
           <div className="flex-1 overflow-y-auto">
           {!selectedDoc ? (
