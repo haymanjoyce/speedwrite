@@ -12,6 +12,10 @@ The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `
 
 Existing `audit_log` arrays in document JSON files are harmless and simply ignored.
 
+### Templates removed (do not re-add)
+
+The templates feature (`backend/templates.py`, `TemplatePickerOverlay.jsx`, `frontend/src/data/templates.js`, `/templates` API routes, "From template…" on Home, "Save as template" on Document) was removed intentionally. Do not re-add document templates or a template picker.
+
 ## Design Decisions
 
 ### Rewrite operates at section level, not selected-text level
@@ -66,7 +70,6 @@ speedwrite/
 │   ├── embeddings.py
 │   ├── llm.py
 │   ├── search.py
-│   ├── templates.py
 │   ├── export.py
 │   ├── models.py
 │   ├── storage.py
@@ -111,7 +114,6 @@ speedwrite/
 │       │   ├── SegmentedControl.jsx
 │       │   ├── ErrorBoundary.jsx
 │       │   ├── SearchOverlay.jsx
-│       │   ├── TemplatePickerOverlay.jsx
 │       │   ├── EvidenceChatPanel.jsx
 │       │   ├── EvidenceSidebar.jsx
 │       │   ├── SourceDetail.jsx
@@ -120,8 +122,6 @@ speedwrite/
 │       │   ├── attachmentLimits.js   # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
 │       │   └── limits.js             # FREE_ACTION_CAP (1000)
 │       ├── insightPrompts.js         # SHARED_INSIGHT_ACTIONS (EvidenceChatPanel) and DOCUMENT_INSIGHT_ACTIONS (ChatPanel)
-│       ├── data/
-│       │   └── templates.js          # BUILT_IN_TEMPLATES (5 built-in templates)
 │       └── api.js
 ├── nginx/
 │   ├── local_app.conf
@@ -150,8 +150,8 @@ Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the 
 Main views:
 
 1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Tagline + Create account button, vertically distributed at golden ratio. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
-2. **Library** (`/home`) — document list left, document detail right. ContextBar: Import ▾ dropdown (via `rightControls`) · From template… · New Document (primary). Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors.
-3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Save as template · Export ▾ dropdown (`.txt`/`.pdf`, via `rightControls`, hidden when proposal pending) · Close; switches to Accept · Reject during diff review.
+2. **Library** (`/home`) — document list left, document detail right. ContextBar: Import ▾ dropdown (via `rightControls`) · New Document (primary). Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors.
+3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Rename · Export ▾ dropdown (`.txt`/`.pdf`, via `rightControls`, hidden when proposal pending) · Close; switches to Accept · Reject during diff review.
 4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right.
 5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs + Close only. VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.
 6. **Images** (`/document/:id/images`) — image list left, image detail right. Selected image fetched as blob (auth header) → `createObjectURL`; Copy URL writes `![filename](/api/documents/{doc_id}/images/{filename})` to clipboard. Delete uses inline confirmation bar pattern. Backend: `backend/images.py` — PNG/JPG/GIF/WebP only, 5 MB limit, storage at `/var/speedwrite/documents/{user_id}/{doc_id}/images/`. Document delete also removes the images directory. Filenames URL-encoded in all API paths (`encodeURIComponent` on filename segment only). `MarkdownPreview.jsx` renders `![…](/api/documents/…)` images via `AuthImage` (same fetch-as-blob pattern).
@@ -177,7 +177,6 @@ Main views:
 - **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. Anthropic is the only active path. `_complete_ollama()` is retained but dormant — no UI toggle and `LLM_PROVIDER`/`OLLAMA_CHAT_MODEL` are commented out in `.env.example`. `config.py` and `ProviderToggle.jsx` have been deleted. Active model: `FREE_MODEL = "claude-haiku-4-5-20251001"` (module-level constant). Sonnet string retained as a comment for Sprint 2 plan-based routing.
 - **Evidence chat** (`EvidenceChatPanel.jsx`): Persistent chat on Evidence page. "All sources" option concatenates all sources. `ignore_history: true` when context attached. Backend: `POST /documents/{doc_id}/evidence-chat` in `evidence_chat.py`. Never modifies the document.
 - **Token limits**: `max_tokens=4096` in `chat.py` and `actions.py`. Large attachments can still cause truncation if total prompt + response exceeds model context window.
-- **Document templates**: Built-in templates in `frontend/src/data/templates.js`. User templates at `/var/speedwrite/templates/{user_id}/{template_id}.json` via `backend/templates.py`. `TemplatePickerOverlay.jsx` two screens: grid picker → AI pre-fill step. `POST /templates/prefill` calls `llm.complete()` (max_tokens=2048). "Save as template" opens inline bar (same `activeBar` state slot as other inline bars).
 - **Document export**: `GET .../export/txt` strips markdown to plain text. `GET .../export/pdf` uses `markdown` + `weasyprint`. Both auth-required, filename-sanitised. Frontend: `api.downloadExport` fetches as blob, extracts filename from header, triggers download via temporary `<a>`.
 - **Document import**: `POST /documents/import` (multipart, auth required). Accepts `.docx` only (400 otherwise). Converts via mammoth → html2text; falls back to raw text if html empty. Title from filename, truncated to 200 chars. Route must be defined before `/{doc_id}` routes in `documents.py` (ordering constraint). Dependencies: `mammoth==1.8.0`, `html2text==2024.2.26`.
 - **Global search**: `POST /search` — searches titles, content, evidence, chat history (not evidence_chat_history); ≤5 results per group. `SearchOverlay.jsx` triggered by Cmd/Ctrl+K or search icon. Evidence results navigate to Evidence view with `{ state: { evidenceId } }`; `Evidence.jsx` pre-selects on load via `initialSelectDoneRef` (one-shot).
@@ -219,7 +218,7 @@ Main views:
 - `GET /documents/{doc_id}/history/{snapshot_id}` — full snapshot with content, share_token, comments.
 - Restore flow: History.jsx navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on load, sets `pendingProposal`, sets `pendingProposalReason: 'restore'`, clears location state via `window.history.replaceState`. Accept → `trigger='restore'` snapshot created; Reject → unchanged.
 - `pendingProposalReason`: `'ai_rewrite'` (default) or `'restore'`. Controls snapshot trigger in `handleAccept`. Reset to `'ai_rewrite'` after accept.
-- `flashStatus` prop on `Editor.jsx`: shows brief messages ("Version saved", "Template saved") in Editor header, overriding save status for 3 seconds.
+- `flashStatus` prop on `Editor.jsx`: shows brief messages (e.g. "Version saved") in Editor header, overriding save status for 3 seconds.
 
 ## Version Sharing
 
@@ -269,10 +268,10 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - **Change password**: `POST /auth/change-password` — verifies current password before updating.
 - **Change email**: `POST /auth/change-email` — verifies password, checks uniqueness.
 - **Update profile**: `POST /auth/update-profile` — saves `display_name`; `GET /auth/me` returns it (may be null).
-- **Delete account**: `DELETE /auth/account` — verifies password, then `shutil.rmtree` on docs, embeddings, and templates dirs.
+- **Delete account**: `DELETE /auth/account` — verifies password, then `shutil.rmtree` on docs and embeddings dirs.
 - **Email sending**: Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
 - **User record fields**: `id`, `email`, `hashed_password`, `display_name`, `plan` (default `"free"`), `byok_key_encrypted`, `ai_actions_used`, `ai_actions_reset_at` (month boundary for reset), `reset_token`, `reset_token_expires`, `is_admin` (default `False` — set manually in `users.json`). All optional fields use `.get()` so existing records degrade safely.
-- **BYOK endpoints**: `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked`. Encryption uses Fernet; key from `ENCRYPTION_KEY` env var. `get_byok_key(user)` returns decrypted key or `None` — raises HTTP 500 if key is stored but decryption fails. All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`, `templates.py`) call `get_byok_key(user)` and pass the result to `complete()`.
+- **BYOK endpoints**: `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked`. Encryption uses Fernet; key from `ENCRYPTION_KEY` env var. `get_byok_key(user)` returns decrypted key or `None` — raises HTTP 500 if key is stored but decryption fails. All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`) call `get_byok_key(user)` and pass the result to `complete()`.
 
 ## Data Storage
 
@@ -285,7 +284,6 @@ JSON files on disk — no database.
 | `/var/speedwrite/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
 | `/var/speedwrite/documents/{user_id}/{doc_id}/images/` | Uploaded images (PNG/JPG/GIF/WebP) |
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources |
-| `/var/speedwrite/templates/{user_id}/{template_id}.json` | User-saved templates |
 
 > **Note**: The local dev named volume is `dev_speedwrite_data` — Docker Compose prefixes it with the project name, so the actual volume is `speedwrite_dev_speedwrite_data`. It mounts to `/var/speedwrite` in `docker-compose.override.yml`.
 
@@ -347,7 +345,7 @@ bash deploy.sh      # subsequent deploys
 ### Sprint 3 — AI action cap
 - **Limits module**: `backend/limits.py` holds `FREE_ACTION_CAP` and `FREE_EVIDENCE_LIMIT`. `frontend/src/constants/limits.js` exports `FREE_ACTION_CAP` for the frontend.
 - **Counter fields**: `ai_actions_used` (int) and `ai_actions_reset_at` (ISO string) on the user record. `GET /auth/me` returns both. `get_actions_used(user)` in `auth.py` returns the count, resetting to 0 if the stored month differs from now. `increment_action_count(user_id)` reloads users, resets if stale, increments, and saves.
-- **Cap enforcement**: `chat.py`, `evidence_chat.py`, and `actions.py` check cap before calling `complete()` (free users only — BYOK users bypass). Returns HTTP 429 with message `"Monthly limit of {FREE_ACTION_CAP} AI actions reached…"`. `increment_action_count` is called after each successful `complete()`. `templates.py` is intentionally excluded (one-time setup, not conversational).
+- **Cap enforcement**: `chat.py`, `evidence_chat.py`, and `actions.py` check cap before calling `complete()` (free users only — BYOK users bypass). Returns HTTP 429 with message `"Monthly limit of {FREE_ACTION_CAP} AI actions reached…"`. `increment_action_count` is called after each successful `complete()`.
 - **Frontend cap UI**: `ChatPanel` and `EvidenceChatPanel` accept `actionsUsed` and `hasByokKey` props. When capped: Send button disabled with tooltip, amber banner shown above input with link to Account settings. 429 cap errors are displayed as plain assistant messages (no "Error:" prefix).
 - **TopBar indicator**: Shows "Sonnet" (BYOK) or "Haiku · N actions left" (free) between the search icon and user dropdown on all pages. Turns amber at 0.
 - **Stale counter cleanup**: `cleanup.py` now also runs `reset_stale_action_counters()`, which zeroes `ai_actions_used` for any user whose `ai_actions_reset_at` is from a prior month.

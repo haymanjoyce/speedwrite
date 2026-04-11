@@ -13,7 +13,6 @@ from evidence import router as evidence_router
 from evidence_chat import router as evidence_chat_router
 from images import router as images_router
 from search import router as search_router
-from templates import router as templates_router
 
 app = FastAPI(title="SpeedWrite API")
 
@@ -27,7 +26,6 @@ app.include_router(evidence_router)
 app.include_router(evidence_chat_router)
 app.include_router(images_router)
 app.include_router(search_router)
-app.include_router(templates_router)
 app.include_router(admin_router, prefix="/admin")
 app.include_router(sharing_router)
 app.include_router(feedback_router)

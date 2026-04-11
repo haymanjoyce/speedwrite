@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
-import TemplatePickerOverlay from '../components/TemplatePickerOverlay'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
@@ -18,7 +17,6 @@ export default function Home() {
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const [pendingDelete, setPendingDelete] = useState(false)
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState(null)
@@ -153,7 +151,6 @@ export default function Home() {
           />
         }
         actions={[
-          { label: 'From template…', onClick: () => setShowTemplatePicker(true), variant: 'default' },
           { label: 'New Document', onClick: handleNewDocument, variant: 'primary' },
         ]}
       />
@@ -285,9 +282,6 @@ export default function Home() {
           </div>
         </main>
       </div>
-      {showTemplatePicker && (
-        <TemplatePickerOverlay onClose={() => setShowTemplatePicker(false)} />
-      )}
       <input ref={importInputRef} type="file" accept=".docx" className="hidden" onChange={handleImport} />
     </div>
   )
