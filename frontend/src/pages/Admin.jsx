@@ -40,8 +40,6 @@ export default function Admin() {
         user={user}
         onLogout={handleLogout}
         pageTitle="Administration"
-        hasByokKey={user?.has_byok_key ?? false}
-        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}

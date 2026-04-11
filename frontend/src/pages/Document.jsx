@@ -8,7 +8,6 @@ import ContextBar from '../components/ContextBar'
 import ActionsDropdown from '../components/ActionsDropdown'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
-import { FREE_ACTION_CAP } from '../constants/limits'
 
 function parseHeadingsWithContent(content) {
   const lines = (content || '').split('\n')
@@ -47,7 +46,6 @@ export default function Document() {
   const [structureLocked, setStructureLocked] = useState(false)
   const [restoreSnapshotId, setRestoreSnapshotId] = useState(null)
   const [restoreSnapshotLabel, setRestoreSnapshotLabel] = useState(null)
-  const [isRenaming, setIsRenaming] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [flashStatus, setFlashStatus] = useState('')
   const editorRef = useRef(null)
@@ -146,22 +144,6 @@ export default function Document() {
   }
 
 
-  const handleRename = () => setIsRenaming(true)
-
-  const handleRenameSave = async (newTitle) => {
-    setIsRenaming(false)
-    if (!newTitle || newTitle === doc?.title) return
-    try {
-      const oldTitle = doc?.title
-      const updated = await api.updateDocument(id, { title: newTitle })
-      setDoc(updated)
-    } catch (err) {
-      console.error('Rename failed', err)
-    }
-  }
-
-  const handleRenameCancel = () => setIsRenaming(false)
-
   const handleExport = async (format) => {
     try {
       await api.downloadExport(id, format)
@@ -195,8 +177,6 @@ export default function Document() {
     : [
         ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }] : []),
         { label: 'Save version', onClick: handleSaveVersion, variant: 'default' },
-        { label: 'Rename', onClick: handleRename, variant: 'default' },
-        { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
       ]
 
 
@@ -206,11 +186,7 @@ export default function Document() {
         user={user}
         onLogout={handleLogout}
         docTitle={doc?.title}
-        isRenaming={isRenaming}
-        onRenameSave={handleRenameSave}
-        onRenameCancel={handleRenameCancel}
-        hasByokKey={user?.has_byok_key ?? false}
-        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        showBack={true}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}

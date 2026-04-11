@@ -5,7 +5,6 @@ import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
-import { FREE_ACTION_CAP } from '../constants/limits'
 
 export default function Images() {
   const navigate = useNavigate()
@@ -114,8 +113,7 @@ export default function Images() {
         user={user}
         onLogout={handleLogout}
         docTitle={doc?.title}
-        hasByokKey={user?.has_byok_key ?? false}
-        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        showBack={true}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
@@ -128,7 +126,6 @@ export default function Images() {
         ]}
         actions={[
           { label: uploading ? 'Uploading…' : 'Upload Image', onClick: () => uploadInputRef.current.click(), variant: 'default', disabled: uploading },
-          { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
         ]}
       />
       {uploadError && (

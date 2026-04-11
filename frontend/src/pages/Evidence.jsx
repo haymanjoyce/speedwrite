@@ -8,7 +8,6 @@ import SourceDetail from '../components/SourceDetail'
 import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
-import { FREE_ACTION_CAP } from '../constants/limits'
 
 export default function Evidence() {
   const navigate = useNavigate()
@@ -163,9 +162,8 @@ export default function Evidence() {
         user={user}
         onLogout={handleLogout}
         docTitle={doc?.title}
-        hasByokKey={user?.has_byok_key ?? false}
+        showBack={true}
         onFeedbackClick={() => setShowFeedback(true)}
-        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar
@@ -184,7 +182,6 @@ export default function Evidence() {
           }] : []),
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
           ...(selectedItem ? [{ label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' }] : []),
-          { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
         ]}
       />
       {pendingDelete && selectedItem && (

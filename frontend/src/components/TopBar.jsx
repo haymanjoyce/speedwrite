@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useSearch } from '../context/SearchContext'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
-export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel, pageTitle = null, hasByokKey = false, actionsRemaining = null, onFeedbackClick = null }) {
+export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameSave, onRenameCancel, pageTitle = null, onFeedbackClick = null, showBack = false }) {
   const { open: openSearch } = useSearch()
+  const navigate = useNavigate()
   const [inputValue, setInputValue] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -43,7 +44,38 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
   return (
     <div className="h-11 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
       <div className="flex items-center text-sm min-w-0 overflow-hidden whitespace-nowrap" title={breadcrumbTitle}>
-        {docTitle ? (
+        {showBack ? (
+          <>
+            <button
+              onClick={() => navigate('/home')}
+              className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0 text-base leading-none px-1"
+              title="Back to library"
+            >
+              ←
+            </button>
+            {(docTitle || pageTitle) && <span className="mx-2 flex-shrink-0" />}
+            {docTitle && (
+              isRenaming ? (
+                <input
+                  ref={inputRef}
+                  autoFocus
+                  onFocus={(e) => e.target.select()}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={() => onRenameSave?.(inputValue.trim())}
+                  size={Math.max(10, inputValue.length + 2)}
+                  className="text-gray-900 border-b border-blue-400 outline-none bg-transparent"
+                />
+              ) : (
+                <span className="text-gray-900 truncate max-w-xs">{docTitle}</span>
+              )
+            )}
+            {!docTitle && pageTitle && (
+              <span className="text-gray-900 truncate max-w-xs">{pageTitle}</span>
+            )}
+          </>
+        ) : docTitle ? (
           <>
             <Link to="/home" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
               SpeedWrite
@@ -87,14 +119,6 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
         </button>
-        {user && hasByokKey && (
-          <span className="text-xs text-gray-400">Sonnet</span>
-        )}
-        {user && !hasByokKey && actionsRemaining !== null && (
-          <span className={`text-xs ${actionsRemaining === 0 ? 'text-amber-500' : 'text-gray-400'}`}>
-            Haiku · {actionsRemaining} actions left
-          </span>
-        )}
         {user && (
           <div className="relative" ref={dropdownRef}>
             <button

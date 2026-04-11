@@ -172,14 +172,28 @@ export default function Account() {
         user={user}
         onLogout={handleLogout}
         pageTitle="Account Settings"
-        hasByokKey={user?.has_byok_key ?? false}
-        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-lg mx-auto py-10 px-4">
           <h1 className="text-xl font-semibold text-gray-900 mb-6">Account settings</h1>
+
+          {/* Usage */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">Usage</h2>
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>Model: <span className="text-gray-900">{hasByokKey ? 'Sonnet' : 'Haiku'}</span></p>
+              {!hasByokKey && (
+                <>
+                  <p>Actions used this month: <span className="text-gray-900">{user.ai_actions_used ?? 0}</span></p>
+                  <p>Actions remaining: <span className="text-gray-900">{Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))}</span></p>
+                </>
+              )}
+            </div>
+          </div>
+
+          <hr className="border-gray-100 my-6" />
 
           {/* Profile */}
           <form onSubmit={handleProfileSubmit}>

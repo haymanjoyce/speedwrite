@@ -157,11 +157,6 @@ def update_document(doc_id: str, data: DocumentUpdate, user=Depends(get_current_
         raise HTTPException(status_code=404, detail="Document not found")
     if data.content is not None:
         doc["content"] = data.content
-        # Re-derive title from H1 unless title was explicitly provided
-        if data.title is None:
-            derived = extract_title(data.content)
-            if derived:
-                doc["title"] = derived
     if data.title is not None:
         doc["title"] = data.title
     if data.description is not None:

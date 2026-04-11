@@ -5,7 +5,6 @@ import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
-import { FREE_ACTION_CAP } from '../constants/limits'
 import ActionsDropdown from '../components/ActionsDropdown'
 
 export default function Home() {
@@ -136,8 +135,6 @@ export default function Home() {
       <TopBar
         user={user}
         onLogout={handleLogout}
-        hasByokKey={user?.has_byok_key ?? false}
-        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}

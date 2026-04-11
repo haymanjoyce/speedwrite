@@ -6,7 +6,6 @@ import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import MarkdownPreview from '../components/MarkdownPreview'
 import TopBar from '../components/TopBar'
-import { FREE_ACTION_CAP } from '../constants/limits'
 
 const TRIGGER_ICONS = { auto: '💾', rewrite: '🤖', manual: '📌', restore: '🔄' }
 
@@ -158,8 +157,7 @@ export default function History() {
         user={user}
         onLogout={handleLogout}
         docTitle={doc?.title}
-        hasByokKey={user?.has_byok_key ?? false}
-        actionsRemaining={user ? (user.has_byok_key ? null : Math.max(0, FREE_ACTION_CAP - (user.ai_actions_used ?? 0))) : null}
+        showBack={true}
         onFeedbackClick={() => setShowFeedback(true)}
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
@@ -170,9 +168,7 @@ export default function History() {
           { label: 'History', active: true, onClick: () => {} },
           { label: 'Images', active: false, onClick: () => navigate(`/document/${id}/images`) },
         ]}
-        actions={[
-          { label: 'Close', onClick: () => navigate('/home'), variant: 'default' },
-        ]}
+        actions={[]}
       />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel — snapshot list */}
