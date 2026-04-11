@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { ATTACHMENT_TRUNCATION_LIMIT, ATTACHMENT_WARNING_THRESHOLD } from '../constants/attachmentLimits'
 import { FREE_ACTION_CAP } from '../constants/limits'
-import { SHARED_INSIGHT_ACTIONS } from '../insightPrompts'
 import MarkdownPreview from './MarkdownPreview'
 
 const isMac = navigator.platform.toUpperCase().includes('MAC')
@@ -19,52 +18,6 @@ function truncateContext(text) {
   const lastNewline = slice.lastIndexOf('\n')
   const cutText = lastNewline > 0 ? slice.slice(0, lastNewline) : slice
   return { text: cutText + '\n[truncated]', truncated: true, originalLength }
-}
-
-function InsightsDropdown({ disabled, onAction }) {
-  const [open, setOpen] = useState(false)
-  const containerRef = useRef(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        onClick={() => { if (!disabled) setOpen((v) => !v) }}
-        disabled={disabled}
-        title={disabled ? 'Attach a source first' : undefined}
-        className={`text-xs border rounded px-3 py-1 transition-colors ${
-          disabled
-            ? 'border-gray-200 text-gray-300 cursor-not-allowed'
-            : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border-gray-200 font-medium cursor-pointer'
-        }`}
-      >
-        Insights
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-md py-1 z-50 min-w-44">
-          {SHARED_INSIGHT_ACTIONS.map((a) => (
-            <button
-              key={a.label}
-              onClick={() => { setOpen(false); onAction(a.prompt) }}
-              className="w-full text-left text-sm text-gray-700 hover:bg-gray-50 px-4 py-1.5 cursor-pointer"
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
 }
 
 function SourcePickerPopup({ sources, onSelect, onClose, anchorRef }) {
@@ -310,13 +263,6 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
       {/* Header */}
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
-        <InsightsDropdown
-          disabled={!localContext}
-          onAction={(prompt) => {
-            setInput(prompt)
-            setTimeout(() => handleSend(prompt), 0)
-          }}
-        />
       </div>
 
       {/* Messages */}

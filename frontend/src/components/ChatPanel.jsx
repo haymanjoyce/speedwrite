@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { ATTACHMENT_TRUNCATION_LIMIT, ATTACHMENT_WARNING_THRESHOLD } from '../constants/attachmentLimits'
 import { FREE_ACTION_CAP } from '../constants/limits'
-import { DOCUMENT_INSIGHT_ACTIONS } from '../insightPrompts'
-import ActionsDropdown from './ActionsDropdown'
 import AttachmentPopup from './AttachmentPopup'
 import MarkdownPreview from './MarkdownPreview'
 
@@ -26,26 +24,6 @@ function truncateContext(text) {
   }
 }
 
-const REDRAFT_LABELS = {
-  rewrite: 'Rewrite',
-  restructure: 'Restructure',
-  expand: 'Expand',
-  condense: 'Condense',
-  simplify: 'Simplify',
-  formalise: 'Formalise',
-}
-
-const REDRAFT_PROMPTS = {
-  rewrite: 'Rewrite this entire document.',
-  restructure: 'Restructure this document for better organisation and flow.',
-  expand: 'Expand this document by fleshing out thin sections and adding more detail throughout.',
-  condense: 'Condense this document by removing redundancy while preserving all key information.',
-  simplify: 'Rewrite this document in simpler language. Reduce jargon, shorten sentences, and make it accessible to a non-specialist audience while preserving all key information.',
-  formalise: 'Rewrite this document in a more formal, professional tone. Remove casual language, tighten the writing, and ensure it is appropriate for a professional or academic audience.',
-}
-
-const INSIGHTS_PROMPTS = Object.fromEntries(DOCUMENT_INSIGHT_ACTIONS.map((a) => [a.action, a.prompt]))
-
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
   headings, evidenceSources, pendingProposal, evidenceCount = 0, structureLocked = false,
@@ -63,13 +41,11 @@ const ChatPanel = forwardRef(function ChatPanel({
   const [localContext, setLocalContext] = useState(null) // { text, label, truncated, originalLength, evidenceId }
   const [ragActive, setRagActive] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
-  const [pendingAction, setPendingAction] = useState(null)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
   const plusButtonRef = useRef(null)
   const abortControllerRef = useRef(null)
-  const instructionInputRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
     appendMessages(userMsg, assistantMsg) {
@@ -89,9 +65,6 @@ const ChatPanel = forwardRef(function ChatPanel({
           textareaRef.current.focus()
         }
       }, 0)
-    },
-    fireInsight(promptText) {
-      fireInsightInternal(promptText)
     },
   }))
 
@@ -243,26 +216,6 @@ const ChatPanel = forwardRef(function ChatPanel({
     setRagActive(false)
   }
 
-  const handleActionSelect = (action, instructions) => {
-    if (instructions === null) {
-      setPendingAction(action)
-    } else {
-      fireInsightInternal(INSIGHTS_PROMPTS[action])
-    }
-  }
-
-  const runAction = (action, instructions) => {
-    setPendingAction(null)
-    const base = REDRAFT_PROMPTS[action]
-    const prompt = instructions.trim() ? `${base} ${instructions.trim()}` : base
-    fireInsightInternal(prompt)
-  }
-
-  const fireInsightInternal = (promptText) => {
-    setInput(promptText)
-    setTimeout(() => handleSend(promptText, 'edit'), 0)
-  }
-
   const effectiveContext = localContext?.text || contextText
   const chipLabel = localContext
     ? localContext.label
@@ -284,56 +237,7 @@ const ChatPanel = forwardRef(function ChatPanel({
             <span className="text-xs text-gray-400">{evidenceCount} source{evidenceCount !== 1 ? 's' : ''}</span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-        <ActionsDropdown
-          title="Redraft"
-          actions={[
-            { label: 'Rewrite', action: 'rewrite' },
-            { label: 'Restructure', action: 'restructure' },
-            { label: 'Expand', action: 'expand' },
-            { label: 'Condense', action: 'condense' },
-            { label: 'Simplify', action: 'simplify' },
-            { label: 'Formalise', action: 'formalise' },
-          ]}
-          onAction={(action) => handleActionSelect(action, null)}
-          disabled={!!pendingProposal}
-        />
-        <ActionsDropdown
-          title="Insights"
-          actions={DOCUMENT_INSIGHT_ACTIONS.map((a) => ({ label: a.label, action: a.action }))}
-          onAction={(action) => handleActionSelect(action, '')}
-          disabled={!!pendingProposal}
-        />
-        </div>
       </div>
-      {pendingAction && (
-        <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs font-medium text-gray-600 capitalize flex-shrink-0">{REDRAFT_LABELS[pendingAction]}</span>
-          <input
-            type="text"
-            placeholder="Additional instructions (optional)"
-            autoFocus
-            ref={instructionInputRef}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); runAction(pendingAction, instructionInputRef.current?.value ?? '') }
-              if (e.key === 'Escape') setPendingAction(null)
-            }}
-            className="flex-1 min-w-0 border border-gray-200 rounded px-2 py-0.5 text-xs text-gray-800 outline-none focus:border-blue-400 transition-colors bg-white"
-          />
-          <button
-            onClick={() => runAction(pendingAction, instructionInputRef.current?.value ?? '')}
-            className="flex-shrink-0 rounded px-2 py-0.5 text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer"
-          >
-            Run
-          </button>
-          <button
-            onClick={() => setPendingAction(null)}
-            className="flex-shrink-0 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
       {/* Messages */}
       <div
         ref={messagesContainerRef}
