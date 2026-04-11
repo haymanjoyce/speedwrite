@@ -12,6 +12,10 @@ The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `
 
 Existing `audit_log` arrays in document JSON files are harmless and simply ignored.
 
+### Redraft and Insights removed (do not re-add)
+
+The Redraft dropdown (rewrite/restructure/expand/condense/simplify/formalise), Insights dropdown in `ChatPanel`, and Insights dropdown in `EvidenceChatPanel` were removed intentionally. This includes `insightPrompts.js`, `REDRAFT_LABELS`/`REDRAFT_PROMPTS`/`INSIGHTS_PROMPTS` constants, `pendingAction` state, `instructionInputRef`, `handleActionSelect`/`runAction`/`fireInsightInternal`/`fireInsight`, and `InstructionBar.jsx` (now unused). Do not re-add these dropdowns or the insight/redraft dispatch flow.
+
 ### Templates removed (do not re-add)
 
 The templates feature (`backend/templates.py`, `TemplatePickerOverlay.jsx`, `frontend/src/data/templates.js`, `/templates` API routes, "From template…" on Home, "Save as template" on Document) was removed intentionally. Do not re-add document templates or a template picker.
@@ -37,7 +41,7 @@ The Rewrite button lives on tree node hover and operates on the full section und
 - **All buttons** use `Button.jsx` (variants: primary/secondary/danger/ghost) or `ContextBar.jsx` action objects. Do not hand-roll button styles.
 - **ContextBar actions** (Tier 2): use action objects with variant 'primary', 'danger', or 'default'. Default renders as secondary style.
 - **Panel header buttons** (Tier 3): use `<Button variant="secondary" size="sm">` for standard actions, `<Button variant="primary" size="sm">` for the primary action on a panel.
-- **Dropdown triggers** (`ActionsDropdown.jsx`, `InsightsDropdown` in EvidenceChatPanel): styled to match Button.jsx secondary.
+- **Dropdown triggers** (`ActionsDropdown.jsx`): styled to match Button.jsx secondary.
 - **Segmented controls** (`SegmentedControl.jsx`): active = blue, inactive = gray.
 - **Icon buttons** (e.g. find bar magnifying glass, TopBar search): ghost style (no bg/border).
 - Destructive actions (Delete) always red; primary actions always blue; everything else secondary grey.
@@ -110,7 +114,7 @@ speedwrite/
 │       │   ├── ChatPanel.jsx
 │       │   ├── AttachmentPopup.jsx
 │       │   ├── ActionsDropdown.jsx
-│       │   ├── InstructionBar.jsx
+│       │   ├── InstructionBar.jsx           # Unused — kept in repo
 │       │   ├── SegmentedControl.jsx
 │       │   ├── ErrorBoundary.jsx
 │       │   ├── SearchOverlay.jsx
@@ -121,7 +125,6 @@ speedwrite/
 │       ├── constants/
 │       │   ├── attachmentLimits.js   # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
 │       │   └── limits.js             # FREE_ACTION_CAP (1000)
-│       ├── insightPrompts.js         # SHARED_INSIGHT_ACTIONS (EvidenceChatPanel) and DOCUMENT_INSIGHT_ACTIONS (ChatPanel)
 │       └── api.js
 ├── nginx/
 │   ├── local_app.conf
@@ -170,8 +173,7 @@ Main views:
 - **Rewrite button**: On tree node hover. Calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` — cross-component call from `Document.jsx` to `ChatPanel`.
 - **Context scoping**: When context is attached, AI is instructed to change only that section and return the full document with only that part replaced. `ignore_history: true` is set whenever context is attached.
 - **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. `onContentOverrideApplied` fires immediately after `Editor.jsx` applies it to clear it back to `null`.
-- **Document actions routing (important)**: Redraft actions in `ChatPanel` go through `fireInsightInternal` → `handleSend` → `api.chatMessage` → `chat.py`. They do **NOT** call `api.documentAction` / `actions.py`. Only `Home.jsx` description generation calls `api.documentAction` (action: `generate_description`). After generation, `Home.jsx` persists the result via `api.updateDocument({ description })`. `DocumentUpdate` accepts an optional `description` field; `documents.py` sets it when present.
-- **Redraft vs Insights**: Both dropdowns in ChatPanel header, both disabled when `pendingProposal` is truthy. Redraft shows `InstructionBar` for optional instructions before firing. Insights fire immediately. ChatPanel Insights use `DOCUMENT_INSIGHT_ACTIONS` (document-focused prompts); EvidenceChatPanel Insights use `SHARED_INSIGHT_ACTIONS` (evidence-source-focused prompts). Both exported from `insightPrompts.js`.
+- **Document actions routing (important)**: Only `Home.jsx` description generation calls `api.documentAction` (action: `generate_description`). After generation, `Home.jsx` persists the result via `api.updateDocument({ description })`. `DocumentUpdate` accepts an optional `description` field; `documents.py` sets it when present. All other AI chat in `ChatPanel` goes through `api.chatMessage` → `chat.py` — never `actions.py`.
 - **Evidence base**: File uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, other documents. URL sources carry `last_fetched_at` and `last_fetch_error`. `POST .../evidence/{id}/refresh` updates content and re-embeds on success. "Update sources" in Sources panel header runs all URL sources sequentially. Duplicate URL detection shows amber banner in SourceDetail.
 - **Embeddings/RAG**: Embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved instead of full context dump. Per-source RAG preflight in ChatPanel/EvidenceChatPanel: `api.ragQuery` → `POST .../evidence/{id}/rag-query`; if `used_rag: true`, chunks replace context. Falls back silently if Ollama unreachable.
 - **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. Anthropic is the only active path. `_complete_ollama()` is retained but dormant — no UI toggle and `LLM_PROVIDER`/`OLLAMA_CHAT_MODEL` are commented out in `.env.example`. `config.py` and `ProviderToggle.jsx` have been deleted. Active model: `FREE_MODEL = "claude-haiku-4-5-20251001"` (module-level constant). Sonnet string retained as a comment for Sprint 2 plan-based routing.
@@ -203,8 +205,8 @@ Main views:
 - **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
 - **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
 - **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
-- **Chat / Edit split**: Input row has two buttons — Edit (gray, left) and Send (blue, right). Send submits in `mode: "chat"`; Edit submits in `mode: "edit"`. Enter key always triggers Send (chat mode). Stop replaces both while loading. Both disabled when input empty or user capped. `handleSend(textOverride, mode = 'chat')` — mode stored on user messages in local state only (not persisted to `chat_history`). Edit-mode user bubbles show a muted pill "Edit" badge. Redraft and Insights fire via `fireInsightInternal` which calls `handleSend(promptText, 'edit')` so they continue to return proposed documents. Backend: `mode` field on `ChatRequest` (default `"chat"`); `_build_mode_instruction()` appended to system prompt — chat mode forbids `<proposed_document>` blocks entirely; edit mode requires one (clarification-only exception).
-- **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`, imported by `actions.py`): prepended as the first block of the system prompt in both `chat.py` and `actions.py` (before document content and all other instructions). Instructs the AI to return markdown tables, image references (`![alt](url)`), fenced code blocks, and blockquotes verbatim in any proposed document. Uses `CRITICAL INSTRUCTION` framing to reduce the chance of smaller models ignoring it.
+- **Chat / Edit split**: Input row has two buttons — Edit (gray, left) and Send (blue, right). Send submits in `mode: "chat"`; Edit submits in `mode: "edit"`. Enter key always triggers Send (chat mode). Stop replaces both while loading. Both disabled when input empty or user capped. `handleSend(textOverride, mode = 'chat')` — mode stored on user messages in local state only (not persisted to `chat_history`). Edit-mode user bubbles show a muted pill "Edit" badge. Backend: `mode` field on `ChatRequest` (default `"chat"`); `_build_mode_instruction()` appended to system prompt — chat mode forbids `<proposed_document>` blocks entirely; edit mode requires one (clarification-only exception).
+- **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended as the first block of the system prompt in `chat.py`. Instructs the AI to return markdown tables, image references (`![alt](url)`), fenced code blocks, and blockquotes verbatim in any proposed document. Uses `CRITICAL INSTRUCTION` framing to reduce the chance of smaller models ignoring it. Not used in `actions.py` — `generate_description` returns plain prose, not a proposed document.
 - **Enter key**: configurable via `localStorage` (`speedwrite_submit_on_enter`). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
 - **onActionComplete**: Optional callback prop (default `null`) on both `ChatPanel` and `EvidenceChatPanel`. Called after each successful AI response (fire-and-forget, no await). Pages pass `() => { api.me().then(setUser).catch(() => {}) }` so the TopBar usage counter refreshes live after each action.
 
@@ -260,7 +262,7 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - UI: icon-only 🔒/🔓 toggle in Structure panel header. No visual treatment on tree nodes — avoids collision with per-section lock styling.
 - When `structureLocked` is true, heading lines highlighted in both `DiffView` and `MarkdownPreview`. `DiffView` matches `/^#{1,6}\s/`.
 - `MarkdownPreview.jsx` uses `react-markdown` + `remark-gfm` (no hand-rolled renderer). Protected and structure-lock highlighting applied via custom `components` renderers using `node.position.start.line` (1-indexed, converted to 0-indexed to match `getProtectedLineSet`). `dangerouslySetInnerHTML` removed.
-- `ChatPanel` receives and forwards `structureLocked` on every message (including Redraft actions, which route through `handleSend`).
+- `ChatPanel` receives and forwards `structureLocked` on every message sent via `handleSend`.
 
 ## Auth & Account Management
 
