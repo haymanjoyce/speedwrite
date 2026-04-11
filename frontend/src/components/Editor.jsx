@@ -2,9 +2,8 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState }
 import { api } from '../api'
 import DiffView from './DiffView'
 import MarkdownPreview from './MarkdownPreview'
-import SegmentedControl from './SegmentedControl'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, onEditorModeChange, protectedSections = [], flashStatus = '', structureLocked = false }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, protectedSections = [], structureLocked = false }, ref) {
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
   const [findOpen, setFindOpen] = useState(false)
@@ -218,30 +217,18 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editor</span>
         <div className="flex items-center gap-3">
-          {(flashStatus || saveStatus) && <span className="text-xs text-gray-400">{flashStatus || saveStatus}</span>}
-          {!pendingProposal && onEditorModeChange && (
-            <>
-              {editorMode === 'edit' && (
-                <button
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  onClick={openFindBar}
-                  title="Find (Ctrl+F)"
-                  aria-label="Find"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                    <path fillRule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              )}
-              <SegmentedControl
-                options={[
-                  { value: 'edit', label: 'Edit' },
-                  { value: 'preview', label: 'Preview' },
-                ]}
-                value={editorMode}
-                onChange={onEditorModeChange}
-              />
-            </>
+          {saveStatus && <span className="text-xs text-gray-400">{saveStatus}</span>}
+          {!pendingProposal && editorMode === 'edit' && (
+            <button
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              onClick={openFindBar}
+              title="Find (Ctrl+F)"
+              aria-label="Find"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                <path fillRule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clipRule="evenodd" />
+              </svg>
+            </button>
           )}
         </div>
       </div>

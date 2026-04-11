@@ -97,7 +97,7 @@ export default function DocumentTree({ content, onHeadingClick, onSectionRewrite
                   }}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
                 >
-                  Rewrite
+                  Add to chat
                 </button>
               </div>
             )}

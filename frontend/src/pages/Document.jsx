@@ -6,6 +6,7 @@ import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
 import ActionsDropdown from '../components/ActionsDropdown'
+import SegmentedControl from '../components/SegmentedControl'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 
@@ -47,7 +48,7 @@ export default function Document() {
   const [restoreSnapshotId, setRestoreSnapshotId] = useState(null)
   const [restoreSnapshotLabel, setRestoreSnapshotLabel] = useState(null)
   const [showFeedback, setShowFeedback] = useState(false)
-  const [flashStatus, setFlashStatus] = useState('')
+  const [saveVersionStatus, setSaveVersionStatus] = useState('idle') // idle | saving | saved
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -121,7 +122,7 @@ export default function Document() {
     setSelectedText('')
   }
 
-  const handleSectionRewritePrefill = (sectionContent, headingText) => {
+  const handleSectionAddToChat = (sectionContent, headingText) => {
     chatPanelRef.current?.prefillRewrite(sectionContent, headingText)
   }
 
@@ -153,12 +154,14 @@ export default function Document() {
   }
 
   const handleSaveVersion = async () => {
+    setSaveVersionStatus('saving')
     try {
       await api.createSnapshot(id)
-      setFlashStatus('Version saved')
-      setTimeout(() => setFlashStatus(''), 3000)
+      setSaveVersionStatus('saved')
+      setTimeout(() => setSaveVersionStatus('idle'), 3000)
     } catch (err) {
       console.error('Save version failed', err)
+      setSaveVersionStatus('idle')
     }
   }
 
@@ -174,10 +177,7 @@ export default function Document() {
         { label: 'Accept', onClick: handleAccept, variant: 'default' },
         { label: 'Reject', onClick: handleReject, variant: 'default' },
       ]
-    : [
-        ...(selectedText ? [{ label: 'Add to chat', onClick: handleAddToChat, variant: 'primary' }] : []),
-        { label: 'Save version', onClick: handleSaveVersion, variant: 'default' },
-      ]
+    : []
 
 
   return (
@@ -193,22 +193,49 @@ export default function Document() {
       <ContextBar
         tabs={pendingProposal ? [] : contextBarTabs}
         actions={contextBarActions}
-        rightControls={!pendingProposal ? (
-          <ActionsDropdown
-            title="Export ▾"
-            actions={[
-              { action: 'txt', label: '.txt' },
-              { action: 'pdf', label: '.pdf' },
-            ]}
-            onAction={(fmt) => handleExport(fmt)}
-          />
-        ) : null}
+        rightControls={
+          <>
+            <div className={pendingProposal ? 'pointer-events-none opacity-50' : ''}>
+              <SegmentedControl
+                options={[{ value: 'edit', label: 'Edit' }, { value: 'preview', label: 'Preview' }]}
+                value={editorMode}
+                onChange={setEditorMode}
+              />
+            </div>
+            {!pendingProposal && (
+              <>
+                <button
+                  onClick={handleAddToChat}
+                  disabled={!selectedText}
+                  className={`text-xs rounded px-3 py-1 border font-medium transition-colors ${selectedText ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-default'}`}
+                >
+                  Add to chat
+                </button>
+                <button
+                  onClick={handleSaveVersion}
+                  disabled={saveVersionStatus === 'saving'}
+                  className="text-xs rounded px-3 py-1 border border-gray-200 font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:text-gray-400 transition-colors"
+                >
+                  {saveVersionStatus === 'saving' ? 'Saving…' : saveVersionStatus === 'saved' ? 'Saved ✓' : 'Save version'}
+                </button>
+                <ActionsDropdown
+                  title="Export ▾"
+                  actions={[
+                    { action: 'txt', label: '.txt' },
+                    { action: 'pdf', label: '.pdf' },
+                  ]}
+                  onAction={(fmt) => handleExport(fmt)}
+                />
+              </>
+            )}
+          </>
+        }
       />
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar
           document={doc}
           onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
-          onSectionRewrite={handleSectionRewritePrefill}
+          onSectionRewrite={handleSectionAddToChat}
           protectedSections={protectedSections}
           onToggleProtection={handleToggleProtection}
           structureLocked={structureLocked}
@@ -223,9 +250,7 @@ export default function Document() {
           onContentOverrideApplied={() => setEditorContentOverride(null)}
           pendingProposal={pendingProposal}
           editorMode={editorMode}
-          onEditorModeChange={setEditorMode}
           protectedSections={protectedSections}
-          flashStatus={flashStatus}
           structureLocked={structureLocked}
         />
         <div className={pendingProposal ? 'hidden' : 'contents'}>
@@ -238,7 +263,6 @@ export default function Document() {
             onClearContext={() => setContextText('')}
             headings={parseHeadingsWithContent(doc?.content)}
             evidenceSources={doc?.evidence || []}
-            evidenceCount={doc?.evidence?.length ?? 0}
             pendingProposal={pendingProposal}
             structureLocked={structureLocked}
             actionsUsed={user?.ai_actions_used ?? 0}

@@ -21,7 +21,6 @@ class ChatRequest(BaseModel):
     provider: Optional[str] = None
     context_label: Optional[str] = None
     structure_locked: bool = False
-    mode: str = "chat"
 
 
 class ChatResponse(BaseModel):
@@ -79,18 +78,11 @@ _PRESERVE_INSTRUCTION = (
 )
 
 
-def _build_mode_instruction(mode: str) -> str:
-    if mode == "edit":
-        return (
-            "\nYou are in edit mode. You must attempt to return a <proposed_document> block with your "
-            "proposed changes. If the request is too vague or unclear to act on, respond conversationally "
-            "asking for clarification — this is the only situation where you may omit the <proposed_document> block."
-        )
+def _build_mode_instruction() -> str:
     return (
-        "\nYou are in conversational mode. Do not return a <proposed_document> block under any circumstances. "
-        "Discuss, critique, explain, or answer questions about the document. If the user appears to be "
-        "requesting a document edit, respond conversationally and let them know they can use the Edit button "
-        "to propose changes."
+        "\nReturn a <proposed_document> block whenever the user is asking for changes to the document. "
+        "If the message is purely conversational or a question, respond conversationally without a "
+        "<proposed_document> block."
     )
 
 
@@ -210,7 +202,7 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
         evidence_block=evidence_block,
         context_block=context_block,
         scope_instruction=scope_instruction,
-    ) + _build_mode_instruction(data.mode)
+    ) + _build_mode_instruction()
 
     # Build messages for Anthropic — strip storage-only fields
     if data.ignore_history:

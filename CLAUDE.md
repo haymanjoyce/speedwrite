@@ -22,9 +22,9 @@ The templates feature (`backend/templates.py`, `TemplatePickerOverlay.jsx`, `fro
 
 ## Design Decisions
 
-### Rewrite operates at section level, not selected-text level
+### "Add to chat" operates at section level, not selected-text level
 
-The Rewrite button lives on tree node hover and operates on the full section under a heading, not on arbitrary selected text. Do not add Rewrite to the context bar for text selections — LLMs are unreliable at mid-paragraph substitution. If sentence-level rewriting is needed, implement via backend text substitution (AI rewrites only the selection, backend does the replacement), not by asking the AI to return a full document with the replacement embedded.
+The "Add to chat" button on tree node hover attaches the full section under a heading as context — it does not prefill any input text. Do not add section-level rewrite triggers to the context bar for text selections — LLMs are unreliable at mid-paragraph substitution. If sentence-level rewriting is needed, implement via backend text substitution (AI rewrites only the selection, backend does the replacement), not by asking the AI to return a full document with the replacement embedded.
 
 ## UI Conventions
 
@@ -154,7 +154,7 @@ Main views:
 
 1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Tagline + Create account button, vertically distributed at golden ratio. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
 2. **Library** (`/home`) — document list left, document detail right. ContextBar: Rename · Duplicate · Delete · Open · Import · New Document. Rename/Duplicate/Delete/Open are disabled when no document is selected. Open is primary when a document is selected; New Document is primary otherwise. Delete sets `pendingDelete` (shows inline confirmation bar below the ContextBar); the other actions fire directly. Import triggers a hidden `.docx` file input. DOCUMENT DETAIL panel header is label-only — no buttons. Duplicate calls `POST /documents/{doc_id}/duplicate`, prepends the new doc to the list, and selects it (no navigation). Import error bar also surfaces duplicate errors.
-3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar: Document tab + Save version · Export ▾ dropdown (`.txt`/`.pdf`, via `rightControls`, hidden when proposal pending); switches to Accept · Reject during diff review.
+3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar right side (all in `rightControls`): Edit/Preview toggle · Add to chat (disabled when no text selected; primary when text selected) · Save version (shows Saving… / Saved ✓ with 3s reset; disabled while saving) · Export ▾ (`.txt`/`.pdf`). All four hidden when proposal pending, which replaces them with Accept · Reject action buttons. `saveVersionStatus` state: `idle`/`saving`/`saved`.
 4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right.
 5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs only (no actions). VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.
 6. **Images** (`/document/:id/images`) — image list left, image detail right. Selected image fetched as blob (auth header) → `createObjectURL`; Copy URL writes `![filename](/api/documents/{doc_id}/images/{filename})` to clipboard. Delete uses inline confirmation bar pattern. Backend: `backend/images.py` — PNG/JPG/GIF/WebP only, 5 MB limit, storage at `/var/speedwrite/documents/{user_id}/{doc_id}/images/`. Document delete also removes the images directory. Filenames URL-encoded in all API paths (`encodeURIComponent` on filename segment only). `MarkdownPreview.jsx` renders `![…](/api/documents/…)` images via `AuthImage` (same fetch-as-blob pattern).
@@ -170,7 +170,7 @@ Main views:
 
 - **Agent panel**: AI can propose document changes in any message. `<proposed_document>` block triggers diff view. Chat panel is hidden via `display: none` (not unmounted) so ref and chat state survive the reject path — `className={pendingProposal ? 'hidden' : 'contents'}`.
 - **Inline diff** (`DiffView.jsx`): LCS-based. Auto-scrolls to first change on mount. Occupies the same flex slot as the editor.
-- **Rewrite button**: On tree node hover. Calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` — cross-component call from `Document.jsx` to `ChatPanel`.
+- **"Add to chat" button**: On tree node hover (hidden for protected headings). Calls `chatPanelRef.current.prefillRewrite(sectionContent, headingText)` — sets section content as context attachment and focuses the input, but does not prefill any text.
 - **Context scoping**: When context is attached, AI is instructed to change only that section and return the full document with only that part replaced. `ignore_history: true` is set whenever context is attached.
 - **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. `onContentOverrideApplied` fires immediately after `Editor.jsx` applies it to clear it back to `null`.
 - **Document actions routing (important)**: Only `Home.jsx` description generation calls `api.documentAction` (action: `generate_description`). After generation, `Home.jsx` persists the result via `api.updateDocument({ description })`. `DocumentUpdate` accepts an optional `description` field; `documents.py` sets it when present. All other AI chat in `ChatPanel` goes through `api.chatMessage` → `chat.py` — never `actions.py`.
@@ -185,10 +185,16 @@ Main views:
 
 ## Document Tree
 
-- **Rewrite** button on hover (hidden for protected headings). Former "Add" button removed — use + in chat input.
+- **"Add to chat"** button on hover (hidden for protected headings). Attaches section as context; input left empty for the user to type their request. Former "Add" button removed — use + in chat input.
 - Protected nodes show lock icon; unlocked nodes show it faintly on hover.
 - Clicking heading scrolls editor to it via `useImperativeHandle` on Editor.
 - No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
+
+## Edit/Preview Toggle
+
+- `SegmentedControl` in the Document page ContextBar `rightControls` — renders as two connected buttons (rounded-l / rounded-r, no gap, shared border removed on right segment). Disabled (pointer-events-none + opacity) when `pendingProposal` is truthy.
+- `Editor.jsx` no longer contains the toggle or `onEditorModeChange` prop — it receives `editorMode` read-only.
+- `MarkdownPreview.jsx` fills full available width (no `max-w-3xl`), matching the edit textarea.
 
 ## Editor Find Bar
 
@@ -205,7 +211,7 @@ Main views:
 - **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
 - **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
 - **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
-- **Chat / Edit split**: Input row has two buttons — Edit (gray, left) and Send (blue, right). Send submits in `mode: "chat"`; Edit submits in `mode: "edit"`. Enter key always triggers Send (chat mode). Stop replaces both while loading. Both disabled when input empty or user capped. `handleSend(textOverride, mode = 'chat')` — mode stored on user messages in local state only (not persisted to `chat_history`). Edit-mode user bubbles show a muted pill "Edit" badge. Backend: `mode` field on `ChatRequest` (default `"chat"`); `_build_mode_instruction()` appended to system prompt — chat mode forbids `<proposed_document>` blocks entirely; edit mode requires one (clarification-only exception).
+- **Single Send button**: Only a Send button — no Edit/Chat split. All messages go through the same path. AI decides whether to return a `<proposed_document>` block based on the request. `_build_mode_instruction()` in `chat.py` instructs: return `<proposed_document>` for change requests, respond conversationally for questions. `mode` field removed from `ChatRequest` and `api.chatMessage`.
 - **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended as the first block of the system prompt in `chat.py`. Instructs the AI to return markdown tables, image references (`![alt](url)`), fenced code blocks, and blockquotes verbatim in any proposed document. Uses `CRITICAL INSTRUCTION` framing to reduce the chance of smaller models ignoring it. Not used in `actions.py` — `generate_description` returns plain prose, not a proposed document.
 - **Enter key**: configurable via `localStorage` (`speedwrite_submit_on_enter`). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
 - **onActionComplete**: Optional callback prop (default `null`) on both `ChatPanel` and `EvidenceChatPanel`. Called after each successful AI response (fire-and-forget, no await). Pages pass `() => { api.me().then(setUser).catch(() => {}) }` to keep `user` state current (e.g. for cap enforcement in the chat panel).
@@ -220,7 +226,7 @@ Main views:
 - `GET /documents/{doc_id}/history/{snapshot_id}` — full snapshot with content, share_token, comments.
 - Restore flow: History.jsx navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on load, sets `pendingProposal`, sets `pendingProposalReason: 'restore'`, clears location state via `window.history.replaceState`. Accept → `trigger='restore'` snapshot created; Reject → unchanged.
 - `pendingProposalReason`: `'ai_rewrite'` (default) or `'restore'`. Controls snapshot trigger in `handleAccept`. Reset to `'ai_rewrite'` after accept.
-- `flashStatus` prop on `Editor.jsx`: shows brief messages (e.g. "Version saved") in Editor header, overriding save status for 3 seconds.
+- `flashStatus` prop removed from `Editor.jsx` — no longer used. Save version feedback is handled via `saveVersionStatus` in `Document.jsx`.
 
 ## Version Sharing
 
@@ -358,6 +364,10 @@ bash deploy.sh      # subsequent deploys
 ```
 0 3 * * * docker exec speedwrite-app python cleanup.py >> /var/log/speedwrite-cleanup.log 2>&1
 ```
+
+## Layout Constraints
+
+`#root` in `index.css` has `min-width: 1024px` — the browser shows a horizontal scrollbar if the window is narrower. The layout is not designed to be responsive below this width.
 
 ## Key Commands
 

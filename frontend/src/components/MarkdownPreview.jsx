@@ -149,7 +149,7 @@ export default function MarkdownPreview({ content, protectedSections = [], struc
   const components = makeComponents(protectedLineSet, structureLocked)
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 bg-white max-w-3xl">
+    <div className="flex-1 overflow-y-auto p-8 bg-white">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content ?? ''}
       </ReactMarkdown>

@@ -26,7 +26,7 @@ function truncateContext(text) {
 
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
-  headings, evidenceSources, pendingProposal, evidenceCount = 0, structureLocked = false,
+  headings, evidenceSources, pendingProposal, structureLocked = false,
   actionsUsed = 0, hasByokKey = false, onActionComplete = null,
 }, ref) {
   const isCapped = !hasByokKey && actionsUsed >= FREE_ACTION_CAP
@@ -58,7 +58,6 @@ const ChatPanel = forwardRef(function ChatPanel({
     prefillRewrite(sectionContent, headingText) {
       const { text, truncated } = truncateContext(sectionContent)
       setLocalContext({ text, label: headingText, truncated, originalLength: sectionContent.length, evidenceId: null })
-      setInput('Rewrite this section.')
       setTimeout(() => {
         if (textareaRef.current) {
           resizeTextarea(textareaRef.current)
@@ -151,14 +150,14 @@ const ChatPanel = forwardRef(function ChatPanel({
     onClearContext()
   }
 
-  const handleSend = async (textOverride, mode = 'chat') => {
+  const handleSend = async (textOverride) => {
     const text = (textOverride !== undefined ? textOverride : input).trim()
     if (!text || loading) return
 
     const contextSnapshot = localContext
     const hasContext = !!(contextSnapshot?.text || contextText)
     const contextLabel = contextSnapshot ? contextSnapshot.label : contextText ? 'Selected text' : null
-    setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel, mode }])
+    setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])
     setInput('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -188,7 +187,7 @@ const ChatPanel = forwardRef(function ChatPanel({
         }
       }
 
-      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked, mode)
+      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       onActionComplete?.()
       if (res.proposed_content) {
@@ -225,7 +224,6 @@ const ChatPanel = forwardRef(function ChatPanel({
   const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > ATTACHMENT_TRUNCATION_LIMIT)
   const isAmber = (localContext?.originalLength ?? 0) > ATTACHMENT_WARNING_THRESHOLD || (!localContext && contextText && contextText.length > ATTACHMENT_WARNING_THRESHOLD)
   const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
-  const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
 
   return (
     <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
@@ -233,9 +231,6 @@ const ChatPanel = forwardRef(function ChatPanel({
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
-          {evidenceCount > 0 && (
-            <span className="text-xs text-gray-400">{evidenceCount} source{evidenceCount !== 1 ? 's' : ''}</span>
-          )}
         </div>
       </div>
       {/* Messages */}
@@ -259,10 +254,7 @@ const ChatPanel = forwardRef(function ChatPanel({
                     {msg.context_label}
                   </div>
                 )}
-                {msg.mode === 'edit' && (
-                  <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 mb-1">Edit</span>
-                )}
-                <div className="rounded-lg px-3 py-2 text-sm bg-blue-600 text-white">
+<div className="rounded-lg px-3 py-2 text-sm bg-blue-600 text-white">
                   {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                 </div>
               </div>
@@ -367,7 +359,7 @@ const ChatPanel = forwardRef(function ChatPanel({
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Message… (${sendHint})`}
+            placeholder="Message…"
             rows={1}
             disabled={loading}
             className="flex-1 resize-none outline-none text-sm text-gray-800 placeholder-gray-400 bg-transparent"
@@ -383,24 +375,14 @@ const ChatPanel = forwardRef(function ChatPanel({
                 ■ Stop
               </button>
             ) : (
-              <div className="flex gap-1 flex-shrink-0">
-                <button
-                  onClick={() => handleSend(undefined, 'edit')}
-                  disabled={!input.trim() || isCapped}
-                  title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
-                  className="text-xs bg-gray-100 hover:bg-gray-200 disabled:text-gray-400 text-gray-700 px-3 py-1.5 rounded transition-colors font-medium"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isCapped}
-                  title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
-                  className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors font-medium"
-                >
-                  Send
-                </button>
-              </div>
+              <button
+                onClick={() => handleSend()}
+                disabled={!input.trim() || isCapped}
+                title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
+                className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors font-medium flex-shrink-0"
+              >
+                Send
+              </button>
             )}
             <button
               onClick={toggleSubmitOnEnter}
