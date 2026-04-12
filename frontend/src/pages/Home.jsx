@@ -235,7 +235,7 @@ export default function Home() {
                       if (e.key === 'Escape') handleRenameCancel()
                     }}
                     onBlur={handleRenameSave}
-                    className="text-3xl font-bold text-gray-900 border-b-2 border-blue-400 outline-none bg-transparent flex-1 min-w-0"
+                    className="text-lg font-semibold text-gray-900 border-b-2 border-blue-400 outline-none bg-transparent flex-1 min-w-0"
                   />
                   <button
                     onMouseDown={(e) => e.preventDefault()}
@@ -249,7 +249,7 @@ export default function Home() {
                   >✕</button>
                 </div>
               ) : (
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedDoc.title}</h1>
+                <h1 className="text-lg font-semibold text-gray-900 mb-2">{selectedDoc.title}</h1>
               )}
               <p className="text-sm text-gray-400 mb-6">
                 Last updated {new Date(selectedDoc.updated_at).toLocaleString()}

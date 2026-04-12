@@ -388,7 +388,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Message… (${sendHint})`}
+            placeholder="Message…"
             rows={1}
             disabled={loading}
             className="flex-1 resize-none outline-none text-sm text-gray-800 placeholder-gray-400 bg-transparent"

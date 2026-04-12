@@ -1,24 +1,10 @@
-import Button from './Button'
-
 const TYPE_ICON = { file: '📄', url: '🔗', text: '📝' }
 
-const hasUrlSources = (items) => items.some((i) => i.type === 'url')
-
-export default function EvidenceSidebar({ items, selectedId, onSelect, onAdd, onUpdateAllSources, updatingAllSources = false }) {
+export default function EvidenceSidebar({ items, selectedId, onSelect }) {
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
-      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
+      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sources</span>
-        {hasUrlSources(items) && (
-          <Button variant="secondary" size="sm" onClick={onUpdateAllSources} disabled={updatingAllSources}>
-            {updatingAllSources ? 'Updating…' : 'Update sources'}
-          </Button>
-        )}
-      </div>
-      <div className="px-4 pt-3 pb-3 border-b border-gray-200">
-        <Button variant="primary" size="md" onClick={onAdd} className="w-full">
-          + Add Source
-        </Button>
       </div>
       <div className="flex-1 overflow-y-auto py-2">
         {items.length === 0 && (

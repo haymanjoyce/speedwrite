@@ -174,6 +174,19 @@ export default function Evidence() {
           { label: 'Images', active: false, onClick: () => navigate(`/document/${id}/images`) },
         ]}
         actions={[
+          { label: 'Add source', onClick: () => setShowModal(true), variant: 'primary' },
+          {
+            label: refreshingId === selectedItem?.id ? 'Updating…' : 'Update source',
+            onClick: () => handleRefresh(selectedItem.id),
+            variant: 'default',
+            disabled: !selectedItem || selectedItem.type !== 'url' || refreshingId === selectedItem?.id,
+          },
+          {
+            label: updatingAllSources ? 'Updating…' : 'Update all sources',
+            onClick: handleUpdateAllSources,
+            variant: 'default',
+            disabled: !items.some((i) => i.type === 'url') || updatingAllSources,
+          },
           ...(items.length > 0 ? [{
             label: reindexStatus === 'Reindexing…' ? 'Reindexing…' : reindexStatus === 'Reindexed' ? 'Reindexed ✓' : 'Reindex',
             onClick: handleReindex,
@@ -187,18 +200,8 @@ export default function Evidence() {
       {pendingDelete && selectedItem && (
         <div className="bg-red-50 border-b border-red-100 px-6 py-2 flex items-center gap-3 flex-shrink-0">
           <span className="text-sm text-red-700 flex-1">Delete "{selectedItem.title}"? This cannot be undone.</span>
-          <button
-            onClick={handleDelete}
-            className="text-xs bg-red-600 hover:bg-red-700 text-white rounded px-3 py-1 transition-colors"
-          >
-            Delete
-          </button>
-          <button
-            onClick={() => setPendingDelete(false)}
-            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
+          <button onClick={handleDelete} className="text-xs text-red-600 hover:text-red-800 font-medium transition-colors">Delete</button>
+          <button onClick={() => setPendingDelete(false)} className="text-xs text-gray-500 hover:text-gray-700 transition-colors">Cancel</button>
         </div>
       )}
       <div className="flex flex-1 overflow-hidden">
@@ -206,17 +209,12 @@ export default function Evidence() {
           items={items}
           selectedId={selectedItem?.id}
           onSelect={handleSelect}
-          onAdd={() => setShowModal(true)}
-          onUpdateAllSources={handleUpdateAllSources}
-          updatingAllSources={updatingAllSources}
         />
         <SourceDetail
           item={selectedItem}
           allItems={items}
           onToggleSync={handleToggleSync}
           onFetchLiveContent={handleFetchLiveContent}
-          onRefresh={() => handleRefresh(selectedItem.id)}
-          refreshing={refreshingId === selectedItem?.id}
         />
         <EvidenceChatPanel
           docId={id}

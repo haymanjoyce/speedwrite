@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import Button from './Button'
 
-const TYPE_ICON = { file: '📄', url: '🔗', text: '📝', document: '📑' }
 const MAX_CONTENT = 2000
 
 function timeAgo(isoString) {
@@ -14,8 +12,8 @@ function timeAgo(isoString) {
   const diffHours = Math.floor(diffMinutes / 60)
   const diffDays = Math.floor(diffHours / 24)
   if (diffSeconds < 60) return 'just now'
-  if (diffMinutes < 60) return `${diffMinutes}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
   if (diffDays === 1) return 'yesterday'
   return date.toLocaleDateString()
 }
@@ -30,10 +28,10 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function getTypeBadge(item) {
+function getTypeLabel(item) {
   if (item.type === 'file' && item.filename) {
     const ext = item.filename.split('.').pop()?.toUpperCase()
-    return ext || 'File'
+    return ext ? `File (${ext})` : 'File'
   }
   if (item.type === 'url') return 'URL'
   if (item.type === 'text') return 'Text'
@@ -41,11 +39,7 @@ function getTypeBadge(item) {
   return item.type
 }
 
-function getDomain(url) {
-  try { return new URL(url).hostname } catch { return null }
-}
-
-export default function SourceDetail({ item, allItems = [], onToggleSync, onFetchLiveContent, onRefresh, refreshing = false }) {
+export default function SourceDetail({ item, allItems = [], onToggleSync, onFetchLiveContent }) {
   const [liveContent, setLiveContent] = useState(null)
 
   useEffect(() => {
@@ -77,8 +71,6 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
   const displayContent = truncated ? rawContent.slice(0, MAX_CONTENT) : rawContent
   const wordCount = rawContent.split(/\s+/).filter(Boolean).length
 
-  const domain = item.url ? getDomain(item.url) : null
-
   const isDuplicateUrl = item.type === 'url' && item.url &&
     allItems.some((other) => other.id !== item.id && other.type === 'url' && other.url?.toLowerCase() === item.url.toLowerCase())
 
@@ -86,18 +78,8 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
 
       {/* Panel header */}
-      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
+      <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Source Detail</span>
-        {item.type === 'url' && (
-          <div className="flex items-center gap-3">
-            {item.last_fetched_at && (
-              <span className="text-xs text-gray-400">Last updated: {timeAgo(item.last_fetched_at)}</span>
-            )}
-            <Button variant="secondary" size="sm" onClick={onRefresh} disabled={refreshing}>
-              {refreshing ? 'Updating…' : 'Update source'}
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Fetch error warning */}
@@ -116,82 +98,57 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
 
       {/* Metadata header */}
       <div className="bg-white border-b border-gray-100 p-6 flex-shrink-0">
-        <div className="flex items-start gap-4">
-          <span className="text-3xl flex-shrink-0 mt-0.5">{TYPE_ICON[item.type] || '📄'}</span>
-          <div className="flex-1 min-w-0">
-
-            {/* Title + badges */}
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <h1 className="text-lg font-semibold text-gray-900">{item.title}</h1>
-              <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 flex-shrink-0">
-                {getTypeBadge(item)}
-              </span>
-              {item.type === 'document' && (
-                <span className={`text-xs rounded-full px-2 py-0.5 flex-shrink-0 ${
-                  item.sync ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {item.sync ? 'Live' : 'Snapshot'}
-                </span>
+        <h1 className="text-base font-semibold text-gray-900 mb-3">{item.title}</h1>
+        <div className="space-y-1">
+          {(item.type === 'url' ? [
+            ['Type', getTypeLabel(item)],
+            item.url ? ['URL', item.url] : null,
+            ['Added', formatDate(item.created_at)],
+            item.last_fetched_at ? ['Last updated', timeAgo(item.last_fetched_at)] : null,
+            wordCount > 0 ? ['Words', `~${wordCount.toLocaleString()}`] : null,
+          ] : item.type === 'file' ? [
+            ['Type', getTypeLabel(item)],
+            ['Added', formatDate(item.created_at)],
+            wordCount > 0 ? ['Words', `~${wordCount.toLocaleString()}`] : null,
+            item.file_size != null ? ['Size', formatBytes(item.file_size)] : null,
+          ] : item.type === 'document' ? [
+            ['Type', getTypeLabel(item)],
+            ['Added', formatDate(item.created_at)],
+            wordCount > 0 ? ['Words', `~${wordCount.toLocaleString()}`] : null,
+            item.source_doc_id ? ['Source doc', item.source_doc_id] : null,
+          ] : [
+            ['Type', getTypeLabel(item)],
+            ['Added', formatDate(item.created_at)],
+            wordCount > 0 ? ['Words', `~${wordCount.toLocaleString()}`] : null,
+          ]).filter(Boolean).map(([label, value]) => (
+            <div key={label} className="flex gap-3 text-xs">
+              <span className="text-gray-400 flex-shrink-0 w-24">{label}</span>
+              {label === 'URL' ? (
+                <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">{value}</a>
+              ) : label === 'Source doc' ? (
+                <Link to={`/document/${value}`} className="text-blue-600 hover:underline">View source document →</Link>
+              ) : (
+                <span className="text-gray-700">{value}</span>
               )}
             </div>
-
-            {/* Secondary metadata */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-400">
-              <span>Added {formatDate(item.created_at)}</span>
-              {wordCount > 0 && <span>~{wordCount.toLocaleString()} words</span>}
-              {item.file_size != null && <span>{formatBytes(item.file_size)}</span>}
-            </div>
-
-            {/* URL with favicon */}
-            {item.url && domain && (
-              <div className="flex items-center gap-1.5 mt-2">
-                <img
-                  src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
-                  alt=""
-                  className="w-4 h-4 flex-shrink-0"
-                  onError={(e) => { e.target.style.display = 'none' }}
-                />
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline truncate"
-                >
-                  {domain}
-                </a>
-              </div>
-            )}
-
-            {/* Document source link */}
-            {item.type === 'document' && item.source_doc_id && (
-              <Link
-                to={`/document/${item.source_doc_id}`}
-                className="text-xs text-blue-600 hover:underline mt-1.5 inline-block"
-              >
-                View source document →
-              </Link>
-            )}
-
-            {/* Sync toggle */}
-            {item.type === 'document' && (
-              <div className="flex items-center gap-3 mt-3">
-                <button
-                  onClick={() => onToggleSync?.(!item.sync)}
-                  className="inline-flex items-center gap-1.5 text-xs border border-gray-200 rounded-full px-2.5 py-0.5 hover:border-gray-300 transition-colors cursor-pointer"
-                >
-                  <span className={`w-2 h-2 rounded-full ${item.sync ? 'bg-green-500' : 'bg-gray-300'}`} />
-                  Sync: {item.sync ? 'On' : 'Off'}
-                </button>
-                {!item.sync && item.synced_at && (
-                  <span className="text-xs text-gray-400">
-                    Last synced: {formatDate(item.synced_at)}
-                  </span>
-                )}
-              </div>
-            )}
-
-          </div>
+          ))}
         </div>
+
+        {/* Sync toggle */}
+        {item.type === 'document' && (
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={() => onToggleSync?.(!item.sync)}
+              className="inline-flex items-center gap-1.5 text-xs border border-gray-200 rounded-full px-2.5 py-0.5 hover:border-gray-300 transition-colors cursor-pointer"
+            >
+              <span className={`w-2 h-2 rounded-full ${item.sync ? 'bg-green-500' : 'bg-gray-300'}`} />
+              Sync: {item.sync ? 'On' : 'Off'}
+            </button>
+            {!item.sync && item.synced_at && (
+              <span className="text-xs text-gray-400">Last synced: {formatDate(item.synced_at)}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content */}
