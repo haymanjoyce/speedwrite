@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-const MAX_CONTENT = 2000
-
 function timeAgo(isoString) {
   const date = new Date(isoString + 'Z')
   const now = new Date()
@@ -67,8 +65,6 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
   const rawContent = (item.type === 'document' && item.sync)
     ? (liveContent ?? '')
     : (item.content ?? '')
-  const truncated = rawContent.length > MAX_CONTENT
-  const displayContent = truncated ? rawContent.slice(0, MAX_CONTENT) : rawContent
   const wordCount = rawContent.split(/\s+/).filter(Boolean).length
 
   const isDuplicateUrl = item.type === 'url' && item.url &&
@@ -151,17 +147,30 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
         )}
       </div>
 
-      {/* Content */}
+      {/* Description */}
       <div className="flex-1 overflow-y-auto p-6">
-        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{displayContent}</p>
+        {item.description ? (
+          <div className="space-y-4">
+            {item.description.split(/\n(?=## )/).map((block) => {
+              const lines = block.trim().split('\n')
+              const heading = lines[0].replace(/^##\s*/, '').trim()
+              const bullets = lines.slice(1).filter((l) => /^[-*]\s/.test(l.trim())).map((l) => l.replace(/^[-*]\s*/, '').trim())
+              return (
+                <div key={heading}>
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">{heading}</p>
+                  <ul className="space-y-0.5">
+                    {bullets.map((b, i) => (
+                      <li key={i} className="text-sm text-gray-600 pl-3 flex gap-2"><span className="flex-shrink-0">·</span><span>{b}</span></li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 italic">No description yet.</p>
+        )}
       </div>
-
-      {/* Truncation banner */}
-      {truncated && (
-        <div className="bg-amber-50 border-t border-amber-100 text-xs text-amber-600 px-6 py-2 flex-shrink-0">
-          Showing first {MAX_CONTENT.toLocaleString()} characters
-        </div>
-      )}
 
     </div>
   )

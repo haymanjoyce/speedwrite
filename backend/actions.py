@@ -10,10 +10,23 @@ from storage import load_document
 
 router = APIRouter(prefix="/documents")
 
-_GENERATE_DESCRIPTION_PROMPT = (
-    "Write a 1-2 sentence plain-prose description of this document — what it is and what it covers. "
-    "No markdown, no bullet points, no headers. Plain sentences only."
-)
+_GENERATE_DESCRIPTION_PROMPT = """\
+Return ONLY the following markdown structure. No preamble, no title, no additional text outside it. \
+Each section must have 3-5 bullet points. Each bullet point must be a single short line — do not wrap \
+or write multi-sentence bullets.
+
+## Summary
+- ...
+
+## Key themes
+- ...
+
+## Key arguments
+- ...
+
+## Open questions
+- ...\
+"""
 
 _SYSTEM = """\
 You are an AI assistant helping the user work with their document.

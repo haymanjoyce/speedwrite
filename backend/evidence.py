@@ -7,9 +7,10 @@ import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from auth import get_current_user
+from auth import get_actions_used, get_byok_key, get_current_user, increment_action_count
 from embeddings import index_evidence_background, remove_evidence_chunks, retrieve_relevant_chunks
-from limits import FREE_EVIDENCE_LIMIT
+from limits import FREE_ACTION_CAP, FREE_EVIDENCE_LIMIT
+from llm import complete
 from storage import DOCS_DIR, load_document, save_document
 
 router = APIRouter(prefix="/documents")
@@ -87,6 +88,7 @@ class EvidenceItem(BaseModel):
 
 class EvidenceItemFull(EvidenceItem):
     content: str
+    description: Optional[str] = None
 
 
 class AddUrlRequest(BaseModel):
@@ -377,6 +379,61 @@ def refresh_evidence(doc_id: str, evidence_id: str, user=Depends(get_current_use
         item["last_fetch_error"] = "Fetch failed"
         save_document(doc)
 
+    return item
+
+
+_DESCRIBE_EVIDENCE_PROMPT = """\
+Return ONLY the following markdown structure. No preamble, no title, no additional text outside it. \
+Each section must have 3-5 bullet points. Each bullet point must be a single short line — do not wrap \
+or write multi-sentence bullets.
+
+## Summary
+- ...
+
+## Key themes
+- ...
+
+## Key arguments
+- ...
+
+## Open questions
+- ...\
+"""
+
+@router.post("/{doc_id}/evidence/{evidence_id}/describe", response_model=EvidenceItemFull)
+def describe_evidence(doc_id: str, evidence_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    items = doc.get("evidence", [])
+    item = next((i for i in items if i["id"] == evidence_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evidence item not found")
+
+    byok_key = get_byok_key(user)
+    if not byok_key:
+        actions_used = get_actions_used(user)
+        if actions_used >= FREE_ACTION_CAP:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Monthly limit of {FREE_ACTION_CAP} AI actions reached. Add your Anthropic API key in Account settings to continue."
+            )
+
+    content = item.get("content", "")
+    system = f"You are analysing an evidence source titled \"{item.get('title', 'Untitled')}\".\n\nContent:\n---\n{content}\n---"
+
+    result = complete(
+        system=system,
+        messages=[{"role": "user", "content": _DESCRIBE_EVIDENCE_PROMPT}],
+        max_tokens=1024,
+        provider=None,
+        byok_key=byok_key,
+    )
+    increment_action_count(user["id"])
+
+    item["description"] = result.strip()
+    save_document(doc)
     return item
 
 

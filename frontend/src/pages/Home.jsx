@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
-import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
@@ -11,7 +10,7 @@ export default function Home() {
   const [user, setUser] = useState(null)
   const [documents, setDocuments] = useState([])
   const [selectedDoc, setSelectedDoc] = useState(null)
-  const [generatingDescription, setGeneratingDescription] = useState(false)
+  const [generateDescriptionStatus, setGenerateDescriptionStatus] = useState('idle') // idle | generating | done
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const [pendingDelete, setPendingDelete] = useState(false)
@@ -114,7 +113,7 @@ export default function Home() {
 
   const handleGenerateDescription = async () => {
     if (!selectedDoc) return
-    setGeneratingDescription(true)
+    setGenerateDescriptionStatus('generating')
     try {
       const res = await api.documentAction(selectedDoc.id, 'generate_description')
       const description = res.result
@@ -122,10 +121,11 @@ export default function Home() {
       setSelectedDoc(updated)
       setDocuments((prev) => prev.map((d) => d.id === updated.id ? updated : d))
       await api.updateDocument(selectedDoc.id, { description })
+      setGenerateDescriptionStatus('done')
+      setTimeout(() => setGenerateDescriptionStatus('idle'), 3000)
     } catch (err) {
       console.error('Generate description failed', err)
-    } finally {
-      setGeneratingDescription(false)
+      setGenerateDescriptionStatus('idle')
     }
   }
 
@@ -139,12 +139,13 @@ export default function Home() {
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar
         actions={[
+          { label: 'Import', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing },
+          { label: 'New Document', onClick: handleNewDocument, variant: selectedDoc ? 'default' : 'primary' },
+          { label: generateDescriptionStatus === 'generating' ? 'Describing…' : generateDescriptionStatus === 'done' ? 'Described ✓' : 'Describe', onClick: handleGenerateDescription, variant: 'default', disabled: !selectedDoc || generateDescriptionStatus !== 'idle' },
           { label: 'Rename', onClick: handleRename, variant: 'default', disabled: !selectedDoc },
           { label: 'Duplicate', onClick: handleDuplicate, variant: 'default', disabled: !selectedDoc },
           { label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default', disabled: !selectedDoc },
           { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: selectedDoc ? 'primary' : 'default', disabled: !selectedDoc },
-          { label: 'Import', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing },
-          { label: 'New Document', onClick: handleNewDocument, variant: selectedDoc ? 'default' : 'primary' },
         ]}
       />
       {pendingDelete && selectedDoc && (
@@ -221,47 +222,58 @@ export default function Home() {
               </div>
             )
           ) : (
-            <div className="p-10 max-w-2xl">
+            <div className="p-6">
               {isRenaming ? (
-                <div className="flex items-center gap-2 mb-2">
-                  <input
-                    ref={renameInputRef}
-                    autoFocus
-                    onFocus={(e) => e.target.select()}
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleRenameSave()
-                      if (e.key === 'Escape') handleRenameCancel()
-                    }}
-                    onBlur={handleRenameSave}
-                    className="text-lg font-semibold text-gray-900 border-b-2 border-blue-400 outline-none bg-transparent flex-1 min-w-0"
-                  />
-                  <button
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={handleRenameSave}
-                    className="text-green-600 hover:text-green-800 text-lg flex-shrink-0"
-                  >✓</button>
-                  <button
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={handleRenameCancel}
-                    className="text-red-500 hover:text-red-700 text-lg flex-shrink-0"
-                  >✕</button>
+                <input
+                  ref={renameInputRef}
+                  autoFocus
+                  onFocus={(e) => e.target.select()}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRenameSave()
+                    if (e.key === 'Escape') handleRenameCancel()
+                  }}
+                  onBlur={handleRenameSave}
+                  className="text-lg font-semibold text-gray-900 border-b border-blue-400 outline-none bg-transparent w-full mb-3"
+                />
+              ) : (
+                <h1 className="text-lg font-semibold text-gray-900 mb-3">{selectedDoc.title}</h1>
+              )}
+              <div className="space-y-1 mb-6">
+                {[
+                  ['Created', selectedDoc.created_at ? new Date(selectedDoc.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null],
+                  ['Last updated', new Date(selectedDoc.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })],
+                  ['Words', `~${(selectedDoc.content ? selectedDoc.content.split(/\s+/).filter(Boolean).length : 0).toLocaleString()}`],
+                ].filter(([, v]) => v != null).map(([label, value]) => (
+                  <div key={label} className="flex gap-3 text-xs">
+                    <span className="text-gray-400 flex-shrink-0 w-24">{label}</span>
+                    <span className="text-gray-700">{value}</span>
+                  </div>
+                ))}
+              </div>
+              {selectedDoc.description ? (
+                <div className="space-y-4 mt-6">
+                  {selectedDoc.description.split(/\n(?=## )/).map((block) => {
+                    const lines = block.trim().split('\n')
+                    const heading = lines[0].replace(/^##\s*/, '').trim()
+                    const bullets = lines.slice(1).filter((l) => /^[-*]\s/.test(l.trim())).map((l) => l.replace(/^[-*]\s*/, '').trim())
+                    return (
+                      <div key={heading}>
+                        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">{heading}</p>
+                        <ul className="space-y-0.5">
+                          {bullets.map((b, i) => (
+                            <li key={i} className="text-sm text-gray-600 pl-3 flex gap-2"><span className="flex-shrink-0">·</span><span>{b}</span></li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
                 </div>
               ) : (
-                <h1 className="text-lg font-semibold text-gray-900 mb-2">{selectedDoc.title}</h1>
+                <p className="text-sm text-gray-400 italic">No description yet.</p>
               )}
-              <p className="text-sm text-gray-400 mb-6">
-                Last updated {new Date(selectedDoc.updated_at).toLocaleString()}
-              </p>
-              {selectedDoc.description ? (
-                <p className="text-gray-600 leading-relaxed mb-6">{selectedDoc.description}</p>
-              ) : (
-                <p className="text-gray-400 italic mb-6">No description yet.</p>
-              )}
-              <Button variant="secondary" onClick={handleGenerateDescription} disabled={generatingDescription}>
-                {generatingDescription ? 'Generating…' : selectedDoc.description ? 'Regenerate description' : 'Generate description'}
-              </Button>
+
             </div>
           )}
           </div>

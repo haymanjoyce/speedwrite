@@ -20,6 +20,7 @@ export default function Evidence() {
   const [showModal, setShowModal] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [reindexStatus, setReindexStatus] = useState('')
+  const [describeStatus, setDescribeStatus] = useState('idle') // idle | describing | done
   const [pendingDelete, setPendingDelete] = useState(false)
   const [refreshingId, setRefreshingId] = useState(null)
   const [updatingAllSources, setUpdatingAllSources] = useState(false)
@@ -108,6 +109,21 @@ export default function Evidence() {
     }
   }
 
+  const handleDescribe = async () => {
+    if (!selectedItem) return
+    setDescribeStatus('describing')
+    try {
+      const updated = await api.describeEvidence(id, selectedItem.id)
+      setSelectedItem(updated)
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+      setDescribeStatus('done')
+      setTimeout(() => setDescribeStatus('idle'), 3000)
+    } catch (err) {
+      console.error('Describe failed', err)
+      setDescribeStatus('idle')
+    }
+  }
+
   const handleReindex = async () => {
     setReindexStatus('Reindexing…')
     try {
@@ -175,6 +191,12 @@ export default function Evidence() {
         ]}
         actions={[
           { label: 'Add source', onClick: () => setShowModal(true), variant: 'primary' },
+          {
+            label: describeStatus === 'describing' ? 'Describing…' : describeStatus === 'done' ? 'Described ✓' : 'Describe',
+            onClick: handleDescribe,
+            variant: 'default',
+            disabled: !selectedItem || describeStatus !== 'idle',
+          },
           {
             label: refreshingId === selectedItem?.id ? 'Updating…' : 'Update source',
             onClick: () => handleRefresh(selectedItem.id),
