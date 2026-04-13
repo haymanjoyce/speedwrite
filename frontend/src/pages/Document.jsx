@@ -174,7 +174,7 @@ export default function Document() {
 
   const contextBarActions = pendingProposal
     ? [
-        { label: 'Accept', onClick: handleAccept, variant: 'default' },
+        { label: 'Accept', onClick: handleAccept, variant: 'primary' },
         { label: 'Reject', onClick: handleReject, variant: 'default' },
       ]
     : []
@@ -195,13 +195,13 @@ export default function Document() {
         actions={contextBarActions}
         rightControls={
           <>
-            <div className={pendingProposal ? 'pointer-events-none opacity-50' : ''}>
+            {!pendingProposal && (
               <SegmentedControl
                 options={[{ value: 'edit', label: 'Edit' }, { value: 'preview', label: 'Preview' }]}
                 value={editorMode}
                 onChange={setEditorMode}
               />
-            </div>
+            )}
             {!pendingProposal && (
               <>
                 <button
@@ -240,6 +240,7 @@ export default function Document() {
           onToggleProtection={handleToggleProtection}
           structureLocked={structureLocked}
           onToggleStructureLock={handleToggleStructureLock}
+          pendingProposal={!!pendingProposal}
         />
         <Editor
           ref={editorRef}

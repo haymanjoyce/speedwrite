@@ -8,7 +8,7 @@ SpeedWrite is an AI-assisted document authoring platform. The core unit is a doc
 
 ### Audit Log removed (do not re-add)
 
-The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `/document/:id/log` route) was removed intentionally. It is an audit trail, not a user-facing document authoring feature. The Log concept is out of scope for SpeedWrite. Do not re-add audit logging or a Log tab to SpeedWrite.
+The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `/document/:id/log` route) was removed intentionally. It is an audit trail, not a user-facing document authoring feature. Do not re-add audit logging or a Log tab to SpeedWrite.
 
 Existing `audit_log` arrays in document JSON files are harmless and simply ignored.
 
@@ -32,9 +32,9 @@ The "Add to chat" button on tree node hover attaches the full section under a he
 
 **Tier 1 — Global bar (TopBar):** Always visible. Props: `user`, `onLogout`, `docTitle`, `isRenaming`, `onRenameSave`, `onRenameCancel`, `pageTitle`, `onFeedbackClick`, `showBack`. SpeedWrite logo links to `/home`. When `showBack={true}` (Document, Evidence, History, Images, Account, Admin), a `←` ghost-style icon button renders instead of the logo and navigates to `/home` on click — renders immediately on mount without waiting for `docTitle` to load. User dropdown: "Give feedback" (when `onFeedbackClick` provided) · "Administration" (admins only) · "Account settings" · "Sign out"; closes on outside click or Escape. `pageTitle` is for non-document pages; `docTitle` takes priority if both are set.
 
-**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group (not inside the actions flex row). The optional `rightControls` prop renders inside the actions flex row, to the left of the action buttons — use this for dropdowns that must sit alongside action buttons. Per-page action inventories are in App Architecture below.
+**Tier 2 — Page context bar (ContextBar):** Below the global bar. Left side: tab navigation (Document / Evidence / History); active tab bold, inactive muted. Right side: page-specific action buttons (outlined). ContextBar accepts a `tabs` prop: `[{ label, active, onClick }]`. Action objects support `disabled: true`. The optional `controls` prop renders between the tabs and the actions group. The optional `rightControls` prop renders inside the actions flex row, to the left of the action buttons — use this for dropdowns that must sit alongside action buttons. Per-page action inventories are in App Architecture below.
 
-**Tier 3 — Panel headers:** Slim headers, label uppercase small caps left-aligned, panel-specific actions right-aligned in header or below it.
+**Tier 3 — Panel headers:** Slim headers, label uppercase small caps left-aligned, panel-specific actions right-aligned.
 
 ### Control type rules
 
@@ -62,99 +62,49 @@ Destructive deletes use an inline confirmation bar below the context bar, not `w
 ```
 speedwrite/
 ├── backend/
-│   ├── main.py
-│   ├── auth.py
-│   ├── mailer.py
-│   ├── feedback.py
-│   ├── documents.py
-│   ├── chat.py
-│   ├── evidence.py
-│   ├── evidence_chat.py
-│   ├── actions.py
-│   ├── embeddings.py
-│   ├── llm.py
-│   ├── search.py
-│   ├── export.py
-│   ├── models.py
-│   ├── storage.py
-│   ├── limits.py
-│   ├── cleanup.py
-│   ├── sharing.py
-│   ├── images.py
-│   └── admin.py
-├── frontend/
-│   └── src/
-│       ├── context/
-│       │   └── SearchContext.jsx
-│       ├── pages/
-│       │   ├── LandingPage.jsx
-│       │   ├── Home.jsx
-│       │   ├── Document.jsx
-│       │   ├── Evidence.jsx
-│       │   ├── History.jsx
-│       │   ├── Images.jsx
-│       │   ├── Login.jsx
-│       │   ├── Register.jsx
-│       │   ├── Account.jsx
-│       │   ├── ResetRequest.jsx
-│       │   ├── ResetConfirm.jsx
-│       │   ├── Admin.jsx
-│       │   └── SharedView.jsx
-│       ├── components/
-│       │   ├── FeedbackBar.jsx
-│       │   ├── TopBar.jsx
-│       │   ├── ContextBar.jsx
-│       │   ├── Sidebar.jsx          # Unused — kept in repo
-│       │   ├── Button.jsx
-│       │   ├── DocumentSidebar.jsx
-│       │   ├── DocumentTree.jsx
-│       │   ├── Editor.jsx
-│       │   ├── DiffView.jsx
-│       │   ├── MarkdownPreview.jsx
-│       │   ├── ChatPanel.jsx
-│       │   ├── AttachmentPopup.jsx
-│       │   ├── ActionsDropdown.jsx
-│       │   ├── InstructionBar.jsx           # Unused — kept in repo
-│       │   ├── SegmentedControl.jsx
-│       │   ├── ErrorBoundary.jsx
-│       │   ├── SearchOverlay.jsx
-│       │   ├── EvidenceChatPanel.jsx
-│       │   ├── EvidenceSidebar.jsx
-│       │   ├── SourceDetail.jsx
-│       │   └── AddSourceModal.jsx
-│       ├── constants/
-│       │   ├── attachmentLimits.js   # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
-│       │   └── limits.js             # FREE_ACTION_CAP (1000)
-│       └── api.js
-├── nginx/
-│   ├── local_app.conf
-│   └── speedwrite.app.conf
-├── docker-compose.yml
-├── docker-compose.override.yml
-├── bootstrap.sh
-├── deploy.sh
-└── CLAUDE.md
+│   ├── main.py, auth.py, mailer.py, feedback.py, documents.py
+│   ├── chat.py, evidence.py, evidence_chat.py, actions.py
+│   ├── embeddings.py, llm.py, search.py, export.py, models.py
+│   ├── storage.py, limits.py, cleanup.py, sharing.py, images.py, admin.py
+├── frontend/src/
+│   ├── context/SearchContext.jsx
+│   ├── pages/  LandingPage, Home, Document, Evidence, History, Images,
+│   │           Login, Register, Account, ResetRequest, ResetConfirm, Admin, SharedView
+│   ├── components/
+│   │   ├── TopBar.jsx, ContextBar.jsx, Button.jsx, SegmentedControl.jsx
+│   │   ├── DocumentSidebar.jsx, DocumentTree.jsx, Editor.jsx, DiffView.jsx
+│   │   ├── MarkdownPreview.jsx, ChatPanel.jsx, AttachmentPopup.jsx
+│   │   ├── ActionsDropdown.jsx, ErrorBoundary.jsx, SearchOverlay.jsx
+│   │   ├── EvidenceChatPanel.jsx, EvidenceSidebar.jsx, SourceDetail.jsx
+│   │   ├── AddSourceModal.jsx, FeedbackBar.jsx
+│   │   ├── Sidebar.jsx          # Unused — kept in repo
+│   │   └── InstructionBar.jsx   # Unused — kept in repo
+│   ├── constants/
+│   │   ├── attachmentLimits.js  # ATTACHMENT_TRUNCATION_LIMIT and ATTACHMENT_WARNING_THRESHOLD (both 6000)
+│   │   └── limits.js            # FREE_ACTION_CAP (1000)
+│   └── api.js
+├── nginx/local_app.conf, speedwrite.app.conf
+├── docker-compose.yml, docker-compose.override.yml
+├── bootstrap.sh, deploy.sh, CLAUDE.md
 ```
 
 ## Docker Stack
 
-| Service    | Image / Build | Internal Port | Purpose                             |
-|------------|---------------|---------------|-------------------------------------|
-| `frontend` | `./frontend`  | —             | Build-only; copies /dist to volume  |
-| `app`      | `./backend`   | 8000          | FastAPI backend (Python 3.12)       |
-| `nginx`    | nginx:1.27    | 80            | Reverse proxy + static file server  |
+- `frontend` — build-only; copies /dist to volume
+- `app` — FastAPI backend (Python 3.12), port 8000
+- `nginx` — nginx:1.27, reverse proxy + static files, port 80
 
-`docker-compose.override.yml` is auto-merged locally. It exposes the backend on 8000, uses a local named volume, overrides the production nginx config with local-dev equivalents (different server names), and suppresses `nginx/default.conf`. The nginx `/api/` location sets `proxy_read_timeout 300s` to handle slow Ollama inference.
+`docker-compose.override.yml` is auto-merged locally. It exposes the backend on 8000, uses a local named volume, overrides the production nginx config, and suppresses `nginx/default.conf`. The nginx `/api/` location sets `proxy_read_timeout 300s` for slow Ollama inference.
 
-Production SSL is handled by a Cloudflare tunnel (`cloudflared`) running on the host — nginx only speaks HTTP. `speedwrite.app.conf` is plain HTTP; no Certbot or `/etc/letsencrypt` involved.
+Production SSL is handled by a Cloudflare tunnel (`cloudflared`) on the host — nginx only speaks HTTP. No Certbot or `/etc/letsencrypt` involved.
 
 ## App Architecture
 
 Main views:
 
-1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Tagline + Create account button, vertically distributed at golden ratio. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
-2. **Library** (`/home`) — document list left, document detail right. ContextBar: Import · New Document · Describe · Rename · Duplicate · Delete · Open. Import always enabled (triggers hidden `.docx` input). New Document always enabled (primary when no document selected; Open is primary when one is). Describe fires `generate_description` action; shows Describing…/Described ✓ (3s reset); disabled when no document selected or status ≠ idle. Rename/Duplicate/Delete/Open disabled when no document selected. Delete sets `pendingDelete` (inline confirmation bar). Duplicate prepends the new doc and selects it (no navigation). Import/duplicate errors surface in shared error bar. DOCUMENT DETAIL panel: title `text-lg font-semibold`; rename input same style (Enter/Escape/onBlur only — no ✓/✕ buttons); key-value metadata (Created · Last updated · Words); structured description rendered via hand-rolled parser (`description.split(/\n(?=## )/)`; heading + bullet extraction).
-3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar right side (all in `rightControls`): Edit/Preview toggle · Add to chat (disabled when no text selected; primary when text selected) · Save version (shows Saving… / Saved ✓ with 3s reset; disabled while saving) · Export ▾ (`.txt`/`.pdf`). All four hidden when proposal pending, which replaces them with Accept · Reject action buttons. `saveVersionStatus` state: `idle`/`saving`/`saved`.
+1. **Landing** (`/`) — public, unauthenticated, no TopBar/ContextBar. Tagline + Create account button. Logout and account-delete both redirect here. File: `LandingPage.jsx`.
+2. **Library** (`/home`) — document list left, document detail right. ContextBar: Import · New Document · Describe · Rename · Duplicate · Delete · Open. Import always enabled (triggers hidden `.docx` input). New Document always enabled (primary when no document selected; Open is primary when one is). Describe fires `generate_description` action; shows Describing…/Described ✓ (3s reset); disabled when no document selected or status ≠ idle. Rename/Duplicate/Delete/Open disabled when no document selected. Delete sets `pendingDelete` (inline confirmation bar). Duplicate prepends the new doc and selects it (no navigation). Import/duplicate errors surface in shared error bar. DOCUMENT DETAIL panel: rename input uses Enter/Escape/onBlur only — no ✓/✕ buttons. Structured description rendered via hand-rolled parser (`description.split(/\n(?=## )/)`; heading + bullet extraction).
+3. **Document** (`/document/:id`) — tree left, editor middle, AI chat right. ContextBar right side (all in `rightControls`): Edit/Preview toggle · Add to chat (disabled when no text selected; primary when text selected) · Save version (shows Saving… / Saved ✓ with 3s reset; disabled while saving) · Export ▾ (`.txt`/`.pdf`). All four not rendered when proposal pending, which replaces them with Accept (variant: 'primary') · Reject action buttons. `saveVersionStatus` state: `idle`/`saving`/`saved`.
 4. **Evidence** (`/document/:id/evidence`) — source list left, source detail middle, EvidenceChatPanel right. ContextBar actions: Add source (primary, always enabled) · Update source (disabled unless a URL source is selected and not currently refreshing) · Update all sources (disabled when no URL sources exist) · Reindex (conditional on items.length > 0; shows Reindexing…/Reindexed ✓) · Sync now (conditional: document source with sync off) · Delete (conditional: source selected). Delete confirmation bar uses plain text buttons. `EvidenceSidebar` is label-only — no buttons in panel header, no "+ Add Source" button below it. `SourceDetail` shows a key-value metadata list (no badges/icons); row order varies by type: URL → Type·URL·Added·Last updated·Words; File → Type·Added·Words·Size; Text → Type·Added·Words; Document → Type·Added·Words·Source doc. `timeAgo` uses full words (e.g. "3 minutes ago", not "3m ago").
 5. **History** (`/document/:id/history`) — snapshot list left, version detail + MarkdownPreview middle, sharing & comments right. ContextBar: tabs only (no actions). VERSION panel header shows "Restore this version" when a snapshot is selected. Share action lives exclusively in the COMMENTS panel header.
 6. **Images** (`/document/:id/images`) — image list left, image detail right. Selected image fetched as blob (auth header) → `createObjectURL`; Copy URL writes `![filename](/api/documents/{doc_id}/images/{filename})` to clipboard. Delete uses inline confirmation bar pattern. Backend: `backend/images.py` — PNG/JPG/GIF/WebP only, 5 MB limit, storage at `/var/speedwrite/documents/{user_id}/{doc_id}/images/`. Document delete also removes the images directory. Filenames URL-encoded in all API paths (`encodeURIComponent` on filename segment only). `MarkdownPreview.jsx` renders `![…](/api/documents/…)` images via `AuthImage` (same fetch-as-blob pattern).
@@ -175,7 +125,7 @@ Main views:
 - **Content override safety**: `editorContentOverride` in `Document.jsx` is a one-shot signal. `onContentOverrideApplied` fires immediately after `Editor.jsx` applies it to clear it back to `null`.
 - **Document actions routing (important)**: Only `Home.jsx` description generation calls `api.documentAction` (action: `generate_description`). After generation, `Home.jsx` persists the result via `api.updateDocument({ description })`. `DocumentUpdate` accepts an optional `description` field; `documents.py` sets it when present. All other AI chat in `ChatPanel` goes through `api.chatMessage` → `chat.py` — never `actions.py`. Both `generate_description` and the evidence describe endpoint return structured four-section markdown (Summary / Key themes / Key arguments / Open questions, 3–5 single-line bullets each) — rendered by a hand-rolled parser, not `MarkdownPreview`.
 - **Evidence describe**: `POST /documents/{doc_id}/evidence/{evidence_id}/describe` — generates the same four-section structured description for an evidence source. Stored as `item["description"]` on the evidence item. `EvidenceItemFull` Pydantic model has `description: Optional[str] = None`. Cap enforced (free users). `SourceDetail` lower panel renders the description via the same hand-rolled parser; shows "No description yet." when absent. Describe button in Evidence ContextBar: disabled when no item selected or describe in progress.
-- **Evidence base**: File uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, other documents. URL sources carry `last_fetched_at` and `last_fetch_error`. `POST .../evidence/{id}/refresh` updates content and re-embeds on success. "Update sources" in Sources panel header runs all URL sources sequentially. Duplicate URL detection shows amber banner in SourceDetail.
+- **Evidence base**: File uploads (`.pdf`, `.txt`, `.md`, `.docx`), URL, plain text, other documents. URL sources carry `last_fetched_at` and `last_fetch_error`. `POST .../evidence/{id}/refresh` updates content and re-embeds on success. Duplicate URL detection shows amber banner in SourceDetail.
 - **Embeddings/RAG**: Embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved instead of full context dump. Per-source RAG preflight in ChatPanel/EvidenceChatPanel: `api.ragQuery` → `POST .../evidence/{id}/rag-query`; if `used_rag: true`, chunks replace context. Falls back silently if Ollama unreachable.
 - **LLM abstraction** (`llm.py`): `complete()` routes to `_complete_anthropic` or `_complete_ollama`. Anthropic is the only active path. `_complete_ollama()` is retained but dormant — no UI toggle and `LLM_PROVIDER`/`OLLAMA_CHAT_MODEL` are commented out in `.env.example`. `config.py` and `ProviderToggle.jsx` have been deleted. Active model: `FREE_MODEL = "claude-haiku-4-5-20251001"` (module-level constant). Sonnet string retained as a comment for Sprint 2 plan-based routing.
 - **Evidence chat** (`EvidenceChatPanel.jsx`): Persistent chat on Evidence page. "All sources" option concatenates all sources. `ignore_history: true` when context attached. Backend: `POST /documents/{doc_id}/evidence-chat` in `evidence_chat.py`. Never modifies the document.
@@ -186,36 +136,41 @@ Main views:
 
 ## Document Tree
 
-- **"Add to chat"** button on hover (hidden for protected headings). Attaches section as context; input left empty for the user to type their request. Former "Add" button removed — use + in chat input.
-- Protected nodes show lock icon; unlocked nodes show it faintly on hover.
+- **"Add to chat"** button on hover (hidden for protected headings and during diff view). Attaches section as context; input left empty for the user to type their request.
+- Protected nodes show lock icon; unlocked nodes show it faintly on hover. Both the per-section lock/unlock icon and the structure lock toggle in the Structure panel header are hidden during diff view.
+- During diff view (`pendingProposal` truthy), a `pendingProposal` boolean is threaded `Document.jsx` → `DocumentSidebar.jsx` → `DocumentTree.jsx` to suppress all three interactive controls; tree content remains fully visible.
 - Clicking heading scrolls editor to it via `useImperativeHandle` on Editor.
 - No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
 
 ## Edit/Preview Toggle
 
-- `SegmentedControl` in the Document page ContextBar `rightControls` — renders as two connected buttons (rounded-l / rounded-r, no gap, shared border removed on right segment). Disabled (pointer-events-none + opacity) when `pendingProposal` is truthy.
+- `SegmentedControl` in the Document page ContextBar `rightControls`. Not rendered (hidden entirely) when `pendingProposal` is truthy.
 - `Editor.jsx` no longer contains the toggle or `onEditorModeChange` prop — it receives `editorMode` read-only.
-- `MarkdownPreview.jsx` fills full available width (no `max-w-3xl`), matching the edit textarea.
+
+## Editor Autosave
+
+- Autosave runs 1 s after each keystroke. No timestamp or status is shown in the panel header during normal operation.
+- On failure, a thin red error bar (`bg-red-50 / border-red-200 / text-red-600`) appears below the Editor panel header. It clears automatically on the next successful save. No close button needed.
+- `onSaveStatus` callback (called with `'Saving…'`, a timestamp string, or `''`) is still forwarded to the parent for the ContextBar "Save version" button status — it is not related to the error bar.
 
 ## Editor Find Bar
 
 - Only available in edit mode when `pendingProposal` is falsy. Not shown in Preview or diff view.
 - Triggered by magnifying glass button in Editor header or Ctrl+F / Cmd+F when textarea is focused.
-- Enter / Shift+Enter navigate next/prev. Escape closes. Switching to Preview closes and resets. Closing returns focus to textarea.
-- `findMatches` is `useMemo` (case-insensitive) to avoid stale-counter flicker on rapid typing.
+- Enter / Shift+Enter navigate next/prev. Escape closes. Switching to Preview closes and resets.
 
 ## Chat Panel
 
-- **Attachment**: `AttachmentPopup.jsx` (+ button). Section picker uses `parseHeadingsWithContent` from `Document.jsx`; evidence picker uses `doc.evidence`. Popup closes on outside click (anchor-ref-aware) or Escape.
-- **Context chip**: shows label + char count. Amber styling + `⚠` when truncated. Hard truncation at 6000 chars (`ATTACHMENT_TRUNCATION_LIMIT`), amber warning threshold also 6000. `originalLength` stored pre-truncation. `AttachmentPopup` passes raw content — truncation all happens in `ChatPanel`.
+- **Attachment**: `AttachmentPopup.jsx` (+ button). Section picker uses `parseHeadingsWithContent` from `Document.jsx`; evidence picker uses `doc.evidence`. Popup closes on outside click or Escape.
+- **Context chip**: shows label + char count. Amber styling + `⚠` when truncated. Hard truncation at 6000 chars (`ATTACHMENT_TRUNCATION_LIMIT`). `originalLength` stored pre-truncation. `AttachmentPopup` passes raw content — truncation all happens in `ChatPanel`.
 - **Context priority**: `localContext` (popup) takes priority over `contextText` prop (editor selection). `contextText` being set clears `localContext`. Both cleared on send.
 - **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
 - **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
 - **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
 - **Single Send button**: Only a Send button — no Edit/Chat split. All messages go through the same path. AI decides whether to return a `<proposed_document>` block based on the request. `_build_mode_instruction()` in `chat.py` instructs: return `<proposed_document>` for change requests, respond conversationally for questions. `mode` field removed from `ChatRequest` and `api.chatMessage`.
-- **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended as the first block of the system prompt in `chat.py`. Instructs the AI to return markdown tables, image references (`![alt](url)`), fenced code blocks, and blockquotes verbatim in any proposed document. Uses `CRITICAL INSTRUCTION` framing to reduce the chance of smaller models ignoring it. Not used in `actions.py` — `generate_description` returns plain prose, not a proposed document.
+- **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended as the first block of the system prompt. Instructs the AI to return markdown tables, image references, fenced code blocks, and blockquotes verbatim in any proposed document. Not used in `actions.py` — `generate_description` returns plain prose, not a proposed document.
 - **Enter key**: configurable via `localStorage` (`speedwrite_submit_on_enter`). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
-- **onActionComplete**: Optional callback prop (default `null`) on both `ChatPanel` and `EvidenceChatPanel`. Called after each successful AI response (fire-and-forget, no await). Pages pass `() => { api.me().then(setUser).catch(() => {}) }` to keep `user` state current (e.g. for cap enforcement in the chat panel).
+- **onActionComplete**: Optional callback prop (default `null`) on both `ChatPanel` and `EvidenceChatPanel`. Called after each successful AI response (fire-and-forget). Pages pass `() => { api.me().then(setUser).catch(() => {}) }` to keep `user` state current for cap enforcement.
 
 ## Document History
 
@@ -227,7 +182,6 @@ Main views:
 - `GET /documents/{doc_id}/history/{snapshot_id}` — full snapshot with content, share_token, comments.
 - Restore flow: History.jsx navigates to `/document/:id` with `{ state: { restoreContent, restoreSnapshotId, restoreSnapshotLabel } }`. `Document.jsx` reads this on load, sets `pendingProposal`, sets `pendingProposalReason: 'restore'`, clears location state via `window.history.replaceState`. Accept → `trigger='restore'` snapshot created; Reject → unchanged.
 - `pendingProposalReason`: `'ai_rewrite'` (default) or `'restore'`. Controls snapshot trigger in `handleAccept`. Reset to `'ai_rewrite'` after accept.
-- `flashStatus` prop removed from `Editor.jsx` — no longer used. Save version feedback is handled via `saveVersionStatus` in `Document.jsx`.
 
 ## Version Sharing
 
@@ -235,7 +189,7 @@ Sharing is tied to History snapshots (immutable), not to the live document. Anyo
 
 - **Backend**: `backend/sharing.py` — registered last in `main.py` (no prefix).
 - **Share/unshare**: `POST .../share` (idempotent — returns existing token if already set). `POST .../unshare` sets `share_token = None`.
-- **Public read**: `GET /shared/{token}` — no auth. `_find_snapshot_by_token()` scans all users' documents via `load_users()` + `list_documents()`. Returns `doc_title`, `label`, `timestamp`, `content`, `comments`.
+- **Public read**: `GET /shared/{token}` — no auth. Scans all users' documents via `load_users()` + `list_documents()`. Returns `doc_title`, `label`, `timestamp`, `content`, `comments`.
 - **Public comments**: `POST /shared/{token}/comments` — no auth; sets `is_owner: False`. `DELETE .../comments/{comment_id}` — auth required; 404 if not found.
 - **Owner comments**: `POST .../comments` — auth required; name derived from `display_name || email`; sets `is_owner: True`.
 - **`is_owner` field**: present on all new comments; old entries without it default to `False` via `.get()`. Owner comments get distinct styling + "Owner" badge in both History.jsx and SharedView.jsx.
@@ -244,12 +198,10 @@ Sharing is tied to History snapshots (immutable), not to the live document. Anyo
 
 ## Feedback
 
-Users can submit feedback from any page via "Give feedback" in the TopBar user dropdown.
-
 - **Trigger**: `onFeedbackClick` prop on `TopBar`. All pages pass `() => setShowFeedback(true)`.
-- **UI**: `FeedbackBar.jsx` — slim bar rendered below TopBar (same pattern as inline confirmation bars). Single text input (maxLength 2000), Send button, × close. Escape also closes. Auto-closes 2s after successful send.
-- **Backend**: `POST /feedback` in `backend/feedback.py`, auth required. Validates message non-empty and ≤2000 chars. Sends email via `mailer.send_email()` to `FEEDBACK_EMAIL` (env var, defaults to `EMAIL_FROM`). Always returns `{"ok": true}` — email failures are logged but not surfaced to the user.
-- **`mailer.send_email()`**: Generic helper added to `mailer.py` to support feedback (and future transactional emails) beyond just password reset.
+- **UI**: `FeedbackBar.jsx` — slim bar rendered below TopBar. Single text input (maxLength 2000), Send button, × close. Escape also closes. Auto-closes 2s after successful send.
+- **Backend**: `POST /feedback` in `backend/feedback.py`, auth required. Sends email via `mailer.send_email()` to `FEEDBACK_EMAIL` (env var, defaults to `EMAIL_FROM`). Always returns `{"ok": true}` — email failures are logged but not surfaced to the user.
+- **`mailer.py`** named to avoid shadowing Python's stdlib `email` module — applies to all of `mailer.py`, not just feedback.
 - **`FEEDBACK_EMAIL`** env var: optional; defaults to `EMAIL_FROM` if not set.
 
 ## Section Locking
@@ -257,7 +209,7 @@ Users can submit feedback from any page via "Give feedback" in the TopBar user d
 - `protected_sections: list` on doc stores locked heading texts.
 - Backend enforces via system prompt in `chat.py` (`_build_protected_block`) — AI instructed never to modify or offer to unlock locked sections.
 - `POST /documents/{doc_id}/protect` adds; `DELETE` removes.
-- Frontend: optimistic update with error revert in `Document.jsx`. `DocumentTree.jsx` shows lock icons, `bg-gray-100` on protected nodes. `MarkdownPreview.jsx` and `DiffView.jsx` both highlight protected blocks visually.
+- Frontend: optimistic update with error revert in `Document.jsx`. `DocumentTree.jsx` shows lock icons on protected nodes. `MarkdownPreview.jsx` and `DiffView.jsx` both highlight protected blocks visually.
 
 ## Structure Locking
 
@@ -266,9 +218,9 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 - `structure_locked: bool` on doc (default `False`). `doc.get('structure_locked', False)` for existing docs.
 - `POST /documents/{doc_id}/lock-structure` and `POST .../unlock-structure`.
 - Instruction text injected into `chat.py` `scope_instruction` and `actions.py` system prompt: *"The document structure is locked. Do not add, remove, reorder, or rename any sections. Rewrite the content within sections freely, except where individual sections are also locked. Locks are constraints — always proceed with the rewrite, doing as much as permitted."*
-- UI: icon-only 🔒/🔓 toggle in Structure panel header. No visual treatment on tree nodes — avoids collision with per-section lock styling.
-- When `structureLocked` is true, heading lines highlighted in both `DiffView` and `MarkdownPreview`. `DiffView` matches `/^#{1,6}\s/`.
-- `MarkdownPreview.jsx` uses `react-markdown` + `remark-gfm` (no hand-rolled renderer). Protected and structure-lock highlighting applied via custom `components` renderers using `node.position.start.line` (1-indexed, converted to 0-indexed to match `getProtectedLineSet`). `dangerouslySetInnerHTML` removed.
+- UI: icon-only toggle in Structure panel header. No visual treatment on tree nodes — avoids collision with per-section lock styling.
+- When `structureLocked` is true, heading lines highlighted in both `DiffView` and `MarkdownPreview`.
+- `MarkdownPreview.jsx` uses `react-markdown` + `remark-gfm`. Protected and structure-lock highlighting applied via custom `components` renderers using `node.position.start.line` (1-indexed, converted to 0-indexed to match `getProtectedLineSet`). `dangerouslySetInnerHTML` removed.
 - `ChatPanel` receives and forwards `structureLocked` on every message sent via `handleSend`.
 
 ## Auth & Account Management
@@ -291,10 +243,10 @@ JSON files on disk — no database.
 | `/var/speedwrite/users.json` | All user accounts |
 | `/var/speedwrite/documents/{user_id}/{doc_id}.json` | Document data: content, evidence, chat history, protected sections, version history, save_count |
 | `/var/speedwrite/documents/{user_id}/evidence/{doc_id}/` | Uploaded evidence files |
-| `/var/speedwrite/documents/{user_id}/{doc_id}/images/` | Uploaded images (PNG/JPG/GIF/WebP) |
+| `/var/speedwrite/documents/{user_id}/{doc_id}/images/` | Uploaded images |
 | `/var/speedwrite/embeddings/{user_id}/{doc_id}.json` | Chunked embeddings for all evidence sources |
 
-> **Note**: The local dev named volume is `dev_speedwrite_data` — Docker Compose prefixes it with the project name, so the actual volume is `speedwrite_dev_speedwrite_data`. It mounts to `/var/speedwrite` in `docker-compose.override.yml`.
+The local dev named volume is `dev_speedwrite_data` — Docker Compose prefixes it with the project name, so the actual volume is `speedwrite_dev_speedwrite_data`. It mounts to `/var/speedwrite` in `docker-compose.override.yml`.
 
 ## Environment Variables
 
@@ -308,19 +260,12 @@ JSON files on disk — no database.
 | `ENCRYPTION_KEY` | Fernet key for encrypting BYOK API keys at rest — generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
 | `FEEDBACK_EMAIL` | Address to receive feedback emails (optional — defaults to `EMAIL_FROM`) |
 | `OLLAMA_HOST` | Ollama base URL (default: `http://172.17.0.1:11434`) — used for embeddings only. Local dev on Windows/Mac: `http://host.docker.internal:11434` |
-| `LLM_PROVIDER` | Dormant — commented out in `.env.example`. Set to `ollama` to activate Ollama chat path. |
-| `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. Ollama chat model (default `llama3.2`). |
+| `LLM_PROVIDER` | Dormant — commented out in `.env.example`. |
+| `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. |
 
 ## Ollama Setup
 
-Ollama runs outside Docker; reached via `host.docker.internal`.
-
-```bash
-ollama pull nomic-embed-text   # required for embeddings/RAG
-ollama pull llama3.2           # only needed if reactivating Ollama chat (dormant)
-```
-
-Embeddings always attempted via Ollama regardless of `LLM_PROVIDER`. If unreachable, skipped silently and RAG falls back to full context dump.
+Ollama runs outside Docker. `ollama pull nomic-embed-text` is required for embeddings/RAG. Embeddings always attempted via Ollama regardless of `LLM_PROVIDER`. If unreachable, skipped silently and RAG falls back to full context dump.
 
 ## Running Locally
 
@@ -329,7 +274,7 @@ cp .env.example .env   # populate JWT_SECRET and ANTHROPIC_API_KEY
 docker compose up --build
 ```
 
-- App: http://localhost · Backend API: http://localhost:8000 · Docs: http://localhost:8000/docs
+App: http://localhost · Backend API: http://localhost:8000 · Docs: http://localhost:8000/docs
 
 ## Deploying to Production
 
@@ -338,14 +283,14 @@ bash bootstrap.sh   # first time only — set EMAIL inside the script first
 bash deploy.sh      # subsequent deploys
 ```
 
-> **Warning:** `docker-compose.override.yml` must never run in production. `deploy.sh` explicitly passes `-f docker-compose.yml` to prevent Docker Compose from auto-merging it. The override file is for local dev only.
+**Warning:** `docker-compose.override.yml` must never run in production. `deploy.sh` explicitly passes `-f docker-compose.yml` to prevent Docker Compose from auto-merging it.
 
 ## Monetisation
 
 ### Sprint 1 scaffolding
 - **Plan field**: `plan: str = "free"` on `UserOut` and written on register. Defaults safely via `.get("plan", "free")`.
 - **Model**: All users on `FREE_MODEL` (`claude-haiku-4-5-20251001`). `PAID_MODEL = "claude-sonnet-4-20250514"` is defined in `llm.py` for Sprint 2.
-- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 50` — defined in `backend/limits.py` (moved from `evidence.py` in Sprint 3). All four add-evidence endpoints enforce it with HTTP 400.
+- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 50` — defined in `backend/limits.py`. All four add-evidence endpoints enforce it with HTTP 400.
 
 ### Sprint 2 — BYOK (Bring Your Own Key)
 - Users add their Anthropic API key in Account settings. BYOK users get `PAID_MODEL` (Sonnet); free users get `FREE_MODEL` (Haiku). See Auth section for encryption and endpoint details.
@@ -357,7 +302,7 @@ bash deploy.sh      # subsequent deploys
 - **Cap enforcement**: `chat.py`, `evidence_chat.py`, and `actions.py` check cap before calling `complete()` (free users only — BYOK users bypass). Returns HTTP 429 with message `"Monthly limit of {FREE_ACTION_CAP} AI actions reached…"`. `increment_action_count` is called after each successful `complete()`.
 - **Frontend cap UI**: `ChatPanel` and `EvidenceChatPanel` accept `actionsUsed` and `hasByokKey` props. When capped: Send button disabled with tooltip, amber banner shown above input with link to Account settings. 429 cap errors are displayed as plain assistant messages (no "Error:" prefix).
 - **Usage display**: Model name and action counts shown in the Usage section of `Account.jsx` (not in TopBar).
-- **Stale counter cleanup**: `cleanup.py` now also runs `reset_stale_action_counters()`, which zeroes `ai_actions_used` for any user whose `ai_actions_reset_at` is from a prior month.
+- **Stale counter cleanup**: `cleanup.py` runs `reset_stale_action_counters()`, which zeroes `ai_actions_used` for any user whose `ai_actions_reset_at` is from a prior month.
 
 ## Maintenance
 
@@ -377,5 +322,4 @@ docker compose logs -f app       # backend logs
 docker compose logs -f nginx     # nginx logs
 docker compose restart app       # restart backend
 docker compose up --build -d     # rebuild everything
-docker compose ps                # container status
 ```

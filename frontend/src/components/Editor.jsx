@@ -6,6 +6,7 @@ import MarkdownPreview from './MarkdownPreview'
 const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, protectedSections = [], structureLocked = false }, ref) {
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
+  const [saveError, setSaveError] = useState(false)
   const [findOpen, setFindOpen] = useState(false)
   const [findQuery, setFindQuery] = useState('')
   const [findIndex, setFindIndex] = useState(0)
@@ -180,11 +181,13 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
         const updated = await api.updateDocument(docId, { content: newContent })
         const ts = `Saved ${new Date().toLocaleTimeString()}`
         setSaveStatus(ts)
+        setSaveError(false)
         if (onSaveStatus) onSaveStatus(ts)
         onUpdate(updated)
       } catch (err) {
         console.error('Auto-save failed', err)
         setSaveStatus('')
+        setSaveError(true)
         if (onSaveStatus) onSaveStatus('')
       }
     }, 1000)
@@ -217,7 +220,6 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Editor</span>
         <div className="flex items-center gap-3">
-          {saveStatus && <span className="text-xs text-gray-400">{saveStatus}</span>}
           {!pendingProposal && editorMode === 'edit' && (
             <button
               className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -232,6 +234,11 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
           )}
         </div>
       </div>
+      {saveError && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-1.5 text-xs text-red-600 flex-shrink-0">
+          Autosave failed — check your connection
+        </div>
+      )}
       {findOpen && !pendingProposal && editorMode === 'edit' && (
         <div className="h-10 bg-gray-50 border-b border-gray-200 px-4 flex items-center gap-2 flex-shrink-0">
           <input

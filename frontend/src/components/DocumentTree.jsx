@@ -37,7 +37,7 @@ function extractSection(content, headings, index) {
   return lines.slice(lineIndex, endLine).join('\n').trim()
 }
 
-export default function DocumentTree({ content, onHeadingClick, onSectionRewrite, protectedSections = [], onToggleProtection }) {
+export default function DocumentTree({ content, onHeadingClick, onSectionRewrite, protectedSections = [], onToggleProtection, pendingProposal = false }) {
   const [hoveredIndex, setHoveredIndex] = useState(null)
   const headings = parseHeadings(content)
   if (!headings.length) return null
@@ -62,22 +62,24 @@ export default function DocumentTree({ content, onHeadingClick, onSectionRewrite
             onMouseLeave={() => setHoveredIndex(null)}
           >
             {/* Lock icon */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggleProtection?.(h.text)
-              }}
-              className={`flex-shrink-0 mr-1 text-xs leading-none transition-colors cursor-pointer ${
-                isProtected
-                  ? 'text-gray-400'
-                  : isHovered
-                  ? 'text-gray-300 hover:text-gray-500'
-                  : 'text-transparent'
-              }`}
-              title={isProtected ? 'Click to unlock section' : 'Click to lock section'}
-            >
-              {isProtected ? '🔒' : '🔓'}
-            </button>
+            {!pendingProposal && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleProtection?.(h.text)
+                }}
+                className={`flex-shrink-0 mr-1 text-xs leading-none transition-colors cursor-pointer ${
+                  isProtected
+                    ? 'text-gray-400'
+                    : isHovered
+                    ? 'text-gray-300 hover:text-gray-500'
+                    : 'text-transparent'
+                }`}
+                title={isProtected ? 'Click to unlock section' : 'Click to lock section'}
+              >
+                {isProtected ? '🔒' : '🔓'}
+              </button>
+            )}
 
             <span
               onClick={() => onHeadingClick?.(h.text)}
@@ -88,7 +90,7 @@ export default function DocumentTree({ content, onHeadingClick, onSectionRewrite
               {h.text}
             </span>
 
-            {isHovered && onSectionRewrite && !isProtected && (
+            {isHovered && onSectionRewrite && !isProtected && !pendingProposal && (
               <div className="flex items-center gap-1 flex-shrink-0 ml-1">
                 <button
                   onClick={(e) => {
