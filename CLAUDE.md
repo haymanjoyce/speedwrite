@@ -160,18 +160,16 @@ Main views:
 
 ## Chat Panel
 
-- **Attachment**: `AttachmentPopup.jsx` (+ button). Section picker uses `parseHeadingsWithContent` from `Document.jsx`; evidence picker uses `doc.evidence`. Popup closes on outside click or Escape. Section labels passed to `onAttach` are heading text only (no emoji prefix). Evidence items show title only (no type icons). Evidence tab shows a muted note ("All sources queried by default…") above the item list — no "All sources" option.
-- **Context chip**: shows label + char count. Amber styling + `⚠` when truncated. Hard truncation at 10000 chars (`ATTACHMENT_TRUNCATION_LIMIT`); amber warning also at 10000 (`ATTACHMENT_WARNING_THRESHOLD`). `originalLength` stored pre-truncation. `AttachmentPopup` passes raw content — truncation all happens in `ChatPanel`.
+- **Attachment**: `AttachmentPopup.jsx` (+ button). Section picker uses `parseHeadingsWithContent`; evidence picker uses `doc.evidence`. Section labels passed to `onAttach` are heading text only (no emoji). Evidence items show title only (no type icons). Evidence tab shows a muted note above items — no "All sources" option.
+- **Context chip**: label + char count. Amber + `⚠` when truncated. Hard truncation at 10000 chars (`ATTACHMENT_TRUNCATION_LIMIT`); amber warning also at 10000 (`ATTACHMENT_WARNING_THRESHOLD`). Raw content passed from `AttachmentPopup` — truncation happens in `ChatPanel`.
 - **Context priority**: `localContext` (popup) takes priority over `contextText` prop (editor selection). `contextText` being set clears `localContext`. Both cleared on send.
-- **Context label**: stored in `chat_history` as `context_label` on user entries. User messages with a label show a small tag above the bubble, right-aligned.
-- **forwardRef**: `ChatPanel` exposes `appendMessages(userMsg, assistantMsg)` and `prefillRewrite(content, heading)` via `useImperativeHandle`.
-- **Stop button**: replaces Send while request in flight. Calls `AbortController.abort()`; `AbortError` caught silently. `api.js` `request()` accepts optional `signal`.
-- **Single Send button**: Only a Send button — no Edit/Chat split. All messages go through the same path. AI decides whether to return a `<proposed_document>` block based on the request. `_build_mode_instruction()` in `chat.py` instructs: return `<proposed_document>` for change requests, respond conversationally for questions. `mode` field removed from `ChatRequest` and `api.chatMessage`.
-- **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended as the first block of the system prompt. Instructs the AI to return markdown tables, image references, fenced code blocks, and blockquotes verbatim in any proposed document. Not used in `actions.py` — `generate_description` returns plain prose, not a proposed document.
-- **Enter key**: configurable via `localStorage` (`speedwrite_submit_on_enter`). Send button uses `onClick={() => handleSend()}` — not `onClick={handleSend}` — to prevent the click event being passed as `textOverride`. `EvidenceChatPanel` follows the same pattern.
-- **onActionComplete**: Optional callback prop (default `null`) on both `ChatPanel` and `EvidenceChatPanel`. Called after each successful AI response (fire-and-forget). Pages pass `() => { api.me().then(setUser).catch(() => {}) }` to keep `user` state current for cap enforcement.
-- **Clear chat**: Ghost-style trash icon button in the panel header. Calls `api.clearChatHistory(docId)` (`DELETE /documents/{doc_id}/chat`) and resets local `messages` to `[]`. No confirmation. `DELETE /{doc_id}/chat` sets `chat_history: []` on the document and saves. Same pattern in `EvidenceChatPanel` via `api.clearEvidenceChatHistory`.
-- **Empty assistant bubbles**: The assistant message bubble is not rendered at all when `msg.content?.trim()` is falsy — avoids a visible empty bubble while a response is being constructed or when content is whitespace-only. Applies to both `ChatPanel` and `EvidenceChatPanel`.
+- **Context label**: stored as `context_label` on user entries in `chat_history`; shown as a small tag above the user bubble.
+- **Single Send button**: no Edit/Chat split. `_build_mode_instruction()` in `chat.py` instructs AI to return `<proposed_document>` for change requests, respond conversationally for questions.
+- **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended to system prompt; instructs AI to return tables, image refs, code blocks, and blockquotes verbatim. Not used in `actions.py`.
+- **Enter key**: configurable via `localStorage` key `speedwrite_submit_on_enter`. Send button uses `onClick={() => handleSend()}` (not `onClick={handleSend}`) to prevent the click event being passed as `textOverride`.
+- **onActionComplete**: optional prop on both panels; called after each successful response to refresh `user` state for cap enforcement.
+- **Clear chat**: trash icon ghost button in panel header; calls `DELETE /documents/{doc_id}/chat` (or `/evidence-chat`), resets local `messages` to `[]`. No confirmation.
+- **Empty assistant bubbles**: bubble not rendered when `msg.content?.trim()` is falsy — prevents visible empty bubble during response construction.
 
 ## Document History
 
@@ -226,14 +224,11 @@ Separate and independent from per-section locking. Prevents AI from changing doc
 
 ## Auth & Account Management
 
-- **Password reset flow**: Token TTL 1 hour. Always returns 200 — does not reveal whether email exists. SendGrid errors logged, not surfaced.
-- **Change password**: `POST /auth/change-password` — verifies current password before updating.
-- **Change email**: `POST /auth/change-email` — verifies password, checks uniqueness.
-- **Update profile**: `POST /auth/update-profile` — saves `display_name`; `GET /auth/me` returns it (may be null).
-- **Delete account**: `DELETE /auth/account` — verifies password, then `shutil.rmtree` on docs and embeddings dirs.
-- **Email sending**: Named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
-- **User record fields**: `id`, `email`, `hashed_password`, `display_name`, `plan` (default `"free"`), `byok_key_encrypted`, `ai_actions_used`, `ai_actions_reset_at` (month boundary for reset), `reset_token`, `reset_token_expires`, `is_admin` (default `False` — set manually in `users.json`). All optional fields use `.get()` so existing records degrade safely.
-- **BYOK endpoints**: `GET /auth/me` returns `has_byok_key` (bool) and `byok_key_masked`. Encryption uses Fernet; key from `ENCRYPTION_KEY` env var. `get_byok_key(user)` returns decrypted key or `None` — raises HTTP 500 if key is stored but decryption fails. All LLM call sites (`chat.py`, `evidence_chat.py`, `actions.py`) call `get_byok_key(user)` and pass the result to `complete()`.
+- **Password reset**: TTL 1 hour; always returns 200 (does not reveal whether email exists). SendGrid errors logged, not surfaced.
+- **Change password / email / profile / delete account**: standard auth endpoints in `auth.py`. Delete uses `shutil.rmtree` on docs and embeddings dirs.
+- **Email sending**: named `mailer.py` (not `email.py`) to avoid shadowing Python's stdlib `email` module.
+- **User record fields**: `id`, `email`, `hashed_password`, `display_name`, `plan`, `byok_key_encrypted`, `ai_actions_used`, `ai_actions_reset_at`, `reset_token`, `reset_token_expires`, `is_admin` (set manually in `users.json`). All optional fields use `.get()` so existing records degrade safely.
+- **BYOK**: `GET /auth/me` returns `has_byok_key` and `byok_key_masked`. `get_byok_key(user)` returns decrypted key or `None` — raises HTTP 500 if stored but decryption fails.
 
 ## Data Storage
 
@@ -288,22 +283,13 @@ bash deploy.sh      # subsequent deploys
 
 ## Monetisation
 
-### Sprint 1 scaffolding
-- **Plan field**: `plan: str = "free"` on `UserOut` and written on register. Defaults safely via `.get("plan", "free")`.
-- **Model**: All users on `FREE_MODEL` (`claude-haiku-4-5-20251001`). `PAID_MODEL = "claude-sonnet-4-20250514"` is defined in `llm.py` for Sprint 2.
-- **Evidence limit**: `FREE_EVIDENCE_LIMIT = 50` — defined in `backend/limits.py`. All four add-evidence endpoints enforce it with HTTP 400.
+All three monetisation sprints are shipped. BYOK users get `PAID_MODEL` (Sonnet); free users get `FREE_MODEL` (Haiku). Free tier is capped at 1000 AI actions/month (`FREE_ACTION_CAP`) and 50 evidence sources (`FREE_EVIDENCE_LIMIT`) — abuse guards, not hard paywalls. Both constants live in `backend/limits.py`; `FREE_ACTION_CAP` is also exported from `frontend/src/constants/limits.js`.
 
-### Sprint 2 — BYOK (Bring Your Own Key)
-- Users add their Anthropic API key in Account settings. BYOK users get `PAID_MODEL` (Sonnet); free users get `FREE_MODEL` (Haiku). See Auth section for encryption and endpoint details.
-- Frontend: `Account.jsx` shows input (no key) or masked key + Remove button. `api.saveByokKey` / `api.removeByokKey` in `api.js`.
-
-### Sprint 3 — AI action cap
-- **Limits module**: `backend/limits.py` holds `FREE_ACTION_CAP` and `FREE_EVIDENCE_LIMIT`. `frontend/src/constants/limits.js` exports `FREE_ACTION_CAP` for the frontend.
-- **Counter fields**: `ai_actions_used` (int) and `ai_actions_reset_at` (ISO string) on the user record. `GET /auth/me` returns both. `get_actions_used(user)` in `auth.py` returns the count, resetting to 0 if the stored month differs from now. `increment_action_count(user_id)` reloads users, resets if stale, increments, and saves.
-- **Cap enforcement**: `chat.py`, `evidence_chat.py`, and `actions.py` check cap before calling `complete()` (free users only — BYOK users bypass). Returns HTTP 429 with message `"Monthly limit of {FREE_ACTION_CAP} AI actions reached…"`. `increment_action_count` is called after each successful `complete()`.
-- **Frontend cap UI**: `ChatPanel` and `EvidenceChatPanel` accept `actionsUsed` and `hasByokKey` props. When capped: Send button disabled with tooltip, amber banner shown above input with link to Account settings. 429 cap errors are displayed as plain assistant messages (no "Error:" prefix).
-- **Usage display**: Model name and action counts shown in the Usage section of `Account.jsx` (not in TopBar).
-- **Stale counter cleanup**: `cleanup.py` runs `reset_stale_action_counters()`, which zeroes `ai_actions_used` for any user whose `ai_actions_reset_at` is from a prior month.
+- **BYOK**: users add their Anthropic key in Account settings. `get_byok_key(user)` in `auth.py` returns decrypted key or `None`. All LLM call sites pass it to `complete()`. Fernet encryption at rest; key from `ENCRYPTION_KEY` env var.
+- **Cap enforcement**: `chat.py`, `evidence_chat.py`, and `actions.py` check cap before `complete()` (BYOK users bypass); HTTP 429 on breach. `increment_action_count(user_id)` called after each successful response. `get_actions_used(user)` resets count to 0 if stored month differs from now.
+- **Frontend cap UI**: `ChatPanel`/`EvidenceChatPanel` accept `actionsUsed` + `hasByokKey`. When capped: Send disabled, amber banner with link to Account settings. 429 errors shown as plain assistant messages (no "Error:" prefix).
+- **Usage display**: model name and counts in the Usage section of `Account.jsx` (not in TopBar).
+- **Stale counter cleanup**: `cleanup.py` zeroes `ai_actions_used` for any user whose `ai_actions_reset_at` is from a prior month.
 
 ## Maintenance
 
