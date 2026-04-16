@@ -168,7 +168,12 @@ export default function History() {
           { label: 'History', active: true, onClick: () => {} },
           { label: 'Images', active: false, onClick: () => navigate(`/document/${id}/images`) },
         ]}
-        actions={[]}
+        actions={[
+          ...(selectedSnapshot && shareToken
+            ? [{ label: 'Revoke', onClick: handleUnshare, variant: 'default', disabled: !selectedSnapshot }]
+            : [{ label: 'Share this version', onClick: handleShare, variant: 'default', disabled: !selectedSnapshot || sharing }]),
+          { label: 'Restore this version', onClick: handleRestore, variant: 'primary', disabled: !selectedSnapshot },
+        ]}
       />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel — snapshot list */}
@@ -208,12 +213,7 @@ export default function History() {
         {/* Middle panel — version detail */}
         <main className="flex-1 bg-white flex flex-col overflow-hidden">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex-1">Version</span>
-            {selectedSnapshot && (
-              <Button variant="primary" size="sm" onClick={handleRestore}>
-                Restore this version
-              </Button>
-            )}
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Version</span>
           </div>
           <div className="flex-1 overflow-y-auto">
             {!selectedSnapshot ? (
@@ -236,18 +236,8 @@ export default function History() {
 
         {/* Right panel — sharing & comments */}
         <div className="w-80 border-l border-gray-200 flex flex-col flex-shrink-0">
-          <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center gap-2 flex-shrink-0">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex-1">Comments</span>
-            {selectedSnapshot && shareToken && (
-              <Button variant="secondary" size="sm" onClick={handleUnshare}>
-                Revoke
-              </Button>
-            )}
-            {selectedSnapshot && !shareToken && (
-              <Button variant="secondary" size="sm" onClick={handleShare} disabled={sharing}>
-                Share this version
-              </Button>
-            )}
+          <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Comments</span>
           </div>
 
           <div className="flex-1 flex flex-col overflow-hidden">
