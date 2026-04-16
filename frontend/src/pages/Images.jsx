@@ -5,6 +5,12 @@ import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export default function Images() {
   const navigate = useNavigate()
   const { id } = useParams()
@@ -180,20 +186,37 @@ export default function Images() {
         {/* Right panel — image detail */}
         <main className="flex-1 bg-white flex flex-col overflow-hidden">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              {selectedImage ? selectedImage.filename : 'Image Detail'}
-            </span>
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Image Detail</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 flex items-start justify-center">
-            {selectedImage && blobUrl && (
-              <img
-                src={blobUrl}
-                alt={selectedImage.filename}
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
-            {!selectedImage && (
-              <p className="text-gray-400 text-sm mt-8">Select an image to view it.</p>
+          <div className="flex-1 overflow-y-auto">
+            {!selectedImage ? (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-gray-400 text-sm">Select an image to view it.</p>
+              </div>
+            ) : (
+              <>
+                <div className="px-6 py-4 border-b border-gray-100 space-y-1">
+                  <div className="flex gap-3 text-xs">
+                    <span className="text-gray-400 flex-shrink-0 w-24">Filename</span>
+                    <span className="text-gray-700">{selectedImage.filename}</span>
+                  </div>
+                  {selectedImage.size_bytes != null && (
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-gray-400 flex-shrink-0 w-24">Size</span>
+                      <span className="text-gray-700">{formatBytes(selectedImage.size_bytes)}</span>
+                    </div>
+                  )}
+                </div>
+                {blobUrl && (
+                  <div className="p-6 flex items-start justify-center">
+                    <img
+                      src={blobUrl}
+                      alt={selectedImage.filename}
+                      className="max-w-full object-contain"
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </main>

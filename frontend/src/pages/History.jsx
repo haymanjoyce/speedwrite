@@ -7,7 +7,6 @@ import FeedbackBar from '../components/FeedbackBar'
 import MarkdownPreview from '../components/MarkdownPreview'
 import TopBar from '../components/TopBar'
 
-const TRIGGER_ICONS = { auto: '💾', rewrite: '🤖', manual: '📌', restore: '🔄' }
 
 function timeAgo(isoString) {
   const date = new Date(isoString + 'Z')
@@ -193,22 +192,13 @@ export default function History() {
               <div
                 key={snap.id}
                 onClick={() => handleSelect(snap)}
-                className={`px-4 py-2.5 cursor-pointer transition-colors border-b border-gray-100 ${
+                className={`px-4 py-2 cursor-pointer transition-colors text-sm truncate ${
                   snap.id === selectedSnapshot?.id
                     ? 'bg-gray-100 text-gray-900'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <span>{TRIGGER_ICONS[snap.trigger] ?? '💾'}</span>
-                  <span className="text-sm font-medium truncate">{snap.label}</span>
-                </div>
-                <div className="text-xs text-gray-400 mt-0.5">{timeAgo(snap.timestamp)}</div>
-                {(snap.is_shared || snap.comment_count > 0) && (
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    {[snap.is_shared ? 'Shared' : null, snap.comment_count > 0 ? `${snap.comment_count} comments` : null].filter(Boolean).join(' · ')}
-                  </div>
-                )}
+                {snap.label}
               </div>
             ))}
           </div>
@@ -229,11 +219,35 @@ export default function History() {
                 Loading…
               </div>
             ) : (
-              <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto">
-                  <MarkdownPreview content={snapshotContent ?? ''} />
+              <>
+                <div className="px-6 py-4 border-b border-gray-100 space-y-1">
+                  <div className="flex gap-3 text-xs">
+                    <span className="text-gray-400 flex-shrink-0 w-24">Label</span>
+                    <span className="text-gray-700">{selectedSnapshot.label}</span>
+                  </div>
+                  <div className="flex gap-3 text-xs">
+                    <span className="text-gray-400 flex-shrink-0 w-24">Saved</span>
+                    <span className="text-gray-700">{formatFullTime(selectedSnapshot.timestamp)}</span>
+                  </div>
+                  <div className="flex gap-3 text-xs">
+                    <span className="text-gray-400 flex-shrink-0 w-24">Trigger</span>
+                    <span className="text-gray-700 capitalize">{selectedSnapshot.trigger}</span>
+                  </div>
+                  {selectedSnapshot.is_shared && (
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-gray-400 flex-shrink-0 w-24">Shared</span>
+                      <span className="text-gray-700">Yes</span>
+                    </div>
+                  )}
+                  {selectedSnapshot.comment_count > 0 && (
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-gray-400 flex-shrink-0 w-24">Comments</span>
+                      <span className="text-gray-700">{selectedSnapshot.comment_count}</span>
+                    </div>
+                  )}
                 </div>
-              </div>
+                <MarkdownPreview content={snapshotContent ?? ''} />
+              </>
             )}
           </div>
         </main>
