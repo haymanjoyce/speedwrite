@@ -45,6 +45,7 @@ export default function History() {
   const [ownerCommentSubmitting, setOwnerCommentSubmitting] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [ownerCommentError, setOwnerCommentError] = useState(null)
+  const [copyStatus, setCopyStatus] = useState('idle')
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -149,6 +150,8 @@ export default function History() {
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.origin + '/shared/' + shareToken)
+    setCopyStatus('copied')
+    setTimeout(() => setCopyStatus('idle'), 3000)
   }
 
   return (
@@ -172,6 +175,7 @@ export default function History() {
           ...(selectedSnapshot && shareToken
             ? [{ label: 'Revoke', onClick: handleUnshare, variant: 'default', disabled: !selectedSnapshot }]
             : [{ label: 'Share this version', onClick: handleShare, variant: 'default', disabled: !selectedSnapshot || sharing }]),
+          { label: copyStatus === 'copied' ? 'Copied ✓' : 'Copy link', onClick: handleCopyLink, variant: 'default', disabled: !selectedSnapshot || !shareToken },
           { label: 'Restore this version', onClick: handleRestore, variant: 'primary', disabled: !selectedSnapshot },
         ]}
       />
@@ -243,19 +247,6 @@ export default function History() {
           <div className="flex-1 flex flex-col overflow-hidden">
             {!selectedSnapshot ? null : (
               <>
-                {/* Share URL — only when shared */}
-                {shareToken && (
-                  <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <input
-                        readOnly
-                        value={window.location.origin + '/shared/' + shareToken}
-                        className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-gray-600 min-w-0"
-                      />
-                      <Button variant="secondary" size="sm" onClick={handleCopyLink}>Copy</Button>
-                    </div>
-                  </div>
-                )}
                 {/* Comments list */}
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
                   {!shareToken && shareComments.length === 0 && (
