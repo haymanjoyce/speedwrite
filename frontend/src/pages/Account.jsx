@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import Button from '../components/Button'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
 import { FREE_ACTION_CAP } from '../constants/limits'
@@ -164,7 +165,6 @@ export default function Account() {
   }
 
   const fieldCls = 'w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500'
-  const outlinedBtn = 'border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors'
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -178,8 +178,6 @@ export default function Account() {
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-lg mx-auto py-10 px-4">
-          <h1 className="text-xl font-semibold text-gray-900 mb-6">Account settings</h1>
-
           {/* Usage */}
           <div>
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Usage</h2>
@@ -210,7 +208,7 @@ export default function Account() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <button type="submit" className={outlinedBtn}>Save</button>
+              <Button type="submit" variant="secondary">Save</Button>
               {profileSuccess && <span className="text-green-600 text-sm">{profileSuccess}</span>}
             </div>
           </form>
@@ -243,7 +241,7 @@ export default function Account() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <button type="submit" className={outlinedBtn}>Update email</button>
+              <Button type="submit" variant="secondary">Update email</Button>
               {emailSuccess && <span className="text-green-600 text-sm">{emailSuccess}</span>}
             </div>
           </form>
@@ -285,7 +283,7 @@ export default function Account() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <button type="submit" className={outlinedBtn}>Update password</button>
+              <Button type="submit" variant="secondary">Update password</Button>
               {passwordSuccess && <span className="text-green-600 text-sm">{passwordSuccess}</span>}
             </div>
           </form>
@@ -300,7 +298,7 @@ export default function Account() {
             {hasByokKey ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-700 font-mono">{byokKeyMasked}</span>
-                <button type="button" onClick={handleByokRemove} className="text-red-600 border border-red-300 rounded px-3 py-1.5 text-sm hover:bg-red-50 transition-colors">Remove</button>
+                <Button type="button" variant="secondary" onClick={handleByokRemove}>Remove</Button>
                 {byokSuccess && <span className="text-green-600 text-sm">{byokSuccess}</span>}
               </div>
             ) : (
@@ -317,7 +315,7 @@ export default function Account() {
                   />
                 </div>
                 <div className="flex items-center gap-3">
-                  <button type="submit" className={outlinedBtn}>Save</button>
+                  <Button type="submit" variant="secondary">Save key</Button>
                   {byokSuccess && <span className="text-green-600 text-sm">{byokSuccess}</span>}
                 </div>
               </form>
@@ -333,13 +331,13 @@ export default function Account() {
               This permanently deletes your account and all your documents. This cannot be undone.
             </p>
             {!showDeleteConfirm && (
-              <button
+              <Button
                 type="button"
+                variant="danger"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="text-red-600 border border-red-300 rounded px-3 py-1.5 text-sm hover:bg-red-50 transition-colors"
               >
                 Delete account
-              </button>
+              </Button>
             )}
             {showDeleteConfirm && (
               <div className="bg-red-50 border border-red-100 rounded p-3 mt-3">
@@ -354,20 +352,20 @@ export default function Account() {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="danger"
                     onClick={handleDeleteConfirm}
-                    className="text-red-600 border border-red-300 rounded px-3 py-1.5 text-sm hover:bg-red-50 transition-colors"
                   >
                     Delete my account
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); setDeleteError('') }}
-                    className="border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

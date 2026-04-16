@@ -45,19 +45,19 @@ export default function Admin() {
       />
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto py-10 px-4">
+        <div className="max-w-5xl mx-auto py-14 px-4">
           {error ? (
             <p className="text-sm text-red-500">{error}</p>
           ) : !data ? (
             <p className="text-sm text-gray-400">Loading…</p>
           ) : (
             <>
-              <p className="text-sm text-gray-400 mb-6">
+              <p className="text-sm text-gray-600 mb-3">
                 {data.summary.total_users} users · {data.summary.total_actions_this_month} AI actions this month
               </p>
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-200">
+                  <tr className="border-b border-gray-200 bg-gray-50">
                     {['Email', 'Plan', 'Actions used', 'Actions left', 'BYOK', 'Documents', 'Admin'].map((col) => (
                       <th key={col} className="text-xs font-semibold text-gray-500 uppercase tracking-wide py-3 px-4">
                         {col}
