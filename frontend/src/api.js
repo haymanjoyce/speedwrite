@@ -144,6 +144,8 @@ export const api = {
   describeEvidence: (docId, evidenceId) =>
     request('POST', `/documents/${docId}/evidence/${evidenceId}/describe`),
 
+  clearChatHistory: (docId) => request('DELETE', `/documents/${docId}/chat`),
+
   // Evidence chat
   evidenceChat: (docId, message, context, contextLabel, ignoreHistory = false, signal = null) =>
     request('POST', `/documents/${docId}/evidence-chat`, {
@@ -152,6 +154,7 @@ export const api = {
       context_label: contextLabel,
       ignore_history: ignoreHistory,
     }, signal),
+  clearEvidenceChatHistory: (docId) => request('DELETE', `/documents/${docId}/evidence-chat`),
 
   // Search
   search: (query) => request('POST', '/search', { query }),

@@ -195,17 +195,19 @@ export default function Images() {
               </div>
             ) : (
               <>
-                <div className="px-6 py-4 border-b border-gray-100 space-y-1">
-                  <div className="flex gap-3 text-xs">
-                    <span className="text-gray-400 flex-shrink-0 w-24">Filename</span>
-                    <span className="text-gray-700">{selectedImage.filename}</span>
-                  </div>
-                  {selectedImage.size_bytes != null && (
+                <div className="bg-white border-b border-gray-100 p-6 flex-shrink-0">
+                  <div className="space-y-1">
                     <div className="flex gap-3 text-xs">
-                      <span className="text-gray-400 flex-shrink-0 w-24">Size</span>
-                      <span className="text-gray-700">{formatBytes(selectedImage.size_bytes)}</span>
+                      <span className="text-gray-400 flex-shrink-0 w-24">Filename</span>
+                      <span className="text-gray-700">{selectedImage.filename}</span>
                     </div>
-                  )}
+                    {selectedImage.size_bytes != null && (
+                      <div className="flex gap-3 text-xs">
+                        <span className="text-gray-400 flex-shrink-0 w-24">Size</span>
+                        <span className="text-gray-700">{formatBytes(selectedImage.size_bytes)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {blobUrl && (
                   <div className="p-6 flex items-start justify-center">

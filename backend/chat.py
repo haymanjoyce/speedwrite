@@ -168,6 +168,16 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
     return "Evidence base:\n" + "\n".join(parts) + "\n\n"
 
 
+@router.delete("/{doc_id}/chat")
+def clear_chat_history(doc_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    doc["chat_history"] = []
+    save_document(doc)
+    return {"ok": True}
+
+
 @router.post("/{doc_id}/chat", response_model=ChatResponse)
 def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_user)):
     doc = load_document(user["id"], doc_id)

@@ -220,7 +220,8 @@ export default function History() {
               </div>
             ) : (
               <>
-                <div className="px-6 py-4 border-b border-gray-100 space-y-1">
+                <div className="bg-white border-b border-gray-100 p-6 flex-shrink-0">
+                  <div className="space-y-1">
                   <div className="flex gap-3 text-xs">
                     <span className="text-gray-400 flex-shrink-0 w-24">Label</span>
                     <span className="text-gray-700">{selectedSnapshot.label}</span>
@@ -245,6 +246,7 @@ export default function History() {
                       <span className="text-gray-700">{selectedSnapshot.comment_count}</span>
                     </div>
                   )}
+                  </div>
                 </div>
                 <MarkdownPreview content={snapshotContent ?? ''} />
               </>

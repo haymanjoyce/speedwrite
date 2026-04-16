@@ -222,59 +222,62 @@ export default function Home() {
               </div>
             )
           ) : (
-            <div className="p-6">
-              {isRenaming ? (
-                <input
-                  ref={renameInputRef}
-                  autoFocus
-                  onFocus={(e) => e.target.select()}
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleRenameSave()
-                    if (e.key === 'Escape') handleRenameCancel()
-                  }}
-                  onBlur={handleRenameSave}
-                  className="text-lg font-semibold text-gray-900 border-b border-blue-400 outline-none bg-transparent w-full mb-3"
-                />
-              ) : (
-                <h1 className="text-lg font-semibold text-gray-900 mb-3">{selectedDoc.title}</h1>
-              )}
-              <div className="space-y-1 mb-6">
-                {[
-                  ['Created', selectedDoc.created_at ? new Date(selectedDoc.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null],
-                  ['Last updated', new Date(selectedDoc.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })],
-                  ['Words', `~${(selectedDoc.content ? selectedDoc.content.split(/\s+/).filter(Boolean).length : 0).toLocaleString()}`],
-                ].filter(([, v]) => v != null).map(([label, value]) => (
-                  <div key={label} className="flex gap-3 text-xs">
-                    <span className="text-gray-400 flex-shrink-0 w-24">{label}</span>
-                    <span className="text-gray-700">{value}</span>
-                  </div>
-                ))}
-              </div>
-              {selectedDoc.description ? (
-                <div className="space-y-4 mt-6">
-                  {selectedDoc.description.split(/\n(?=## )/).map((block) => {
-                    const lines = block.trim().split('\n')
-                    const heading = lines[0].replace(/^##\s*/, '').trim()
-                    const bullets = lines.slice(1).filter((l) => /^[-*]\s/.test(l.trim())).map((l) => l.replace(/^[-*]\s*/, '').trim())
-                    return (
-                      <div key={heading}>
-                        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">{heading}</p>
-                        <ul className="space-y-0.5">
-                          {bullets.map((b, i) => (
-                            <li key={i} className="text-sm text-gray-600 pl-3 flex gap-2"><span className="flex-shrink-0">·</span><span>{b}</span></li>
-                          ))}
-                        </ul>
-                      </div>
-                    )
-                  })}
+            <>
+              <div className="bg-white border-b border-gray-100 p-6 flex-shrink-0">
+                {isRenaming ? (
+                  <input
+                    ref={renameInputRef}
+                    autoFocus
+                    onFocus={(e) => e.target.select()}
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRenameSave()
+                      if (e.key === 'Escape') handleRenameCancel()
+                    }}
+                    onBlur={handleRenameSave}
+                    className="text-base font-semibold text-gray-900 border-b border-blue-400 outline-none bg-transparent w-full mb-3"
+                  />
+                ) : (
+                  <h1 className="text-base font-semibold text-gray-900 mb-3">{selectedDoc.title}</h1>
+                )}
+                <div className="space-y-1">
+                  {[
+                    ['Created', selectedDoc.created_at ? new Date(selectedDoc.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null],
+                    ['Last updated', new Date(selectedDoc.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })],
+                    ['Words', `~${(selectedDoc.content ? selectedDoc.content.split(/\s+/).filter(Boolean).length : 0).toLocaleString()}`],
+                  ].filter(([, v]) => v != null).map(([label, value]) => (
+                    <div key={label} className="flex gap-3 text-xs">
+                      <span className="text-gray-400 flex-shrink-0 w-24">{label}</span>
+                      <span className="text-gray-700">{value}</span>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <p className="text-sm text-gray-400 italic">No description yet.</p>
-              )}
-
-            </div>
+              </div>
+              <div className="p-6">
+                {selectedDoc.description ? (
+                  <div className="space-y-4">
+                    {selectedDoc.description.split(/\n(?=## )/).map((block) => {
+                      const lines = block.trim().split('\n')
+                      const heading = lines[0].replace(/^##\s*/, '').trim()
+                      const bullets = lines.slice(1).filter((l) => /^[-*]\s/.test(l.trim())).map((l) => l.replace(/^[-*]\s*/, '').trim())
+                      return (
+                        <div key={heading}>
+                          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">{heading}</p>
+                          <ul className="space-y-0.5">
+                            {bullets.map((b, i) => (
+                              <li key={i} className="text-sm text-gray-600 pl-3 flex gap-2"><span className="flex-shrink-0">·</span><span>{b}</span></li>
+                            ))}
+                          </ul>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No description yet.</p>
+                )}
+              </div>
+            </>
           )}
           </div>
         </main>

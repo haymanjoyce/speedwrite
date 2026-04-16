@@ -31,12 +31,20 @@ def complete(system, messages, max_tokens=4096, provider=None, byok_key=None):
 
 def _complete_anthropic(system: str, messages: list[dict], max_tokens: int, api_key: str = None, model: str = None) -> str:
     client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
-    response = client.messages.create(
-        model=model or FREE_MODEL,
-        max_tokens=max_tokens,
-        system=system,
-        messages=messages,
-    )
+    try:
+        response = client.messages.create(
+            model=model or FREE_MODEL,
+            max_tokens=max_tokens,
+            system=system,
+            messages=messages,
+        )
+    except anthropic.APIStatusError as e:
+        if e.status_code == 529:
+            raise HTTPException(
+                status_code=503,
+                detail="Anthropic's API is temporarily overloaded. Please try again in a moment."
+            )
+        raise
     return response.content[0].text
 
 

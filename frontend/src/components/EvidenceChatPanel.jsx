@@ -7,7 +7,6 @@ import MarkdownPreview from './MarkdownPreview'
 
 const isMac = navigator.platform.toUpperCase().includes('MAC')
 
-const TYPE_ICONS = { url: '🔗', file: '📄', text: '📝', document: '📋' }
 
 
 function truncateContext(text) {
@@ -49,29 +48,17 @@ function SourcePickerPopup({ sources, onSelect, onClose, anchorRef }) {
       className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-72 z-50"
     >
       <div className="max-h-48 overflow-y-auto">
+        <p className="text-xs text-gray-400 px-3 py-2">All sources are queried by default. Attach a source to focus on one only.</p>
         {(!sources || sources.length === 0) && (
           <p className="text-xs text-gray-400 px-3 py-2">No sources available.</p>
-        )}
-        {sources && sources.length > 0 && (
-          <>
-            <button
-              onClick={() => onSelect({ __allSources: true })}
-              className="text-sm font-medium text-gray-700 hover:bg-gray-50 rounded px-3 py-1.5 cursor-pointer w-full text-left flex items-center gap-2"
-            >
-              <span className="flex-shrink-0">📚</span>
-              <span>All sources</span>
-            </button>
-            <div className="border-t border-gray-100 my-1" />
-          </>
         )}
         {(sources || []).map((s, i) => (
           <button
             key={i}
             onClick={() => onSelect(s)}
-            className="text-sm text-gray-700 hover:bg-gray-50 rounded px-3 py-1.5 cursor-pointer w-full text-left flex items-center gap-2"
+            className="text-sm text-gray-700 hover:bg-gray-50 rounded px-3 py-1.5 cursor-pointer w-full text-left truncate"
           >
-            <span className="flex-shrink-0">{TYPE_ICONS[s.type] || '📄'}</span>
-            <span className="truncate">{s.title}</span>
+            {s.title}
           </button>
         ))}
       </div>
@@ -263,6 +250,16 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
       {/* Header */}
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
+        <button
+          onClick={() => { api.clearEvidenceChatHistory(docId).catch(console.error); setMessages([]) }}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+          title="Clear chat history"
+          aria-label="Clear chat history"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+            <path fillRule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5A.75.75 0 0 1 9.95 6Z" clipRule="evenodd" />
+          </svg>
+        </button>
       </div>
 
       {/* Messages */}

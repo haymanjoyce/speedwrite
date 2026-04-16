@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import get_actions_used, get_byok_key, get_current_user, increment_action_count
+from chat import _build_evidence_block
 from limits import FREE_ACTION_CAP
 from llm import complete
 from storage import load_document, save_document
@@ -15,9 +16,9 @@ _SYSTEM = """\
 You are an AI assistant helping the user analyse and understand their evidence sources. \
 You answer questions based on the evidence provided to you.
 
+{source_inventory}\
 {context_block}\
-If no evidence is attached, ask the user to attach a source using the + button before \
-asking questions. Be precise, cite which source your answer comes from when possible, \
+Be precise, cite which source your answer comes from when possible, \
 and acknowledge when information is not available in the provided sources.\
 """
 
@@ -31,6 +32,16 @@ class EvidenceChatRequest(BaseModel):
 
 class EvidenceChatResponse(BaseModel):
     message: str
+
+
+@router.delete("/{doc_id}/evidence-chat")
+def clear_evidence_chat_history(doc_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    doc["evidence_chat_history"] = []
+    save_document(doc)
+    return {"ok": True}
 
 
 @router.post("/{doc_id}/evidence-chat", response_model=EvidenceChatResponse)
@@ -48,7 +59,13 @@ def evidence_chat(doc_id: str, data: EvidenceChatRequest, user=Depends(get_curre
             )
     doc.setdefault("evidence_chat_history", [])
 
-    context_block = ""
+    evidence_items = doc.get("evidence", [])
+    if evidence_items:
+        lines = "\n".join(f"- {item['title']} ({item['type']})" for item in evidence_items)
+        source_inventory = f"Available sources ({len(evidence_items)} total):\n{lines}\n\n"
+    else:
+        source_inventory = ""
+
     if data.context:
         label = data.context_label or "Attached source"
         context_block = (
@@ -57,8 +74,10 @@ def evidence_chat(doc_id: str, data: EvidenceChatRequest, user=Depends(get_curre
             f"{data.context}\n"
             f"---\n\n"
         )
+    else:
+        context_block = _build_evidence_block(doc, data.message)
 
-    system_prompt = _SYSTEM.format(context_block=context_block)
+    system_prompt = _SYSTEM.format(source_inventory=source_inventory, context_block=context_block)
 
     if data.ignore_history:
         api_messages = []

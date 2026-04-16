@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 
-const TYPE_ICONS = { url: '🔗', file: '📄', text: '📝', document: '📋' }
-
 export default function AttachmentPopup({ headings, evidenceSources, onAttach, onClose, anchorRef }) {
   const [screen, setScreen] = useState('type')
   const [query, setQuery] = useState('')
@@ -91,7 +89,7 @@ export default function AttachmentPopup({ headings, evidenceSources, onAttach, o
         {screen === 'section' && filteredHeadings.map((h, i) => (
           <button
             key={i}
-            onClick={() => { onAttach(h.content, `📄 ${h.text}`, null); onClose() }}
+            onClick={() => { onAttach(h.content, h.text, null); onClose() }}
             className={`text-sm text-gray-700 hover:bg-gray-50 rounded py-1.5 cursor-pointer w-full text-left truncate ${
               h.level === 3 ? 'pl-7 pr-3' : 'pl-3 pr-3'
             }`}
@@ -99,17 +97,19 @@ export default function AttachmentPopup({ headings, evidenceSources, onAttach, o
             {h.text}
           </button>
         ))}
+        {screen === 'evidence' && (
+          <p className="text-xs text-gray-400 px-3 py-2">All sources are queried by default. Attach a source to focus on one only.</p>
+        )}
         {screen === 'evidence' && filteredSources.length === 0 && (
           <p className="text-xs text-gray-400 px-3 py-2">No sources found.</p>
         )}
         {screen === 'evidence' && filteredSources.map((s, i) => (
           <button
             key={i}
-            onClick={() => { onAttach(s.content || '', `📎 ${s.title}`, s.id); onClose() }}
-            className="text-sm text-gray-700 hover:bg-gray-50 rounded px-3 py-1.5 cursor-pointer w-full text-left flex items-center gap-2"
+            onClick={() => { onAttach(s.content || '', s.title, s.id); onClose() }}
+            className="text-sm text-gray-700 hover:bg-gray-50 rounded px-3 py-1.5 cursor-pointer w-full text-left truncate"
           >
-            <span className="flex-shrink-0">{TYPE_ICONS[s.type] || '📄'}</span>
-            <span className="truncate">{s.title}</span>
+            {s.title}
           </button>
         ))}
       </div>
