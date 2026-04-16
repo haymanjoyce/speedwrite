@@ -190,7 +190,6 @@ export default function Evidence() {
           { label: 'Images', active: false, onClick: () => navigate(`/document/${id}/images`) },
         ]}
         actions={[
-          { label: 'Add source', onClick: () => setShowModal(true), variant: 'primary' },
           {
             label: describeStatus === 'describing' ? 'Describing…' : describeStatus === 'done' ? 'Described ✓' : 'Describe',
             onClick: handleDescribe,
@@ -217,6 +216,7 @@ export default function Evidence() {
           }] : []),
           ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
           ...(selectedItem ? [{ label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' }] : []),
+          { label: 'Add source', onClick: () => setShowModal(true), variant: 'primary' },
         ]}
       />
       {pendingDelete && selectedItem && (

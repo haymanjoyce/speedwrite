@@ -140,12 +140,12 @@ export default function Home() {
       <ContextBar
         actions={[
           { label: 'Import', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing },
-          { label: 'New Document', onClick: handleNewDocument, variant: selectedDoc ? 'default' : 'primary' },
           { label: generateDescriptionStatus === 'generating' ? 'Describing…' : generateDescriptionStatus === 'done' ? 'Described ✓' : 'Describe', onClick: handleGenerateDescription, variant: 'default', disabled: !selectedDoc || generateDescriptionStatus !== 'idle' },
           { label: 'Rename', onClick: handleRename, variant: 'default', disabled: !selectedDoc },
           { label: 'Duplicate', onClick: handleDuplicate, variant: 'default', disabled: !selectedDoc },
           { label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default', disabled: !selectedDoc },
           { label: 'Open', onClick: () => navigate(`/document/${selectedDoc.id}`, { state: { doc: selectedDoc } }), variant: selectedDoc ? 'primary' : 'default', disabled: !selectedDoc },
+          { label: 'New Document', onClick: handleNewDocument, variant: selectedDoc ? 'default' : 'primary' },
         ]}
       />
       {pendingDelete && selectedDoc && (

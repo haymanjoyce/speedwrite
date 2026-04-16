@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
-import Button from '../components/Button'
 import ContextBar from '../components/ContextBar'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
@@ -17,7 +16,7 @@ export default function Images() {
   const [pendingDelete, setPendingDelete] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
-  const [copyLabel, setCopyLabel] = useState('Copy URL')
+  const [copyStatus, setCopyStatus] = useState('idle')
   const [showFeedback, setShowFeedback] = useState(false)
   const uploadInputRef = useRef(null)
   const prevBlobUrl = useRef(null)
@@ -102,8 +101,8 @@ export default function Images() {
   const handleCopyUrl = () => {
     const markdown = `![${selectedImage.filename}](${api.getImageUrl(id, selectedImage.filename)})`
     navigator.clipboard.writeText(markdown).then(() => {
-      setCopyLabel('Copied!')
-      setTimeout(() => setCopyLabel('Copy URL'), 2000)
+      setCopyStatus('copied')
+      setTimeout(() => setCopyStatus('idle'), 3000)
     }).catch(console.error)
   }
 
@@ -125,7 +124,9 @@ export default function Images() {
           { label: 'Images', active: true, onClick: () => {} },
         ]}
         actions={[
-          { label: uploading ? 'Uploading…' : 'Upload Image', onClick: () => uploadInputRef.current.click(), variant: 'default', disabled: uploading },
+          { label: copyStatus === 'copied' ? 'Copied ✓' : 'Copy URL', onClick: handleCopyUrl, variant: 'default', disabled: !selectedImage },
+          { label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default', disabled: !selectedImage },
+          { label: uploading ? 'Uploading…' : 'Upload Image', onClick: () => uploadInputRef.current.click(), variant: 'primary', disabled: uploading },
         ]}
       />
       {uploadError && (
@@ -182,12 +183,6 @@ export default function Images() {
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               {selectedImage ? selectedImage.filename : 'Image Detail'}
             </span>
-            {selectedImage && (
-              <div className="ml-auto flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={handleCopyUrl}>{copyLabel}</Button>
-                <Button variant="danger" size="sm" onClick={() => setPendingDelete(true)}>Delete</Button>
-              </div>
-            )}
           </div>
           <div className="flex-1 overflow-y-auto p-6 flex items-start justify-center">
             {selectedImage && blobUrl && (
