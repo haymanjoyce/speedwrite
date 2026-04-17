@@ -25,7 +25,7 @@ from models import (
     UserLogin,
     UserOut,
 )
-from storage import DATA_DIR, DOCS_DIR, load_users, save_users
+from storage import DATA_DIR, DOCS_DIR, load_users, save_document, save_users, load_welcome_template
 
 router = APIRouter(prefix="/auth")
 
@@ -144,6 +144,33 @@ def register(data: UserCreate):
     }
     users.append(user)
     save_users(users)
+    template = load_welcome_template()
+    if template:
+        import re, uuid as _uuid
+        from datetime import datetime as _dt
+        h1 = re.search(r"^#\s+(.+)$", template, re.MULTILINE)
+        title = h1.group(1).strip() if h1 else "Getting Started"
+        now = _dt.utcnow().isoformat()
+        doc = {
+            "id": str(_uuid.uuid4()),
+            "user_id": user["id"],
+            "title": title,
+            "content": template,
+            "description": "",
+            "created_at": now,
+            "updated_at": now,
+            "evidence": [],
+            "audit_log": [],
+            "shared_with": [],
+            "protected_sections": [],
+            "evidence_chat_history": [],
+            "history": [],
+            "save_count": 0,
+        }
+        try:
+            save_document(doc)
+        except Exception:
+            pass
     return Token(access_token=create_token(user["id"]), token_type="bearer")
 
 

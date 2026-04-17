@@ -69,6 +69,8 @@ export const api = {
   deleteDocument: (id) => request('DELETE', `/documents/${id}`),
   duplicateDocument: (id) => request('POST', `/documents/${id}/duplicate`),
 
+  saveAsWelcome: (docId) => request('POST', '/documents/save-as-welcome', { doc_id: docId }),
+
   importDocument: async (file) => {
     const form = new FormData()
     form.append('file', file)

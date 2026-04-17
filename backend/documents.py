@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from auth import get_current_user
 from models import Document, DocumentCreate, DocumentUpdate
-from storage import DOCS_DIR, delete_document, list_documents, load_document, save_document
+from storage import DOCS_DIR, delete_document, list_documents, load_document, save_document, save_welcome_template
 
 router = APIRouter(prefix="/documents")
 
@@ -111,6 +111,21 @@ async def import_document(file: UploadFile = File(...), user=Depends(get_current
     }
     save_document(doc)
     return doc
+
+
+class SaveAsWelcomeRequest(BaseModel):
+    doc_id: str
+
+
+@router.post("/save-as-welcome")
+def save_as_welcome(data: SaveAsWelcomeRequest, user=Depends(get_current_user)):
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    doc = load_document(user["id"], data.doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    save_welcome_template(doc.get("content", ""))
+    return {"ok": True}
 
 
 @router.post("/{doc_id}/duplicate", response_model=Document)

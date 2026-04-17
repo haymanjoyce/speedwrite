@@ -5,6 +5,18 @@ from pathlib import Path
 DATA_DIR = Path(os.getenv("DATA_DIR", "/var/speedwrite"))
 USERS_FILE = DATA_DIR / "users.json"
 DOCS_DIR = DATA_DIR / "documents"
+WELCOME_TEMPLATE_PATH = DATA_DIR / "welcome_document.md"
+
+
+def load_welcome_template() -> str | None:
+    if not WELCOME_TEMPLATE_PATH.exists():
+        return None
+    return WELCOME_TEMPLATE_PATH.read_text(encoding="utf-8")
+
+
+def save_welcome_template(content: str) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    WELCOME_TEMPLATE_PATH.write_text(content, encoding="utf-8")
 
 
 def load_users() -> list:

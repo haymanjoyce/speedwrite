@@ -49,6 +49,7 @@ export default function Document() {
   const [restoreSnapshotLabel, setRestoreSnapshotLabel] = useState(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [saveVersionStatus, setSaveVersionStatus] = useState('idle') // idle | saving | saved
+  const [welcomeSaveStatus, setWelcomeSaveStatus] = useState('idle') // idle | saving | saved
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
 
@@ -145,6 +146,18 @@ export default function Document() {
   }
 
 
+  const handleSaveAsWelcome = async () => {
+    setWelcomeSaveStatus('saving')
+    try {
+      await api.saveAsWelcome(id)
+      setWelcomeSaveStatus('saved')
+      setTimeout(() => setWelcomeSaveStatus('idle'), 3000)
+    } catch (err) {
+      console.error('Save as welcome failed', err)
+      setWelcomeSaveStatus('idle')
+    }
+  }
+
   const handleExport = async (format) => {
     try {
       await api.downloadExport(id, format)
@@ -218,6 +231,15 @@ export default function Document() {
                 >
                   {saveVersionStatus === 'saving' ? 'Saving…' : saveVersionStatus === 'saved' ? 'Saved ✓' : 'Save version'}
                 </button>
+                {user?.is_admin && (
+                  <button
+                    onClick={handleSaveAsWelcome}
+                    disabled={welcomeSaveStatus === 'saving'}
+                    className="text-xs rounded px-3 py-1 border border-gray-200 font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:text-gray-400 transition-colors"
+                  >
+                    {welcomeSaveStatus === 'saving' ? 'Saving…' : welcomeSaveStatus === 'saved' ? 'Saved ✓' : 'Save as welcome'}
+                  </button>
+                )}
                 <ActionsDropdown
                   title="Export ▾"
                   actions={[
