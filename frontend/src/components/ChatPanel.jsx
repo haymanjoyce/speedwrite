@@ -387,7 +387,7 @@ const ChatPanel = forwardRef(function ChatPanel({
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isCapped}
                 title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
-                className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors font-medium flex-shrink-0"
+                className="text-xs bg-gray-900 hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors font-medium flex-shrink-0"
               >
                 Send
               </button>

@@ -40,7 +40,7 @@ export default function FeedbackBar({ onClose }) {
             placeholder="Suggest an improvement..."
             maxLength={2000}
             disabled={sending}
-            className="flex-1 border border-gray-200 rounded px-3 py-1 text-sm text-gray-800 outline-none focus:border-blue-400 transition-colors bg-white disabled:opacity-60"
+            className="flex-1 border border-gray-200 rounded px-3 py-1 text-sm text-gray-800 outline-none focus:border-gray-400 transition-colors bg-white disabled:opacity-60"
           />
           {status === 'error' && (
             <span className="text-xs text-red-500 flex-shrink-0">Failed to send — please try again</span>
@@ -48,7 +48,7 @@ export default function FeedbackBar({ onClose }) {
           <button
             onClick={handleSubmit}
             disabled={sending || !message.trim()}
-            className="rounded px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="rounded px-3 py-1 text-sm bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {sending ? 'Sending…' : 'Send'}
           </button>

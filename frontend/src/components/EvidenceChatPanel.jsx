@@ -403,7 +403,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isCapped}
                 title={isCapped ? 'Monthly action limit reached — add your Anthropic API key in Account settings' : undefined}
-                className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
+                className="text-xs bg-gray-900 hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400 text-white px-3 py-1.5 rounded transition-colors flex-shrink-0 font-medium"
               >
                 Send
               </button>

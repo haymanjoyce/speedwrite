@@ -66,6 +66,12 @@ export default function Document() {
       setDoc(data)
       setProtectedSections(data.protected_sections ?? [])
       setStructureLocked(data.structure_locked ?? false)
+      const saved = localStorage.getItem(`editorMode:${id}`)
+      if (saved === 'edit' || saved === 'preview') {
+        setEditorMode(saved)
+      } else {
+        setEditorMode(data.content?.trim() ? 'preview' : 'edit')
+      }
       if (location.state?.restoreContent) {
         setPendingProposal(location.state.restoreContent)
         setPendingProposalReason('restore')
@@ -212,7 +218,10 @@ export default function Document() {
               <SegmentedControl
                 options={[{ value: 'edit', label: 'Edit' }, { value: 'preview', label: 'Preview' }]}
                 value={editorMode}
-                onChange={setEditorMode}
+                onChange={(mode) => {
+                  setEditorMode(mode)
+                  localStorage.setItem(`editorMode:${id}`, mode)
+                }}
               />
             )}
             {!pendingProposal && (

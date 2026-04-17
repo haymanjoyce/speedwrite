@@ -144,6 +144,7 @@ Main views:
 
 - `SegmentedControl` in the Document page ContextBar `rightControls`. Not rendered (hidden entirely) when `pendingProposal` is truthy.
 - `Editor.jsx` no longer contains the toggle or `onEditorModeChange` prop — it receives `editorMode` read-only.
+- Mode is persisted to `localStorage` under the key `editorMode:{docId}` and restored on load. Default when no saved value: `'preview'` if the document has content, `'edit'` if empty/whitespace-only.
 
 ## Editor Autosave
 
