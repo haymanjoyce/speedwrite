@@ -139,7 +139,7 @@ export default function Home() {
       {showFeedback && <FeedbackBar onClose={() => setShowFeedback(false)} />}
       <ContextBar
         actions={[
-          { label: 'Import', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing },
+          { label: 'Import', onClick: () => importInputRef.current.click(), variant: 'default', disabled: importing, title: 'Supports .docx, .md, .txt' },
           { label: generateDescriptionStatus === 'generating' ? 'Describing…' : generateDescriptionStatus === 'done' ? 'Described ✓' : 'Describe', onClick: handleGenerateDescription, variant: 'default', disabled: !selectedDoc || generateDescriptionStatus !== 'idle' },
           { label: 'Rename', onClick: handleRename, variant: 'default', disabled: !selectedDoc },
           { label: 'Duplicate', onClick: handleDuplicate, variant: 'default', disabled: !selectedDoc },
@@ -282,7 +282,7 @@ export default function Home() {
           </div>
         </main>
       </div>
-      <input ref={importInputRef} type="file" accept=".docx" className="hidden" onChange={handleImport} />
+      <input ref={importInputRef} type="file" accept=".docx,.md,.txt" className="hidden" onChange={handleImport} />
     </div>
   )
 }

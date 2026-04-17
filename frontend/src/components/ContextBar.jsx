@@ -24,6 +24,7 @@ export default function ContextBar({ actions = [], controls, rightControls, tabs
             key={i}
             onClick={action.onClick}
             disabled={action.disabled}
+            title={action.title}
             className={`text-xs rounded px-3 py-1 transition-colors ${action.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${
               action.variant === 'primary'
                 ? 'font-medium text-white bg-gray-900 border border-gray-900 hover:bg-gray-800'

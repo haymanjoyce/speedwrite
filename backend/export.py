@@ -101,6 +101,20 @@ def export_txt(doc_id: str, user=Depends(get_current_user)):
     )
 
 
+@router.get("/{doc_id}/export/md")
+def export_md(doc_id: str, user=Depends(get_current_user)):
+    doc = load_document(user["id"], doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    content = doc.get("content", "")
+    filename = _sanitise_filename(doc.get("title", "document")) + ".md"
+    return Response(
+        content=content.encode("utf-8"),
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/{doc_id}/export/pdf")
 def export_pdf(doc_id: str, user=Depends(get_current_user)):
     import markdown as md

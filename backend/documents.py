@@ -66,27 +66,31 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
 
 @router.post("/import", response_model=Document)
 async def import_document(file: UploadFile = File(...), user=Depends(get_current_user)):
-    if not file.filename or not file.filename.lower().endswith(".docx"):
-        raise HTTPException(status_code=400, detail="Only .docx files are supported")
+    fname = (file.filename or "").lower()
+    if not any(fname.endswith(ext) for ext in (".docx", ".md", ".txt")):
+        raise HTTPException(status_code=400, detail="Only .docx, .md, and .txt files are supported")
 
-    raw_title = file.filename[:-5]  # strip .docx
+    raw_title = file.filename.rsplit(".", 1)[0]
     title = raw_title.strip()[:200] or "Untitled"
 
     data = await file.read()
-    source = io.BytesIO(data)
 
-    result = mammoth.convert_to_html(source, convert_image=mammoth.images.img_element(lambda image: {}))
-    html = result.value
+    if fname.endswith(".docx"):
+        source = io.BytesIO(data)
+        result = mammoth.convert_to_html(source, convert_image=mammoth.images.img_element(lambda image: {}))
+        html = result.value
 
-    converter = html2text.HTML2Text()
-    converter.ignore_links = False
-    converter.body_width = 0  # disable line wrapping
-    content = converter.handle(html).strip()
+        converter = html2text.HTML2Text()
+        converter.ignore_links = False
+        converter.body_width = 0  # disable line wrapping
+        content = converter.handle(html).strip()
 
-    if not content:
-        source.seek(0)
-        raw = mammoth.extract_raw_text(source)
-        content = f"# {title}\n\n{raw.value.strip()}"
+        if not content:
+            source.seek(0)
+            raw = mammoth.extract_raw_text(source)
+            content = f"# {title}\n\n{raw.value.strip()}"
+    else:
+        content = data.decode("utf-8", errors="replace").strip()
 
     now = datetime.utcnow().isoformat()
     doc = {

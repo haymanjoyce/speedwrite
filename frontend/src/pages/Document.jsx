@@ -222,6 +222,7 @@ export default function Document() {
                   title="Export ▾"
                   actions={[
                     { action: 'txt', label: '.txt' },
+                    { action: 'md', label: '.md' },
                     { action: 'pdf', label: '.pdf' },
                   ]}
                   onAction={(fmt) => handleExport(fmt)}
