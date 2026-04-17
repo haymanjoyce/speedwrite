@@ -6,10 +6,10 @@ export default function ContextBar({ actions = [], controls, rightControls, tabs
           <button
             key={i}
             onClick={tab.onClick}
-            className={`text-sm px-1 cursor-pointer ${
+            className={`text-sm px-1 cursor-pointer self-stretch flex items-center border-b-2 ${
               tab.active
-                ? 'text-gray-900 font-semibold'
-                : 'text-gray-400 hover:text-gray-700 transition-colors'
+                ? 'text-gray-900 border-gray-900'
+                : 'text-gray-400 border-transparent hover:text-gray-700 hover:border-gray-300 transition-colors'
             }`}
           >
             {tab.label}
@@ -26,7 +26,7 @@ export default function ContextBar({ actions = [], controls, rightControls, tabs
             disabled={action.disabled}
             className={`text-xs rounded px-3 py-1 transition-colors ${action.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${
               action.variant === 'primary'
-                ? 'font-medium text-white bg-blue-600 border border-blue-600 hover:bg-blue-700'
+                ? 'font-medium text-white bg-gray-900 border border-gray-900 hover:bg-gray-800'
                 : action.variant === 'danger'
                 ? 'font-medium text-red-600 border border-red-200 hover:bg-red-50'
                 : 'font-medium bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-200'

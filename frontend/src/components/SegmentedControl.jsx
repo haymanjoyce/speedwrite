@@ -9,7 +9,7 @@ export default function SegmentedControl({ options, value, onChange }) {
             i === 0 ? 'rounded-l' : 'rounded-r border-l-0'
           } ${
             value === opt.value
-              ? 'bg-blue-600 text-white border-blue-700'
+              ? 'bg-gray-900 text-white border-gray-900'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors'
           }`}
         >

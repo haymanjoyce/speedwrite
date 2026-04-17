@@ -77,7 +77,7 @@ export default function AddSourceModal({ onAdd, onClose, docId }) {
                 onClick={() => setType(t.id)}
                 className={`flex-1 rounded border py-2 px-2 text-xs transition-colors ${
                   type === t.id
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    ? 'border-gray-400 bg-gray-100 text-gray-800'
                     : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}
               >
@@ -149,7 +149,7 @@ export default function AddSourceModal({ onAdd, onClose, docId }) {
                       onClick={() => setSelectedDocId(doc.id)}
                       className={`px-3 py-2 cursor-pointer text-sm transition-colors ${
                         doc.id === selectedDocId
-                          ? 'bg-blue-50 text-blue-700'
+                          ? 'bg-gray-100 text-gray-800'
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >

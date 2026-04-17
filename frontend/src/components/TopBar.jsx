@@ -42,13 +42,13 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
   }
 
   return (
-    <div className="h-11 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
+    <div className="h-11 bg-gray-900 flex items-center justify-between px-4 flex-shrink-0">
       <div className="flex items-center text-sm min-w-0 overflow-hidden whitespace-nowrap" title={breadcrumbTitle}>
         {showBack ? (
           <>
             <button
               onClick={() => navigate('/home')}
-              className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0 text-base leading-none px-1"
+              className="text-gray-400 hover:text-white transition-colors flex-shrink-0 text-base leading-none px-1"
               title="Back to library"
             >
               ←
@@ -65,19 +65,19 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
                   onKeyDown={handleKeyDown}
                   onBlur={() => onRenameSave?.(inputValue.trim())}
                   size={Math.max(10, inputValue.length + 2)}
-                  className="text-gray-900 border-b border-blue-400 outline-none bg-transparent"
+                  className="text-white border-b border-gray-500 outline-none bg-transparent"
                 />
               ) : (
-                <span className="text-gray-900 truncate max-w-xs">{docTitle}</span>
+                <span className="text-white truncate max-w-xs">{docTitle}</span>
               )
             )}
             {!docTitle && pageTitle && (
-              <span className="text-gray-900 truncate max-w-xs">{pageTitle}</span>
+              <span className="text-white truncate max-w-xs">{pageTitle}</span>
             )}
           </>
         ) : docTitle ? (
           <>
-            <Link to="/home" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
+            <Link to="/home" className="text-gray-400 hover:text-white font-semibold tracking-tight transition-colors flex-shrink-0">
               SpeedWrite
             </Link>
             <span className="mx-2 flex-shrink-0" />
@@ -91,29 +91,29 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
                 onKeyDown={handleKeyDown}
                 onBlur={() => onRenameSave?.(inputValue.trim())}
                 size={Math.max(10, inputValue.length + 2)}
-                className="text-gray-900 border-b border-blue-400 outline-none bg-transparent"
+                className="text-white border-b border-gray-500 outline-none bg-transparent"
               />
             ) : (
-              <span className="text-gray-900 truncate max-w-xs">{docTitle}</span>
+              <span className="text-white truncate max-w-xs">{docTitle}</span>
             )}
           </>
         ) : pageTitle ? (
           <>
-            <Link to="/home" className="text-gray-400 hover:text-gray-700 font-semibold tracking-tight transition-colors flex-shrink-0">
+            <Link to="/home" className="text-gray-400 hover:text-white font-semibold tracking-tight transition-colors flex-shrink-0">
               SpeedWrite
             </Link>
             <span className="mx-2 flex-shrink-0" />
-            <span className="text-gray-900 truncate max-w-xs">{pageTitle}</span>
+            <span className="text-white truncate max-w-xs">{pageTitle}</span>
           </>
         ) : (
-          <span className="text-gray-900 font-semibold tracking-tight">SpeedWrite</span>
+          <span className="text-white font-semibold tracking-tight">SpeedWrite</span>
         )}
       </div>
       <div className="flex items-center gap-3">
         <button
           onClick={openSearch}
           title={`Search (${isMac ? '⌘K' : 'Ctrl+K'})`}
-          className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -123,7 +123,7 @@ export default function TopBar({ user, onLogout, docTitle, isRenaming, onRenameS
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen((v) => !v)}
-              className="flex items-center gap-1 text-sm text-gray-600 cursor-pointer hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1 text-sm text-gray-300 cursor-pointer hover:text-white transition-colors"
             >
               {user.display_name || user.email}
               <span className="text-gray-400 text-xs">▾</span>

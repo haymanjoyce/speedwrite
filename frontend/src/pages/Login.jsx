@@ -23,7 +23,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">SpeedWrite</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-6">Sign in</h1>
         <form onSubmit={submit} className="space-y-4">
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <div>
