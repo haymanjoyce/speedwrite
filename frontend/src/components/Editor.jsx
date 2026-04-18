@@ -12,6 +12,7 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
   const [findIndex, setFindIndex] = useState(0)
   const saveTimer = useRef(null)
   const textareaRef = useRef(null)
+  const previewContainerRef = useRef(null)
 
   const findMatches = useMemo(() => {
     if (!findQuery) return []
@@ -118,6 +119,17 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
   }
 
   useImperativeHandle(ref, () => ({
+    scrollToHeadingPreview(headingText) {
+      const container = previewContainerRef.current
+      if (!container) return
+      const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6')
+      for (const el of headings) {
+        if (el.textContent.trim() === headingText) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          return
+        }
+      }
+    },
     scrollToHeading(headingText) {
       const el = textareaRef.current
       if (!el) return
@@ -262,7 +274,9 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
       {pendingProposal ? (
         <DiffView originalContent={content} proposedContent={pendingProposal} protectedSections={protectedSections} structureLocked={structureLocked} />
       ) : editorMode === 'preview' ? (
-        <MarkdownPreview content={content} protectedSections={protectedSections} structureLocked={structureLocked} />
+        <div ref={previewContainerRef} className="flex-1 flex flex-col overflow-hidden">
+          <MarkdownPreview content={content} protectedSections={protectedSections} structureLocked={structureLocked} />
+        </div>
       ) : (
         <textarea
           ref={textareaRef}

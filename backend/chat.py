@@ -227,7 +227,7 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     raw_text = complete(
         system=system_prompt,
         messages=api_messages,
-        max_tokens=4096,
+        max_tokens=8192,
         provider=data.provider,
         byok_key=byok_key,
     )
@@ -248,6 +248,8 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
             raw_text,
             flags=re.DOTALL,
         ).strip()
+    elif re.search(r"<proposed_document", raw_text) and "</proposed_document>" not in raw_text:
+        clean_message = "The proposed document was too large to return in full. Please use Add to chat to select a specific section and try again."
     now = datetime.utcnow().isoformat()
     doc["chat_history"].append(
         {"role": "user", "content": data.message, "context_label": data.context_label, "timestamp": now}

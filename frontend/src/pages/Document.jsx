@@ -266,7 +266,7 @@ export default function Document() {
       <div className="flex flex-1 overflow-hidden">
         <DocumentSidebar
           document={doc}
-          onHeadingClick={(text) => editorRef.current?.scrollToHeading(text)}
+          onHeadingClick={(text) => editorMode === 'preview' ? editorRef.current?.scrollToHeadingPreview(text) : editorRef.current?.scrollToHeading(text)}
           onSectionRewrite={handleSectionAddToChat}
           protectedSections={protectedSections}
           onToggleProtection={handleToggleProtection}
