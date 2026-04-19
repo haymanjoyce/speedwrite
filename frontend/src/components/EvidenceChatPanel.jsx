@@ -84,6 +84,17 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
   const textareaRef = useRef(null)
   const plusButtonRef = useRef(null)
   const abortControllerRef = useRef(null)
+  const sentFingerprintRef = useRef(null)
+
+  const getActiveFingerprint = () =>
+    (evidenceSources || [])
+      .filter((s) => s.active !== false)
+      .map((s) => s.id)
+      .sort()
+      .join(',')
+
+  const staleContext = sentFingerprintRef.current !== null &&
+    sentFingerprintRef.current !== getActiveFingerprint()
 
   useEffect(() => {
     const history = document?.evidence_chat_history ?? []
@@ -190,6 +201,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
     const contextLabel = contextSnapshot?.label ?? null
     const hasContext = !!contextSnapshot?.text
 
+    sentFingerprintRef.current = getActiveFingerprint()
     setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])
     setInput('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -251,9 +263,9 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>
         <button
-          onClick={() => { api.clearEvidenceChatHistory(docId).catch(console.error); setMessages([]) }}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-          title="Clear chat history"
+          onClick={() => { sentFingerprintRef.current = null; api.clearEvidenceChatHistory(docId).catch(console.error); setMessages([]) }}
+          className={`transition-colors ${staleContext ? 'text-gray-900 hover:text-gray-600' : 'text-gray-400 hover:text-gray-600'}`}
+          title={staleContext ? 'Chat may be referencing deactivated sources. Clear to start fresh.' : 'Clear chat history'}
           aria-label="Clear chat history"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">

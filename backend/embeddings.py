@@ -152,6 +152,7 @@ def remove_evidence_chunks(user_id: str, doc_id: str, evidence_id: str) -> None:
 def retrieve_relevant_chunks(
     user_id: str, doc_id: str, query: str, k: int = 5,
     evidence_id: Optional[str] = None,
+    active_ids: Optional[set] = None,
 ) -> list[dict]:
     query_embedding = embed_text(query)
     if query_embedding is None:
@@ -161,6 +162,8 @@ def retrieve_relevant_chunks(
         return []
     if evidence_id is not None:
         chunks = [c for c in chunks if c["evidence_id"] == evidence_id]
+    if active_ids is not None:
+        chunks = [c for c in chunks if c["evidence_id"] in active_ids]
     if not chunks:
         return []
     scored = [

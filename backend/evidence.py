@@ -84,6 +84,7 @@ class EvidenceItem(BaseModel):
     synced_at: Optional[str] = None
     last_fetched_at: Optional[str] = None
     last_fetch_error: Optional[str] = None
+    active: Optional[bool] = None
 
 
 class EvidenceItemFull(EvidenceItem):

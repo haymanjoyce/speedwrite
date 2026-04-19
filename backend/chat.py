@@ -144,7 +144,8 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
 
     if query and total_len > RAG_THRESHOLD_CHARS:
         try:
-            chunks = retrieve_relevant_chunks(doc["user_id"], doc["id"], query)
+            active_ids = {i["id"] for i in other_sources}
+            chunks = retrieve_relevant_chunks(doc["user_id"], doc["id"], query, active_ids=active_ids)
             if chunks:
                 rag_parts = ["Relevant evidence (semantically retrieved):"]
                 for chunk in chunks:

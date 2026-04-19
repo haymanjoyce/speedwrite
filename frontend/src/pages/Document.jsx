@@ -70,7 +70,7 @@ export default function Document() {
       if (saved === 'edit' || saved === 'preview') {
         setEditorMode(saved)
       } else {
-        setEditorMode(data.content?.trim() ? 'preview' : 'edit')
+        setEditorMode((data.content?.trim().length ?? 0) > 50 ? 'preview' : 'edit')
       }
       if (location.state?.restoreContent) {
         setPendingProposal(location.state.restoreContent)
