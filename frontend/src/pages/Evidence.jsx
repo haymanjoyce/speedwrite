@@ -231,6 +231,11 @@ export default function Evidence() {
           items={items}
           selectedId={selectedItem?.id}
           onSelect={handleSelect}
+          docId={id}
+          onItemUpdate={(updated) => {
+            setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+            if (selectedItem?.id === updated.id) setSelectedItem(updated)
+          }}
         />
         <SourceDetail
           item={selectedItem}

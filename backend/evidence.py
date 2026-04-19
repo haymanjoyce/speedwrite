@@ -106,6 +106,7 @@ class AddDocumentRequest(BaseModel):
 
 class UpdateEvidenceRequest(BaseModel):
     sync: Optional[bool] = None
+    active: Optional[bool] = None
 
 
 class RagQueryRequest(BaseModel):
@@ -305,6 +306,8 @@ def update_evidence_item(doc_id: str, evidence_id: str, data: UpdateEvidenceRequ
 
     if data.sync is not None:
         item["sync"] = data.sync
+    if data.active is not None:
+        item["active"] = data.active
     save_document(doc)
     return item
 

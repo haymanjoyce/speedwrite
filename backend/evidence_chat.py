@@ -59,7 +59,7 @@ def evidence_chat(doc_id: str, data: EvidenceChatRequest, user=Depends(get_curre
             )
     doc.setdefault("evidence_chat_history", [])
 
-    evidence_items = doc.get("evidence", [])
+    evidence_items = [i for i in doc.get("evidence", []) if i.get("active", True)]
     if evidence_items:
         lines = "\n".join(f"- {item['title']} ({item['type']})" for item in evidence_items)
         source_inventory = f"Available sources ({len(evidence_items)} total):\n{lines}\n\n"

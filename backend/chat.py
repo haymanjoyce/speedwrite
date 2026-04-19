@@ -115,7 +115,7 @@ def _build_protected_block(doc: dict) -> str:
 
 
 def _build_evidence_block(doc: dict, query: str = "") -> str:
-    items = doc.get("evidence", [])
+    items = [i for i in doc.get("evidence", []) if i.get("active", True)]
     if not items:
         return ""
 
