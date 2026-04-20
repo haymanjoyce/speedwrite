@@ -80,8 +80,6 @@ class EvidenceItem(BaseModel):
     file_size: Optional[int] = None
     created_at: str
     source_doc_id: Optional[str] = None
-    sync: Optional[bool] = None
-    synced_at: Optional[str] = None
     last_fetched_at: Optional[str] = None
     last_fetch_error: Optional[str] = None
     active: Optional[bool] = None
@@ -106,7 +104,6 @@ class AddDocumentRequest(BaseModel):
 
 
 class UpdateEvidenceRequest(BaseModel):
-    sync: Optional[bool] = None
     active: Optional[bool] = None
 
 
@@ -276,8 +273,6 @@ def add_evidence_document(doc_id: str, data: AddDocumentRequest, user=Depends(ge
         "title": source.get("title", "Untitled"),
         "source_doc_id": data.source_doc_id,
         "content": source.get("content", ""),
-        "sync": True,
-        "synced_at": now,
         "url": None,
         "filename": None,
         "file_size": None,
@@ -286,11 +281,7 @@ def add_evidence_document(doc_id: str, data: AddDocumentRequest, user=Depends(ge
     doc.setdefault("evidence", [])
     doc["evidence"].append(item)
     save_document(doc)
-    # Only index snapshot (sync=off) — live sources are fetched at chat time
-    if not item.get("sync"):
-        index_evidence_background(
-            user["id"], doc_id, evidence_id, item["title"], item["content"]
-        )
+    index_evidence_background(user["id"], doc_id, evidence_id, item["title"], item["content"])
     return item
 
 
@@ -305,34 +296,8 @@ def update_evidence_item(doc_id: str, evidence_id: str, data: UpdateEvidenceRequ
     if not item:
         raise HTTPException(status_code=404, detail="Evidence item not found")
 
-    if data.sync is not None:
-        item["sync"] = data.sync
     if data.active is not None:
         item["active"] = data.active
-    save_document(doc)
-    return item
-
-
-@router.post("/{doc_id}/evidence/{evidence_id}/sync", response_model=EvidenceItemFull)
-def sync_evidence_item(doc_id: str, evidence_id: str, user=Depends(get_current_user)):
-    doc = load_document(user["id"], doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    items = doc.get("evidence", [])
-    item = next((i for i in items if i["id"] == evidence_id), None)
-    if not item:
-        raise HTTPException(status_code=404, detail="Evidence item not found")
-    if item.get("type") != "document":
-        raise HTTPException(status_code=400, detail="Only document-type evidence can be synced")
-
-    source = load_document(user["id"], item["source_doc_id"])
-    if not source:
-        raise HTTPException(status_code=404, detail="Source document not found")
-
-    item["content"] = source.get("content", "")
-    item["title"] = source.get("title", item["title"])
-    item["synced_at"] = datetime.utcnow().isoformat()
     save_document(doc)
     return item
 
@@ -363,25 +328,37 @@ def refresh_evidence(doc_id: str, evidence_id: str, user=Depends(get_current_use
     item = next((i for i in items if i["id"] == evidence_id), None)
     if not item:
         raise HTTPException(status_code=404, detail="Evidence item not found")
-    if item.get("type") != "url":
-        raise HTTPException(status_code=400, detail="Only URL sources can be refreshed")
 
-    try:
-        _, content = _fetch_url(item["url"])
+    item_type = item.get("type")
+
+    if item_type == "url":
+        try:
+            _, content = _fetch_url(item["url"])
+            item["content"] = content
+            item["last_fetched_at"] = datetime.utcnow().isoformat()
+            item["last_fetch_error"] = None
+            save_document(doc)
+            index_evidence_background(user["id"], doc_id, evidence_id, item["title"], content)
+        except httpx.HTTPStatusError as e:
+            item["last_fetch_error"] = f"{e.response.status_code} {e.response.reason_phrase}"
+            save_document(doc)
+        except httpx.TimeoutException:
+            item["last_fetch_error"] = "Connection timeout"
+            save_document(doc)
+        except Exception:
+            item["last_fetch_error"] = "Fetch failed"
+            save_document(doc)
+    elif item_type == "document":
+        source = load_document(user["id"], item["source_doc_id"])
+        if not source:
+            raise HTTPException(status_code=404, detail="Source document not found")
+        content = source.get("content", "")
         item["content"] = content
         item["last_fetched_at"] = datetime.utcnow().isoformat()
-        item["last_fetch_error"] = None
         save_document(doc)
         index_evidence_background(user["id"], doc_id, evidence_id, item["title"], content)
-    except httpx.HTTPStatusError as e:
-        item["last_fetch_error"] = f"{e.response.status_code} {e.response.reason_phrase}"
-        save_document(doc)
-    except httpx.TimeoutException:
-        item["last_fetch_error"] = "Connection timeout"
-        save_document(doc)
-    except Exception:
-        item["last_fetch_error"] = "Fetch failed"
-        save_document(doc)
+    else:
+        raise HTTPException(status_code=400, detail="Only URL and document sources can be refreshed")
 
     return item
 

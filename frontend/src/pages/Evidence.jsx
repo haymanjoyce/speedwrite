@@ -23,7 +23,8 @@ export default function Evidence() {
   const [describeStatus, setDescribeStatus] = useState('idle') // idle | describing | done
   const [pendingDelete, setPendingDelete] = useState(false)
   const [refreshingId, setRefreshingId] = useState(null)
-  const [updatingAllSources, setUpdatingAllSources] = useState(false)
+  const [updateSourceDoneId, setUpdateSourceDoneId] = useState(null)
+  const [updateAllStatus, setUpdateAllStatus] = useState('idle') // idle | updating | done
   const initialSelectDoneRef = useRef(false)
 
   useEffect(() => {
@@ -84,31 +85,6 @@ export default function Evidence() {
     setSelectedItem(newItem)
   }
 
-  const handleSync = async () => {
-    try {
-      const updated = await api.syncEvidence(id, selectedItem.id)
-      setSelectedItem(updated)
-      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-    } catch (err) {
-      console.error('Sync failed', err)
-    }
-  }
-
-  const handleFetchLiveContent = async () => {
-    const sourceDoc = await api.getDocument(selectedItem.source_doc_id)
-    return sourceDoc.content ?? ''
-  }
-
-  const handleToggleSync = async (syncOn) => {
-    try {
-      const updated = await api.updateEvidence(id, selectedItem.id, { sync: syncOn })
-      setSelectedItem(updated)
-      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-    } catch (err) {
-      console.error('Toggle sync failed', err)
-    }
-  }
-
   const handleDescribe = async () => {
     if (!selectedItem) return
     setDescribeStatus('describing')
@@ -136,28 +112,45 @@ export default function Evidence() {
     }
   }
 
+  // Returns true on success, false on error — used by both single and bulk update handlers.
   const handleRefresh = async (evidenceId) => {
     setRefreshingId(evidenceId)
     try {
       const updated = await api.refreshEvidence(id, evidenceId)
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
       if (selectedItem?.id === evidenceId) setSelectedItem(updated)
+      return true
     } catch (err) {
       console.error('Refresh failed', err)
+      return false
     } finally {
       setRefreshingId(null)
     }
   }
 
+  const handleUpdateSource = async () => {
+    if (!selectedItem) return
+    const targetId = selectedItem.id
+    const success = await handleRefresh(targetId)
+    if (success) {
+      setUpdateSourceDoneId(targetId)
+      setTimeout(() => setUpdateSourceDoneId((cur) => (cur === targetId ? null : cur)), 3000)
+    }
+  }
+
   const handleUpdateAllSources = async () => {
-    setUpdatingAllSources(true)
-    try {
-      const urlItems = items.filter((i) => i.type === 'url')
-      for (const item of urlItems) {
-        await handleRefresh(item.id)
-      }
-    } finally {
-      setUpdatingAllSources(false)
+    setUpdateAllStatus('updating')
+    const refreshableItems = items.filter((i) => i.type === 'url' || i.type === 'document')
+    let anySuccess = false
+    for (const item of refreshableItems) {
+      const success = await handleRefresh(item.id)
+      if (success) anySuccess = true
+    }
+    if (anySuccess) {
+      setUpdateAllStatus('done')
+      setTimeout(() => setUpdateAllStatus('idle'), 3000)
+    } else {
+      setUpdateAllStatus('idle')
     }
   }
 
@@ -197,25 +190,29 @@ export default function Evidence() {
             disabled: !selectedItem || describeStatus !== 'idle',
           },
           {
-            label: refreshingId === selectedItem?.id ? 'Updating…' : 'Update source',
-            onClick: () => handleRefresh(selectedItem.id),
+            label: refreshingId === selectedItem?.id ? 'Updating…' : updateSourceDoneId === selectedItem?.id ? 'Updated ✓' : 'Update source',
+            onClick: handleUpdateSource,
             variant: 'default',
-            disabled: !selectedItem || selectedItem.type !== 'url' || refreshingId === selectedItem?.id,
+            disabled: !selectedItem || (selectedItem.type !== 'url' && selectedItem.type !== 'document') || refreshingId === selectedItem?.id || updateSourceDoneId === selectedItem?.id,
           },
           {
-            label: updatingAllSources ? 'Updating…' : 'Update all sources',
+            label: updateAllStatus === 'updating' ? 'Updating…' : updateAllStatus === 'done' ? 'Updated ✓' : 'Update all sources',
             onClick: handleUpdateAllSources,
             variant: 'default',
-            disabled: !items.some((i) => i.type === 'url') || updatingAllSources,
+            disabled: !items.some((i) => i.type === 'url' || i.type === 'document') || updateAllStatus !== 'idle',
           },
-          ...(items.length > 0 ? [{
+          {
             label: reindexStatus === 'Reindexing…' ? 'Reindexing…' : reindexStatus === 'Reindexed' ? 'Reindexed ✓' : 'Reindex',
             onClick: handleReindex,
             variant: 'default',
-            disabled: reindexStatus === 'Reindexing…',
-          }] : []),
-          ...(selectedItem?.type === 'document' && selectedItem?.sync === false ? [{ label: 'Sync now', onClick: handleSync, variant: 'default' }] : []),
-          ...(selectedItem ? [{ label: 'Delete', onClick: () => setPendingDelete(true), variant: 'default' }] : []),
+            disabled: items.length === 0 || reindexStatus !== '',
+          },
+          {
+            label: 'Delete',
+            onClick: () => setPendingDelete(true),
+            variant: 'default',
+            disabled: !selectedItem,
+          },
           { label: 'Add source', onClick: () => setShowModal(true), variant: 'primary' },
         ]}
       />
@@ -240,8 +237,6 @@ export default function Evidence() {
         <SourceDetail
           item={selectedItem}
           allItems={items}
-          onToggleSync={handleToggleSync}
-          onFetchLiveContent={handleFetchLiveContent}
         />
         <EvidenceChatPanel
           docId={id}

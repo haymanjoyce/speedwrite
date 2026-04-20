@@ -135,8 +135,6 @@ export const api = {
     request('POST', `/documents/${docId}/evidence/document`, { source_doc_id: sourceDocId }),
   updateEvidence: (docId, evidenceId, data) =>
     request('PATCH', `/documents/${docId}/evidence/${evidenceId}`, data),
-  syncEvidence: (docId, evidenceId) =>
-    request('POST', `/documents/${docId}/evidence/${evidenceId}/sync`),
   reindexEvidence: (docId) =>
     request('POST', `/documents/${docId}/evidence/reindex`),
   ragQuery: (docId, evidenceId, query, signal = null) =>

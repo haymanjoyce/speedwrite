@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 function timeAgo(isoString) {
@@ -37,18 +36,7 @@ function getTypeLabel(item) {
   return item.type
 }
 
-export default function SourceDetail({ item, allItems = [], onToggleSync, onFetchLiveContent }) {
-  const [liveContent, setLiveContent] = useState(null)
-
-  useEffect(() => {
-    if (item?.type === 'document' && item.sync) {
-      setLiveContent(null)
-      onFetchLiveContent?.().then(setLiveContent).catch(console.error)
-    } else {
-      setLiveContent(null)
-    }
-  }, [item?.id, item?.sync])
-
+export default function SourceDetail({ item, allItems = [] }) {
   if (!item) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-white">
@@ -62,10 +50,7 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
     )
   }
 
-  const rawContent = (item.type === 'document' && item.sync)
-    ? (liveContent ?? '')
-    : (item.content ?? '')
-  const wordCount = rawContent.split(/\s+/).filter(Boolean).length
+  const wordCount = (item.content ?? '').split(/\s+/).filter(Boolean).length
 
   const isDuplicateUrl = item.type === 'url' && item.url &&
     allItems.some((other) => other.id !== item.id && other.type === 'url' && other.url?.toLowerCase() === item.url.toLowerCase())
@@ -110,6 +95,7 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
           ] : item.type === 'document' ? [
             ['Type', getTypeLabel(item)],
             ['Added', formatDate(item.created_at)],
+            item.last_fetched_at ? ['Last updated', timeAgo(item.last_fetched_at)] : null,
             wordCount > 0 ? ['Words', `~${wordCount.toLocaleString()}`] : null,
             item.source_doc_id ? ['Source doc', item.source_doc_id] : null,
           ] : [
@@ -129,22 +115,6 @@ export default function SourceDetail({ item, allItems = [], onToggleSync, onFetc
             </div>
           ))}
         </div>
-
-        {/* Sync toggle */}
-        {item.type === 'document' && (
-          <div className="flex items-center gap-3 mt-3">
-            <button
-              onClick={() => onToggleSync?.(!item.sync)}
-              className="inline-flex items-center gap-1.5 text-xs border border-gray-200 rounded-full px-2.5 py-0.5 hover:border-gray-300 transition-colors cursor-pointer"
-            >
-              <span className={`w-2 h-2 rounded-full ${item.sync ? 'bg-green-500' : 'bg-gray-300'}`} />
-              Sync: {item.sync ? 'On' : 'Off'}
-            </button>
-            {!item.sync && item.synced_at && (
-              <span className="text-xs text-gray-400">Last synced: {formatDate(item.synced_at)}</span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Description */}
