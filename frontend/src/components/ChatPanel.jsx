@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { ATTACHMENT_TRUNCATION_LIMIT, ATTACHMENT_WARNING_THRESHOLD } from '../constants/attachmentLimits'
 import { FREE_ACTION_CAP } from '../constants/limits'
-import AttachmentPopup from './AttachmentPopup'
 import MarkdownPreview from './MarkdownPreview'
 
 const isMac = navigator.platform.toUpperCase().includes('MAC')
@@ -26,7 +25,7 @@ function truncateContext(text) {
 
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, contextText, onClearContext, provider,
-  headings, evidenceSources, pendingProposal, structureLocked = false,
+  headings, pendingProposal, structureLocked = false,
   actionsUsed = 0, hasByokKey = false, onActionComplete = null,
 }, ref) {
   const isCapped = !hasByokKey && actionsUsed >= FREE_ACTION_CAP
@@ -38,13 +37,15 @@ const ChatPanel = forwardRef(function ChatPanel({
     () => localStorage.getItem('speedwrite_submit_on_enter') !== 'false'
   )
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const [localContext, setLocalContext] = useState(null) // { text, label, truncated, originalLength, evidenceId }
-  const [ragActive, setRagActive] = useState(false)
+  const [localContext, setLocalContext] = useState(null) // { text, label, truncated, originalLength }
   const [showPopup, setShowPopup] = useState(false)
+  const [sectionQuery, setSectionQuery] = useState('')
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const textareaRef = useRef(null)
   const plusButtonRef = useRef(null)
+  const sectionPickerRef = useRef(null)
+  const sectionSearchRef = useRef(null)
   const abortControllerRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
@@ -57,7 +58,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     },
     prefillRewrite(sectionContent, headingText) {
       const { text, truncated } = truncateContext(sectionContent)
-      setLocalContext({ text, label: headingText, truncated, originalLength: sectionContent.length, evidenceId: null })
+      setLocalContext({ text, label: headingText, truncated, originalLength: sectionContent.length })
       setTimeout(() => {
         if (textareaRef.current) {
           resizeTextarea(textareaRef.current)
@@ -88,6 +89,37 @@ const ChatPanel = forwardRef(function ChatPanel({
   useEffect(() => {
     if (contextText) setLocalContext(null)
   }, [contextText])
+
+  // Close section picker on outside click
+  useEffect(() => {
+    if (!showPopup) return
+    const handler = (e) => {
+      if (
+        sectionPickerRef.current && !sectionPickerRef.current.contains(e.target) &&
+        !(plusButtonRef.current && plusButtonRef.current.contains(e.target))
+      ) {
+        setShowPopup(false)
+      }
+    }
+    window.document.addEventListener('mousedown', handler)
+    return () => window.document.removeEventListener('mousedown', handler)
+  }, [showPopup])
+
+  // Close section picker on Escape
+  useEffect(() => {
+    if (!showPopup) return
+    const handler = (e) => { if (e.key === 'Escape') setShowPopup(false) }
+    window.document.addEventListener('keydown', handler)
+    return () => window.document.removeEventListener('keydown', handler)
+  }, [showPopup])
+
+  // Focus search and reset query when section picker opens
+  useEffect(() => {
+    if (showPopup) {
+      setSectionQuery('')
+      setTimeout(() => sectionSearchRef.current?.focus(), 0)
+    }
+  }, [showPopup])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -139,9 +171,9 @@ const ChatPanel = forwardRef(function ChatPanel({
     }
   }
 
-  const handleAttach = (content, label, evidenceId) => {
+  const handleAttach = (content, label) => {
     const { text, truncated } = truncateContext(content)
-    setLocalContext({ text, label, truncated, originalLength: content.length, evidenceId: evidenceId ?? null })
+    setLocalContext({ text, label, truncated, originalLength: content.length })
     setShowPopup(false)
   }
 
@@ -168,24 +200,11 @@ const ChatPanel = forwardRef(function ChatPanel({
     setLoading(true)
 
     try {
-      let context = contextSnapshot
+      const context = contextSnapshot
         ? contextSnapshot.text
         : contextText
           ? truncateContext(contextText).text
           : null
-
-      if (contextSnapshot?.evidenceId) {
-        try {
-          const ragRes = await api.ragQuery(docId, contextSnapshot.evidenceId, text, abortControllerRef.current.signal)
-          if (ragRes?.used_rag && ragRes.chunks?.length > 0) {
-            context = ragRes.chunks.map((c) => c.text).join('\n---\n')
-            setRagActive(true)
-          }
-        } catch (err) {
-          if (err.name === 'AbortError') throw err
-          // RAG unavailable — fall back to contextSnapshot.text silently
-        }
-      }
 
       const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
@@ -204,7 +223,6 @@ const ChatPanel = forwardRef(function ChatPanel({
     } finally {
       abortControllerRef.current = null
       setLoading(false)
-      setRagActive(false)
     }
   }
 
@@ -212,8 +230,11 @@ const ChatPanel = forwardRef(function ChatPanel({
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
     setLoading(false)
-    setRagActive(false)
   }
+
+  const filteredHeadings = (headings || []).filter((h) =>
+    h.text.toLowerCase().includes(sectionQuery.toLowerCase())
+  )
 
   const effectiveContext = localContext?.text || contextText
   const chipLabel = localContext
@@ -346,19 +367,39 @@ const ChatPanel = forwardRef(function ChatPanel({
       <div className="px-4 pb-4 flex-shrink-0">
         <div className="relative flex gap-2 bg-white border border-gray-200 rounded-lg p-2 focus-within:border-blue-300 transition-colors">
           {showPopup && (
-            <AttachmentPopup
-              headings={headings || []}
-              evidenceSources={evidenceSources || []}
-              onAttach={handleAttach}
-              onClose={() => setShowPopup(false)}
-              anchorRef={plusButtonRef}
-            />
+            <div
+              ref={sectionPickerRef}
+              className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-72 z-50"
+            >
+              <input
+                ref={sectionSearchRef}
+                value={sectionQuery}
+                onChange={(e) => setSectionQuery(e.target.value)}
+                placeholder="Search headings…"
+                className="w-full text-sm outline-none px-2 py-1 border border-gray-200 rounded mb-2"
+              />
+              <div className="max-h-48 overflow-y-auto">
+                {filteredHeadings.length === 0 ? (
+                  <p className="text-xs text-gray-400 px-3 py-2">No headings found.</p>
+                ) : filteredHeadings.map((h, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleAttach(h.content, h.text)}
+                    className={`text-sm text-gray-700 hover:bg-gray-50 rounded py-1.5 cursor-pointer w-full text-left truncate ${
+                      h.level === 3 ? 'pl-7 pr-3' : 'pl-3 pr-3'
+                    }`}
+                  >
+                    {h.text}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           <button
             ref={plusButtonRef}
             onClick={() => setShowPopup((v) => !v)}
             className="self-end text-gray-400 hover:text-gray-600 cursor-pointer text-lg leading-none px-1 pb-0.5 flex-shrink-0"
-            title="Attach section or evidence"
+            title="Attach section"
           >
             +
           </button>
@@ -374,7 +415,6 @@ const ChatPanel = forwardRef(function ChatPanel({
             style={{ maxHeight: '144px', overflowY: 'auto' }}
           />
           <div className="self-end flex flex-col items-end gap-1">
-            {ragActive && <span className="text-xs text-green-600 font-medium">✦ RAG</span>}
             {loading ? (
               <button
                 onClick={handleStop}
