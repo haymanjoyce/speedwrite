@@ -6,6 +6,7 @@ import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
 import ActionsDropdown from '../components/ActionsDropdown'
+import Button from '../components/Button'
 import SegmentedControl from '../components/SegmentedControl'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
@@ -217,18 +218,22 @@ export default function Document() {
                 onChange={(mode) => {
                   setEditorMode(mode)
                   localStorage.setItem(`editorMode:${id}`, mode)
+                  if (mode === 'preview') {
+                    setSelectedText('')
+                    window.getSelection()?.removeAllRanges()
+                  }
                 }}
               />
             )}
             {!pendingProposal && (
               <>
-                <button
-                  onClick={handleAddToChat}
+                <Button
+                  variant={selectedText ? 'primary' : 'secondary'}
                   disabled={!selectedText}
-                  className={`text-xs rounded px-3 py-1 border font-medium transition-colors ${selectedText ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-default'}`}
+                  onClick={handleAddToChat}
                 >
                   Add to chat
-                </button>
+                </Button>
                 <button
                   onClick={handleSaveVersion}
                   disabled={saveVersionStatus === 'saving'}
