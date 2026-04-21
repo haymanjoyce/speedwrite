@@ -1,7 +1,7 @@
 import DocumentTree from './DocumentTree'
 import { parseHeadings } from './DocumentTree'
 
-export default function DocumentSidebar({ document, onHeadingClick, onSectionRewrite, protectedSections, onToggleProtection, structureLocked, onToggleStructureLock, pendingProposal = false }) {
+export default function DocumentSidebar({ document, onHeadingClick, protectedSections, onToggleProtection, structureLocked, onToggleStructureLock, pendingProposal = false }) {
   const hasHeadings = document && parseHeadings(document.content).length > 0
 
   return (
@@ -23,7 +23,6 @@ export default function DocumentSidebar({ document, onHeadingClick, onSectionRew
           <DocumentTree
             content={document.content}
             onHeadingClick={onHeadingClick}
-            onSectionRewrite={onSectionRewrite}
             protectedSections={protectedSections}
             onToggleProtection={onToggleProtection}
             pendingProposal={pendingProposal}

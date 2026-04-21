@@ -129,10 +129,6 @@ export default function Document() {
     setSelectedText('')
   }
 
-  const handleSectionAddToChat = (sectionContent, headingText) => {
-    chatPanelRef.current?.prefillRewrite(sectionContent, headingText)
-  }
-
   const handleAccept = () => {
     setEditorContentOverride(pendingProposal)
     setPendingProposal(null)
@@ -267,7 +263,6 @@ export default function Document() {
         <DocumentSidebar
           document={doc}
           onHeadingClick={(text) => editorMode === 'preview' ? editorRef.current?.scrollToHeadingPreview(text) : editorRef.current?.scrollToHeading(text)}
-          onSectionRewrite={handleSectionAddToChat}
           protectedSections={protectedSections}
           onToggleProtection={handleToggleProtection}
           structureLocked={structureLocked}

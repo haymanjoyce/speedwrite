@@ -12,44 +12,15 @@ export function parseHeadings(content) {
   return headings
 }
 
-function getInScope(headings, hoveredIndex) {
-  if (hoveredIndex === null) return new Set()
-  const parentLevel = headings[hoveredIndex].level
-  const scope = new Set()
-  for (let i = hoveredIndex + 1; i < headings.length; i++) {
-    if (headings[i].level <= parentLevel) break
-    scope.add(i)
-  }
-  return scope
-}
-
-function extractSection(content, headings, index) {
-  const lines = content.split('\n')
-  const { lineIndex, level } = headings[index]
-  let endLine = lines.length
-  for (let i = lineIndex + 1; i < lines.length; i++) {
-    const m = lines[i].match(/^(#{1,6})(?!#)\s+/)
-    if (m && m[1].length <= level) {
-      endLine = i
-      break
-    }
-  }
-  return lines.slice(lineIndex, endLine).join('\n').trim()
-}
-
-export default function DocumentTree({ content, onHeadingClick, onSectionRewrite, protectedSections = [], onToggleProtection, pendingProposal = false }) {
+export default function DocumentTree({ content, onHeadingClick, protectedSections = [], onToggleProtection, pendingProposal = false }) {
   const [hoveredIndex, setHoveredIndex] = useState(null)
   const headings = parseHeadings(content)
   if (!headings.length) return null
-
-  const inScope = getInScope(headings, hoveredIndex)
 
   return (
     <div className="border-l border-gray-200 ml-5">
       {headings.map((h, i) => {
         const isHovered = i === hoveredIndex
-        const isInScope = inScope.has(i)
-        const isHighlighted = isHovered || isInScope
         const isProtected = protectedSections.includes(h.text)
 
         return (
@@ -57,7 +28,7 @@ export default function DocumentTree({ content, onHeadingClick, onSectionRewrite
             key={i}
             className={`group flex items-center justify-between py-0.5 pr-2 truncate ${
               h.level === 3 ? 'pl-6' : 'pl-3'
-            } ${isProtected ? 'bg-gray-100' : isHighlighted ? 'bg-blue-50' : ''}`}
+            } ${isProtected ? 'bg-gray-100' : ''}`}
             onMouseEnter={() => setHoveredIndex(i)}
             onMouseLeave={() => setHoveredIndex(null)}
           >
@@ -84,25 +55,11 @@ export default function DocumentTree({ content, onHeadingClick, onSectionRewrite
             <span
               onClick={() => onHeadingClick?.(h.text)}
               className={`text-xs truncate cursor-pointer flex-1 ${
-                isHighlighted && !isProtected ? 'text-blue-700' : isProtected ? 'text-gray-500' : 'text-gray-500 hover:text-gray-800'
+                isProtected ? 'text-gray-500' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
               {h.text}
             </span>
-
-            {isHovered && onSectionRewrite && !isProtected && !pendingProposal && (
-              <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSectionRewrite(extractSection(content, headings, i), h.text)
-                  }}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
-                >
-                  Add to chat
-                </button>
-              </div>
-            )}
           </div>
         )
       })}
