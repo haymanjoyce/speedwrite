@@ -12,13 +12,20 @@ export function parseHeadings(content) {
   return headings
 }
 
+const levelColor = (level) => {
+  if (level <= 1) return 'text-gray-800'
+  if (level === 2) return 'text-gray-700'
+  if (level === 3) return 'text-gray-600'
+  return 'text-gray-500'
+}
+
 export default function DocumentTree({ content, onHeadingClick, protectedSections = [], onToggleProtection, pendingProposal = false }) {
   const [hoveredIndex, setHoveredIndex] = useState(null)
   const headings = parseHeadings(content)
   if (!headings.length) return null
 
   return (
-    <div className="border-l border-gray-200 ml-5">
+    <div>
       {headings.map((h, i) => {
         const isHovered = i === hoveredIndex
         const isProtected = protectedSections.includes(h.text)
@@ -54,9 +61,8 @@ export default function DocumentTree({ content, onHeadingClick, protectedSection
 
             <span
               onClick={() => onHeadingClick?.(h.text)}
-              className={`text-xs truncate cursor-pointer flex-1 ${
-                isProtected ? 'text-gray-500' : 'text-gray-500 hover:text-gray-800'
-              }`}
+              title={h.text}
+              className={`text-xs truncate cursor-pointer flex-1 ${levelColor(h.level)}${isProtected ? '' : ' hover:text-gray-800'}`}
             >
               {h.text}
             </span>
