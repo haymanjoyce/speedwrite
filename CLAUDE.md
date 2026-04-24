@@ -131,6 +131,7 @@ Main views:
 - During diff view (`pendingProposal` truthy), a `pendingProposal` boolean is threaded `Document.jsx` → `DocumentSidebar.jsx` → `DocumentTree.jsx` to suppress both lock controls; tree content remains fully visible.
 - Clicking a heading scrolls to it via `useImperativeHandle` on `Editor`. In edit mode: `scrollToHeading` mirrors into the textarea. In preview mode: `scrollToHeadingPreview` queries heading elements inside `previewContainerRef` and calls `scrollIntoView`. `Document.jsx` `onHeadingClick` branches on `editorMode`.
 - No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
+- Tree has no left border; indentation alone carries hierarchy. Heading colour steps by level: H2 gray-700, H3 gray-600, H4+ gray-500. Each heading row carries `title={h.text}` for a native tooltip on truncated labels.
 
 ## Edit/Preview Toggle
 
