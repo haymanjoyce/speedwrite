@@ -165,6 +165,7 @@ Main views:
 - **Auto-scroll (user-intent model)**: `isFollowingRef` (ref, starts `true`) tracks whether the user is following the conversation. The scroll handler sets it `true` when near the bottom (< 100px) and `false` when scrolled away. The `[messages, loading]` effect scrolls to bottom only when `isFollowingRef.current` is true — no geometry check at render time. `scrollToBottom` (including the ↓ Latest button) resets it to `true`.
 - **Clear chat**: trash icon ghost button in panel header; calls `DELETE /documents/{doc_id}/chat` (or `/evidence-chat`), resets local `messages` to `[]`. No confirmation.
 - **Empty assistant bubbles**: bubble not rendered when `msg.content?.trim()` is falsy — prevents visible empty bubble during response construction.
+- **MarkdownPreview variant**: assistant bubbles use `<MarkdownPreview content={msg.content} variant="chat" />`. The `variant` prop accepts `'document'` (default) or `'chat'`. Chat variant uses smaller heading scale (h1/h2 → `text-base`, h3–h6 → `text-sm`) with tight margins, skips protected-section and structure-lock highlighting (document-editing concepts with no meaning in a chat bubble), and renders with no outer wrapper div so the bubble container controls padding/background. Document variant is unchanged — the large heading scale and `flex-1 overflow-y-auto p-8 bg-white` wrapper documented elsewhere apply to the document variant only. Do not use the document variant in chat bubbles.
 
 ## Document History
 

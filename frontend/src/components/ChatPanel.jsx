@@ -289,7 +289,7 @@ const ChatPanel = forwardRef(function ChatPanel({
               </div>
             ) : msg.content?.trim() ? (
               <div className="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-white border border-gray-200 text-gray-800">
-                <div className="[&>*]:!p-0 [&>*]:!max-w-none [&>*]:!overflow-visible [&>*]:!bg-transparent [&>*]:!flex-none"><MarkdownPreview content={msg.content} /></div>
+                <MarkdownPreview content={msg.content} variant="chat" />
               </div>
             ) : null}
           </div>

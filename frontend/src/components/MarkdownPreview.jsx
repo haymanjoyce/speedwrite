@@ -63,9 +63,12 @@ function Highlight({ children }) {
   return <div className={HIGHLIGHT}>{children}</div>
 }
 
-function makeComponents(protectedLineSet, structureLocked) {
+function makeComponents(protectedLineSet, structureLocked, variant) {
+  const isChat = variant === 'chat'
+
   // node.position.start.line is 1-indexed; protectedLineSet is 0-indexed
   function isProtected(node) {
+    if (isChat) return false
     return node?.position && protectedLineSet.has(node.position.start.line - 1)
   }
 
@@ -75,39 +78,39 @@ function makeComponents(protectedLineSet, structureLocked) {
 
   return {
     h1({ node, children, ...props }) {
-      const el = <h1 className="text-3xl font-bold text-gray-900 mb-4 mt-6" {...props}>{children}</h1>
-      return wrap(isProtected(node) || structureLocked, el)
+      const el = <h1 className={isChat ? 'text-base font-bold text-gray-900 mt-3 mb-1' : 'text-3xl font-bold text-gray-900 mb-4 mt-6'} {...props}>{children}</h1>
+      return wrap(isProtected(node) || (!isChat && structureLocked), el)
     },
     h2({ node, children, ...props }) {
-      const el = <h2 className="text-2xl font-semibold text-gray-800 mb-3 mt-5" {...props}>{children}</h2>
-      return wrap(isProtected(node) || structureLocked, el)
+      const el = <h2 className={isChat ? 'text-base font-semibold text-gray-800 mt-3 mb-1' : 'text-2xl font-semibold text-gray-800 mb-3 mt-5'} {...props}>{children}</h2>
+      return wrap(isProtected(node) || (!isChat && structureLocked), el)
     },
     h3({ node, children, ...props }) {
-      const el = <h3 className="text-xl font-semibold text-gray-700 mb-2 mt-4" {...props}>{children}</h3>
-      return wrap(isProtected(node) || structureLocked, el)
+      const el = <h3 className={isChat ? 'text-sm font-semibold text-gray-700 mt-3 mb-1' : 'text-xl font-semibold text-gray-700 mb-2 mt-4'} {...props}>{children}</h3>
+      return wrap(isProtected(node) || (!isChat && structureLocked), el)
     },
     h4({ node, children, ...props }) {
-      const el = <h4 className="text-lg font-semibold text-gray-700 mb-2 mt-3" {...props}>{children}</h4>
+      const el = <h4 className={isChat ? 'text-sm font-semibold text-gray-700 mt-2 mb-1' : 'text-lg font-semibold text-gray-700 mb-2 mt-3'} {...props}>{children}</h4>
       return wrap(isProtected(node), el)
     },
     h5({ node, children, ...props }) {
-      const el = <h5 className="text-base font-semibold text-gray-700 mb-1 mt-2" {...props}>{children}</h5>
+      const el = <h5 className={isChat ? 'text-sm font-semibold text-gray-700 mt-2 mb-1' : 'text-base font-semibold text-gray-700 mb-1 mt-2'} {...props}>{children}</h5>
       return wrap(isProtected(node), el)
     },
     h6({ node, children, ...props }) {
-      const el = <h6 className="text-sm font-semibold text-gray-700 mb-1 mt-2" {...props}>{children}</h6>
+      const el = <h6 className={isChat ? 'text-sm font-semibold text-gray-700 mt-2 mb-1' : 'text-sm font-semibold text-gray-700 mb-1 mt-2'} {...props}>{children}</h6>
       return wrap(isProtected(node), el)
     },
     p({ node, children, ...props }) {
-      const el = <p className="text-gray-700 leading-relaxed mb-4" {...props}>{children}</p>
+      const el = <p className={isChat ? 'text-gray-700 mb-2' : 'text-gray-700 leading-relaxed mb-4'} {...props}>{children}</p>
       return wrap(isProtected(node), el)
     },
     ul({ node, children, ...props }) {
-      const el = <ul className="list-disc pl-6 mb-4 text-gray-700" {...props}>{children}</ul>
+      const el = <ul className={`list-disc ${isChat ? 'pl-5 mb-2' : 'pl-6 mb-4'} text-gray-700`} {...props}>{children}</ul>
       return wrap(isProtected(node), el)
     },
     ol({ node, children, ...props }) {
-      const el = <ol className="list-decimal pl-6 mb-4 text-gray-700" {...props}>{children}</ol>
+      const el = <ol className={`list-decimal ${isChat ? 'pl-5 mb-2' : 'pl-6 mb-4'} text-gray-700`} {...props}>{children}</ol>
       return wrap(isProtected(node), el)
     },
     pre({ node, children, ...props }) {
@@ -144,9 +147,17 @@ function makeComponents(protectedLineSet, structureLocked) {
   }
 }
 
-export default function MarkdownPreview({ content, protectedSections = [], structureLocked = false }) {
+export default function MarkdownPreview({ content, protectedSections = [], structureLocked = false, variant = 'document' }) {
   const protectedLineSet = getProtectedLineSet(content ?? '', protectedSections)
-  const components = makeComponents(protectedLineSet, structureLocked)
+  const components = makeComponents(protectedLineSet, structureLocked, variant)
+
+  if (variant === 'chat') {
+    return (
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content ?? ''}
+      </ReactMarkdown>
+    )
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-white">
