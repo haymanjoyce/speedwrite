@@ -47,6 +47,7 @@ const ChatPanel = forwardRef(function ChatPanel({
   const sectionPickerRef = useRef(null)
   const sectionSearchRef = useRef(null)
   const abortControllerRef = useRef(null)
+  const isFollowingRef = useRef(true)
 
   useImperativeHandle(ref, () => ({
     appendMessages(userMsg, assistantMsg) {
@@ -123,22 +124,19 @@ const ChatPanel = forwardRef(function ChatPanel({
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    isFollowingRef.current = true
     setShowScrollButton(false)
   }
 
   useEffect(() => {
-    const el = messagesContainerRef.current
-    if (!el) return
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
-    if (isNearBottom) {
-      scrollToBottom()
-    }
+    if (isFollowingRef.current) scrollToBottom()
   }, [messages, loading])
 
   const handleMessagesScroll = () => {
     const el = messagesContainerRef.current
     if (!el) return
     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
+    isFollowingRef.current = isNearBottom
     setShowScrollButton(!isNearBottom)
   }
 

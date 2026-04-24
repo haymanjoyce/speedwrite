@@ -85,6 +85,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
   const plusButtonRef = useRef(null)
   const abortControllerRef = useRef(null)
   const sentFingerprintRef = useRef(null)
+  const isFollowingRef = useRef(true)
 
   const getActiveFingerprint = () =>
     (evidenceSources || [])
@@ -112,20 +113,19 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    isFollowingRef.current = true
     setShowScrollButton(false)
   }
 
   useEffect(() => {
-    const el = messagesContainerRef.current
-    if (!el) return
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
-    if (isNearBottom) scrollToBottom()
+    if (isFollowingRef.current) scrollToBottom()
   }, [messages, loading])
 
   const handleMessagesScroll = () => {
     const el = messagesContainerRef.current
     if (!el) return
     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
+    isFollowingRef.current = isNearBottom
     setShowScrollButton(!isNearBottom)
   }
 

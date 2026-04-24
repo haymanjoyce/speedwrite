@@ -161,6 +161,7 @@ Main views:
 - **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended to system prompt; instructs AI to return tables, image refs, code blocks, and blockquotes verbatim. Not used in `actions.py`.
 - **Enter key**: configurable via `localStorage` key `speedwrite_submit_on_enter`. Send button uses `onClick={() => handleSend()}` (not `onClick={handleSend}`) to prevent the click event being passed as `textOverride`.
 - **onActionComplete**: optional prop on both panels; called after each successful response to refresh `user` state for cap enforcement.
+- **Auto-scroll (user-intent model)**: `isFollowingRef` (ref, starts `true`) tracks whether the user is following the conversation. The scroll handler sets it `true` when near the bottom (< 100px) and `false` when scrolled away. The `[messages, loading]` effect scrolls to bottom only when `isFollowingRef.current` is true — no geometry check at render time. `scrollToBottom` (including the ↓ Latest button) resets it to `true`.
 - **Clear chat**: trash icon ghost button in panel header; calls `DELETE /documents/{doc_id}/chat` (or `/evidence-chat`), resets local `messages` to `[]`. No confirmation.
 - **Empty assistant bubbles**: bubble not rendered when `msg.content?.trim()` is falsy — prevents visible empty bubble during response construction.
 
