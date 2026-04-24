@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import ResizableGutter from '../components/ResizableGutter'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import Button from '../components/Button'
@@ -55,6 +56,21 @@ export default function History() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [ownerCommentError, setOwnerCommentError] = useState(null)
   const [copyStatus, setCopyStatus] = useState('idle')
+
+  const [leftWidth, setLeftWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem('speedwrite_panel_widths_history')
+      if (s) { const p = JSON.parse(s); if (typeof p.left === 'number') return p.left }
+    } catch {}
+    return 256
+  })
+  const [rightWidth, setRightWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem('speedwrite_panel_widths_history')
+      if (s) { const p = JSON.parse(s); if (typeof p.right === 'number') return p.right }
+    } catch {}
+    return 320
+  })
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -190,7 +206,7 @@ export default function History() {
       />
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel — snapshot list */}
-        <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
+        <div style={{ width: leftWidth, flexShrink: 0 }} className="bg-gray-50 border-r border-gray-200 flex flex-col">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">History</span>
           </div>
@@ -217,8 +233,17 @@ export default function History() {
           </div>
         </div>
 
+        <ResizableGutter
+          side="left"
+          currentWidth={leftWidth}
+          onResize={setLeftWidth}
+          onResizeEnd={(w) => localStorage.setItem('speedwrite_panel_widths_history', JSON.stringify({ left: w, right: rightWidth }))}
+          min={180}
+          max={window.innerWidth - rightWidth - 300}
+        />
+
         {/* Middle panel — version detail */}
-        <main className="flex-1 bg-white flex flex-col overflow-hidden">
+        <main className="flex-1 min-w-0 bg-white flex flex-col overflow-hidden">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Version</span>
           </div>
@@ -267,8 +292,17 @@ export default function History() {
           </div>
         </main>
 
+        <ResizableGutter
+          side="right"
+          currentWidth={rightWidth}
+          onResize={setRightWidth}
+          onResizeEnd={(w) => localStorage.setItem('speedwrite_panel_widths_history', JSON.stringify({ left: leftWidth, right: w }))}
+          min={300}
+          max={window.innerWidth - leftWidth - 300}
+        />
+
         {/* Right panel — sharing & comments */}
-        <div className="w-80 border-l border-gray-200 flex flex-col flex-shrink-0">
+        <div style={{ width: rightWidth, flexShrink: 0 }} className="border-l border-gray-200 flex flex-col">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Comments</span>
           </div>

@@ -300,6 +300,18 @@ All three monetisation sprints are shipped. BYOK users get `PAID_MODEL` (Sonnet)
 0 3 * * * docker exec speedwrite-app python cleanup.py >> /var/log/speedwrite-cleanup.log 2>&1
 ```
 
+## Panel Resizing
+
+Document, Evidence, History, and Images pages have draggable gutters (`ResizableGutter.jsx`) between panels.
+
+- **Gutter**: 8px hit zone with a centred 1px line (gray-200 default, gray-400 hover). `cursor-col-resize`. `side` prop is `'left'` or `'right'` — determines delta direction.
+- **Props**: `onResize(newWidth)` fires on every mousemove (pages update state live); `onResizeEnd(finalWidth)` fires once on mouseup (pages write localStorage). `min`/`max` are pre-computed by the calling page at drag start.
+- **Minimum widths**: left sidebar 180 px; right panel 300 px; middle panel 300 px enforced via the gutter's `max` bound: left gutter max = `window.innerWidth - rightWidth - 300`; right gutter max = `window.innerWidth - leftWidth - 300`.
+- **localStorage key**: `speedwrite_panel_widths_{pageKey}` where `pageKey` ∈ `document | evidence | history | images`. Stored as `{ left, right }` JSON (Images stores `{ left }` only — two-panel page, one gutter).
+- **Defaults** (used when no stored value): left sidebars 256 px (w-64); chat/right panels 380 px; History right panel 320 px (w-80); Images left 256 px.
+- **Panel ownership**: `DocumentSidebar`, `EvidenceSidebar`, `ChatPanel`, and `EvidenceChatPanel` no longer own their own widths — each uses `w-full` and is wrapped in a `style={{ width, flexShrink: 0 }}` div in the page. **Do not re-add hardcoded width classes (`w-64`, `w-[380px]`) to these four components.**
+- Middle panels use `flex-1 min-w-0` and absorb window resize changes. Window resize does not recompute stored panel widths.
+
 ## Layout Constraints
 
 `#root` in `index.css` has `min-width: 1024px` — the browser shows a horizontal scrollbar if the window is narrower. The layout is not designed to be responsive below this width.

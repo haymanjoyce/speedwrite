@@ -6,6 +6,7 @@ import DocumentSidebar from '../components/DocumentSidebar'
 import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
 import ActionsDropdown from '../components/ActionsDropdown'
+import ResizableGutter from '../components/ResizableGutter'
 import Button from '../components/Button'
 import SegmentedControl from '../components/SegmentedControl'
 import FeedbackBar from '../components/FeedbackBar'
@@ -53,6 +54,21 @@ export default function Document() {
   const [welcomeSaveStatus, setWelcomeSaveStatus] = useState('idle') // idle | saving | saved
   const editorRef = useRef(null)
   const chatPanelRef = useRef(null)
+
+  const [leftWidth, setLeftWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem('speedwrite_panel_widths_document')
+      if (s) { const p = JSON.parse(s); if (typeof p.left === 'number') return p.left }
+    } catch {}
+    return 256
+  })
+  const [rightWidth, setRightWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem('speedwrite_panel_widths_document')
+      if (s) { const p = JSON.parse(s); if (typeof p.right === 'number') return p.right }
+    } catch {}
+    return 380
+  })
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -265,43 +281,65 @@ export default function Document() {
         }
       />
       <div className="flex flex-1 overflow-hidden">
-        <DocumentSidebar
-          document={doc}
-          onHeadingClick={(text) => editorMode === 'preview' ? editorRef.current?.scrollToHeadingPreview(text) : editorRef.current?.scrollToHeading(text)}
-          protectedSections={protectedSections}
-          onToggleProtection={handleToggleProtection}
-          structureLocked={structureLocked}
-          onToggleStructureLock={handleToggleStructureLock}
-          pendingProposal={!!pendingProposal}
-        />
-        <Editor
-          ref={editorRef}
-          document={doc}
-          onUpdate={handleUpdate}
-          onSelectText={setSelectedText}
-          contentOverride={editorContentOverride}
-          onContentOverrideApplied={() => setEditorContentOverride(null)}
-          pendingProposal={pendingProposal}
-          editorMode={editorMode}
-          protectedSections={protectedSections}
-          structureLocked={structureLocked}
-        />
-        <div className={pendingProposal ? 'hidden' : 'contents'}>
-          <ChatPanel
-            ref={chatPanelRef}
-            docId={id}
+        <div style={{ width: leftWidth, flexShrink: 0 }}>
+          <DocumentSidebar
             document={doc}
-            onProposedChange={setPendingProposal}
-            contextText={contextText}
-            onClearContext={() => setContextText('')}
-            headings={parseHeadingsWithContent(doc?.content)}
-            evidenceSources={doc?.evidence || []}
-            pendingProposal={pendingProposal}
+            onHeadingClick={(text) => editorMode === 'preview' ? editorRef.current?.scrollToHeadingPreview(text) : editorRef.current?.scrollToHeading(text)}
+            protectedSections={protectedSections}
+            onToggleProtection={handleToggleProtection}
             structureLocked={structureLocked}
-            actionsUsed={user?.ai_actions_used ?? 0}
-            hasByokKey={user?.has_byok_key ?? false}
-            onActionComplete={() => { api.me().then(setUser).catch(() => {}) }}
+            onToggleStructureLock={handleToggleStructureLock}
+            pendingProposal={!!pendingProposal}
           />
+        </div>
+        <ResizableGutter
+          side="left"
+          currentWidth={leftWidth}
+          onResize={setLeftWidth}
+          onResizeEnd={(w) => localStorage.setItem('speedwrite_panel_widths_document', JSON.stringify({ left: w, right: rightWidth }))}
+          min={180}
+          max={window.innerWidth - rightWidth - 300}
+        />
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          <Editor
+            ref={editorRef}
+            document={doc}
+            onUpdate={handleUpdate}
+            onSelectText={setSelectedText}
+            contentOverride={editorContentOverride}
+            onContentOverrideApplied={() => setEditorContentOverride(null)}
+            pendingProposal={pendingProposal}
+            editorMode={editorMode}
+            protectedSections={protectedSections}
+            structureLocked={structureLocked}
+          />
+        </div>
+        <ResizableGutter
+          side="right"
+          currentWidth={rightWidth}
+          onResize={setRightWidth}
+          onResizeEnd={(w) => localStorage.setItem('speedwrite_panel_widths_document', JSON.stringify({ left: leftWidth, right: w }))}
+          min={300}
+          max={window.innerWidth - leftWidth - 300}
+        />
+        <div style={{ width: rightWidth, flexShrink: 0 }}>
+          <div className={pendingProposal ? 'hidden' : 'contents'}>
+            <ChatPanel
+              ref={chatPanelRef}
+              docId={id}
+              document={doc}
+              onProposedChange={setPendingProposal}
+              contextText={contextText}
+              onClearContext={() => setContextText('')}
+              headings={parseHeadingsWithContent(doc?.content)}
+              evidenceSources={doc?.evidence || []}
+              pendingProposal={pendingProposal}
+              structureLocked={structureLocked}
+              actionsUsed={user?.ai_actions_used ?? 0}
+              hasByokKey={user?.has_byok_key ?? false}
+              onActionComplete={() => { api.me().then(setUser).catch(() => {}) }}
+            />
+          </div>
         </div>
       </div>
     </div>

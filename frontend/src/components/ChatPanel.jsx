@@ -245,7 +245,7 @@ const ChatPanel = forwardRef(function ChatPanel({
   const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
 
   return (
-    <div className="w-[380px] flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
+    <div className="w-full flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
       {/* Header */}
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">

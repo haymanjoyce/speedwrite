@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import AddSourceModal from '../components/AddSourceModal'
+import ResizableGutter from '../components/ResizableGutter'
 import EvidenceChatPanel from '../components/EvidenceChatPanel'
 import EvidenceSidebar from '../components/EvidenceSidebar'
 import SourceDetail from '../components/SourceDetail'
@@ -26,6 +27,21 @@ export default function Evidence() {
   const [updateSourceDoneId, setUpdateSourceDoneId] = useState(null)
   const [updateAllStatus, setUpdateAllStatus] = useState('idle') // idle | updating | done
   const initialSelectDoneRef = useRef(false)
+
+  const [leftWidth, setLeftWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem('speedwrite_panel_widths_evidence')
+      if (s) { const p = JSON.parse(s); if (typeof p.left === 'number') return p.left }
+    } catch {}
+    return 256
+  })
+  const [rightWidth, setRightWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem('speedwrite_panel_widths_evidence')
+      if (s) { const p = JSON.parse(s); if (typeof p.right === 'number') return p.right }
+    } catch {}
+    return 380
+  })
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {
@@ -224,28 +240,50 @@ export default function Evidence() {
         </div>
       )}
       <div className="flex flex-1 overflow-hidden">
-        <EvidenceSidebar
-          items={items}
-          selectedId={selectedItem?.id}
-          onSelect={handleSelect}
-          docId={id}
-          onItemUpdate={(updated) => {
-            setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-            if (selectedItem?.id === updated.id) setSelectedItem(updated)
-          }}
+        <div style={{ width: leftWidth, flexShrink: 0 }}>
+          <EvidenceSidebar
+            items={items}
+            selectedId={selectedItem?.id}
+            onSelect={handleSelect}
+            docId={id}
+            onItemUpdate={(updated) => {
+              setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+              if (selectedItem?.id === updated.id) setSelectedItem(updated)
+            }}
+          />
+        </div>
+        <ResizableGutter
+          side="left"
+          currentWidth={leftWidth}
+          onResize={setLeftWidth}
+          onResizeEnd={(w) => localStorage.setItem('speedwrite_panel_widths_evidence', JSON.stringify({ left: w, right: rightWidth }))}
+          min={180}
+          max={window.innerWidth - rightWidth - 300}
         />
-        <SourceDetail
-          item={selectedItem}
-          allItems={items}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          <SourceDetail
+            item={selectedItem}
+            allItems={items}
+          />
+        </div>
+        <ResizableGutter
+          side="right"
+          currentWidth={rightWidth}
+          onResize={setRightWidth}
+          onResizeEnd={(w) => localStorage.setItem('speedwrite_panel_widths_evidence', JSON.stringify({ left: leftWidth, right: w }))}
+          min={300}
+          max={window.innerWidth - leftWidth - 300}
         />
-        <EvidenceChatPanel
-          docId={id}
-          evidenceSources={items}
-          document={doc}
-          actionsUsed={user?.ai_actions_used ?? 0}
-          hasByokKey={user?.has_byok_key ?? false}
-          onActionComplete={() => { api.me().then(setUser).catch(() => {}) }}
-        />
+        <div style={{ width: rightWidth, flexShrink: 0 }}>
+          <EvidenceChatPanel
+            docId={id}
+            evidenceSources={items}
+            document={doc}
+            actionsUsed={user?.ai_actions_used ?? 0}
+            hasByokKey={user?.has_byok_key ?? false}
+            onActionComplete={() => { api.me().then(setUser).catch(() => {}) }}
+          />
+        </div>
       </div>
       {showModal && (
         <AddSourceModal onAdd={handleAdd} onClose={() => setShowModal(false)} docId={id} />

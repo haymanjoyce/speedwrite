@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import ResizableGutter from '../components/ResizableGutter'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import ContextBar from '../components/ContextBar'
@@ -25,6 +26,14 @@ export default function Images() {
   const [copyStatus, setCopyStatus] = useState('idle')
   const [showFeedback, setShowFeedback] = useState(false)
   const uploadInputRef = useRef(null)
+
+  const [leftWidth, setLeftWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem('speedwrite_panel_widths_images')
+      if (s) { const p = JSON.parse(s); if (typeof p.left === 'number') return p.left }
+    } catch {}
+    return 256
+  })
   const prevBlobUrl = useRef(null)
 
   useEffect(() => {
@@ -159,7 +168,7 @@ export default function Images() {
       )}
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel — image list */}
-        <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
+        <div style={{ width: leftWidth, flexShrink: 0 }} className="bg-gray-50 border-r border-gray-200 flex flex-col">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Images</span>
           </div>
@@ -183,8 +192,17 @@ export default function Images() {
           </div>
         </div>
 
+        <ResizableGutter
+          side="left"
+          currentWidth={leftWidth}
+          onResize={setLeftWidth}
+          onResizeEnd={(w) => localStorage.setItem('speedwrite_panel_widths_images', JSON.stringify({ left: w }))}
+          min={180}
+          max={window.innerWidth - 300}
+        />
+
         {/* Right panel — image detail */}
-        <main className="flex-1 bg-white flex flex-col overflow-hidden">
+        <main className="flex-1 min-w-0 bg-white flex flex-col overflow-hidden">
           <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center flex-shrink-0">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Image Detail</span>
           </div>
