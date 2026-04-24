@@ -310,6 +310,7 @@ Document, Evidence, History, and Images pages have draggable gutters (`Resizable
 - **localStorage key**: `speedwrite_panel_widths_{pageKey}` where `pageKey` ∈ `document | evidence | history | images`. Stored as `{ left, right }` JSON (Images stores `{ left }` only — two-panel page, one gutter).
 - **Defaults** (used when no stored value): left sidebars 256 px (w-64); chat/right panels 380 px; History right panel 320 px (w-80); Images left 256 px.
 - **Panel ownership**: `DocumentSidebar`, `EvidenceSidebar`, `ChatPanel`, and `EvidenceChatPanel` no longer own their own widths — each uses `w-full` and is wrapped in a `style={{ width, flexShrink: 0 }}` div in the page. **Do not re-add hardcoded width classes (`w-64`, `w-[380px]`) to these four components.**
+- **h-full requirement**: These four components must have `h-full` on their outer divs. The page-level wrapper is a flex item that receives stretch height from the outer row, but as a plain block container it does not automatically propagate that height to block children. Without `h-full`, the component's own `flex flex-col` has no height constraint and any `flex-1` children inside collapse to 0px. History and Images do not need this because their panel layout (`flex flex-col`) is written directly on the wrapper div with no component layer between them. Do not remove `h-full` from these four components.
 - Middle panels use `flex-1 min-w-0` and absorb window resize changes. Window resize does not recompute stored panel widths.
 
 ## Layout Constraints

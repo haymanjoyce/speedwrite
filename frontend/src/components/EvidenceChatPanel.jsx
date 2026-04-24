@@ -258,7 +258,7 @@ export default function EvidenceChatPanel({ docId, evidenceSources, document, ac
   const sendHint = submitOnEnter ? '↵ to send' : (isMac ? '⌘↵ to send' : 'Ctrl↵ to send')
 
   return (
-    <div className="w-full flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
+    <div className="w-full h-full flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
       {/* Header */}
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Chat</span>

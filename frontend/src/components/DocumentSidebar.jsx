@@ -5,7 +5,7 @@ export default function DocumentSidebar({ document, onHeadingClick, protectedSec
   const hasHeadings = document && parseHeadings(document.content).length > 0
 
   return (
-    <div className="w-full bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
+    <div className="w-full h-full bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
       <div className="h-11 bg-white border-b border-gray-200 px-4 flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Structure</span>
         {!pendingProposal && (
