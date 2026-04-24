@@ -28,6 +28,16 @@ function formatFullTime(isoString) {
   return date.toLocaleString()
 }
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+function formatSnapshotTime(isoString) {
+  const date = new Date(isoString + 'Z')
+  const day = String(date.getDate()).padStart(2, '0')
+  const mon = MONTHS[date.getMonth()]
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${day} ${mon} ${hh}:${mm}`
+}
+
 export default function History() {
   const navigate = useNavigate()
   const { id } = useParams()
@@ -192,13 +202,16 @@ export default function History() {
               <div
                 key={snap.id}
                 onClick={() => handleSelect(snap)}
-                className={`px-4 py-2 cursor-pointer transition-colors text-sm truncate ${
+                className={`px-4 py-2 cursor-pointer transition-colors text-sm flex items-center gap-2 min-w-0 overflow-hidden ${
                   snap.id === selectedSnapshot?.id
                     ? 'bg-gray-100 text-gray-900'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {snap.label}
+                <span className={`font-mono text-xs flex-shrink-0 ${snap.id === selectedSnapshot?.id ? 'text-gray-900' : 'text-gray-500'}`}>
+                  {formatSnapshotTime(snap.timestamp)}
+                </span>
+                <span className="truncate">{snap.label}</span>
               </div>
             ))}
           </div>
