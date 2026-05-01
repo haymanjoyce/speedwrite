@@ -24,8 +24,9 @@ function truncateContext(text) {
 }
 
 const ChatPanel = forwardRef(function ChatPanel({
-  docId, document, onProposedChange, contextText, onClearContext, provider,
+  docId, document, onProposedChange, provider,
   headings, pendingProposal, structureLocked = false,
+  protectedSections = [],
   actionsUsed = 0, hasByokKey = false, onActionComplete = null,
 }, ref) {
   const isCapped = !hasByokKey && actionsUsed >= FREE_ACTION_CAP
@@ -37,7 +38,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     () => localStorage.getItem('speedwrite_submit_on_enter') !== 'false'
   )
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const [localContext, setLocalContext] = useState(null) // { text, label, truncated, originalLength }
+  const [localContext, setLocalContext] = useState(null) // { text, label, path, truncated, originalLength }
   const [showPopup, setShowPopup] = useState(false)
   const [sectionQuery, setSectionQuery] = useState('')
   const messagesEndRef = useRef(null)
@@ -57,16 +58,6 @@ const ChatPanel = forwardRef(function ChatPanel({
         { role: 'assistant', content: assistantMsg },
       ])
     },
-    prefillRewrite(sectionContent, headingText) {
-      const { text, truncated } = truncateContext(sectionContent)
-      setLocalContext({ text, label: headingText, truncated, originalLength: sectionContent.length })
-      setTimeout(() => {
-        if (textareaRef.current) {
-          resizeTextarea(textareaRef.current)
-          textareaRef.current.focus()
-        }
-      }, 0)
-    },
   }))
 
   useEffect(() => {
@@ -85,11 +76,6 @@ const ChatPanel = forwardRef(function ChatPanel({
       messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
     }, 0)
   }, [document?.id])
-
-  // External context (e.g. "Add to chat" from editor) takes over — clear local attachment
-  useEffect(() => {
-    if (contextText) setLocalContext(null)
-  }, [contextText])
 
   // Close section picker on outside click
   useEffect(() => {
@@ -169,42 +155,44 @@ const ChatPanel = forwardRef(function ChatPanel({
     }
   }
 
-  const handleAttach = (content, label) => {
+  const handleAttach = (content, label, path) => {
     const { text, truncated } = truncateContext(content)
-    setLocalContext({ text, label, truncated, originalLength: content.length })
+    setLocalContext({ text, label, path, truncated, originalLength: content.length })
     setShowPopup(false)
   }
 
   const handleClearContext = () => {
     setLocalContext(null)
-    onClearContext()
   }
 
   const handleSend = async (textOverride) => {
     const text = (textOverride !== undefined ? textOverride : input).trim()
     if (!text || loading) return
 
-    const contextSnapshot = localContext
-    const hasContext = !!(contextSnapshot?.text || contextText)
-    const contextLabel = contextSnapshot ? contextSnapshot.label : contextText ? 'Selected text' : null
+    // Per-section lock check (not applicable to entire-document scope, path=[])
+    if (localContext && localContext.path.length > 0 && protectedSections.includes(localContext.label)) {
+      setMessages((prev) => [...prev, {
+        role: 'system-notice',
+        content: `Locked section — unlock "${localContext.label}" to edit, or attach a different section.`,
+      }])
+      return
+    }
+
+    const sectionPath = localContext ? localContext.path : null
+    const ignoreHistory = sectionPath !== null
+    const contextLabel = localContext?.label ?? null
+
     setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])
     setInput('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
     setLocalContext(null)
-    onClearContext()
     abortControllerRef.current = new AbortController()
     setLoading(true)
 
     try {
-      const context = contextSnapshot
-        ? contextSnapshot.text
-        : contextText
-          ? truncateContext(contextText).text
-          : null
-
-      const res = await api.chatMessage(docId, text, context, hasContext, provider, contextLabel, abortControllerRef.current.signal, structureLocked)
+      const res = await api.chatMessage(docId, text, sectionPath, ignoreHistory, provider, abortControllerRef.current.signal, structureLocked)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.message }])
       onActionComplete?.()
       if (res.proposed_content) {
@@ -234,15 +222,10 @@ const ChatPanel = forwardRef(function ChatPanel({
     h.text.toLowerCase().includes(sectionQuery.toLowerCase())
   )
 
-  const effectiveContext = localContext?.text || contextText
-  const chipLabel = localContext
-    ? localContext.label
-    : contextText
-      ? `Selected text (${contextText.length} chars)`
-      : null
-  const isTruncated = localContext?.truncated || (!localContext && contextText && contextText.length > ATTACHMENT_TRUNCATION_LIMIT)
-  const isAmber = (localContext?.originalLength ?? 0) > ATTACHMENT_WARNING_THRESHOLD || (!localContext && contextText && contextText.length > ATTACHMENT_WARNING_THRESHOLD)
-  const actualChars = localContext ? localContext.originalLength : (contextText?.length ?? 0)
+  const chipLabel = localContext?.label ?? null
+  const isTruncated = localContext?.truncated ?? false
+  const isAmber = (localContext?.originalLength ?? 0) > ATTACHMENT_WARNING_THRESHOLD
+  const actualChars = localContext?.originalLength ?? 0
 
   return (
     <div className="w-full h-full flex flex-col border-l border-gray-200 bg-gray-50 flex-shrink-0 overflow-hidden">
@@ -270,7 +253,7 @@ const ChatPanel = forwardRef(function ChatPanel({
       >
         {messages.length === 0 && !loading && (
           <p className="text-xs text-gray-400 text-center mt-8">
-            Ask the AI to edit or rewrite parts of your document.
+            Attach a section with + to edit it, or ask a question about the document.
           </p>
         )}
 
@@ -283,9 +266,13 @@ const ChatPanel = forwardRef(function ChatPanel({
                     {msg.context_label}
                   </div>
                 )}
-<div className="rounded-lg px-3 py-2 text-sm bg-blue-600 text-white">
+                <div className="rounded-lg px-3 py-2 text-sm bg-blue-600 text-white">
                   {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                 </div>
+              </div>
+            ) : msg.role === 'system-notice' ? (
+              <div className="max-w-[85%] rounded px-3 py-2 text-xs text-gray-500 bg-gray-100 border border-gray-200 italic">
+                {msg.content}
               </div>
             ) : msg.content?.trim() ? (
               <div className="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-white border border-gray-200 text-gray-800">
@@ -323,7 +310,7 @@ const ChatPanel = forwardRef(function ChatPanel({
       )}
 
       {/* Context attachment chip */}
-      {effectiveContext && (
+      {localContext && (
         <div className="px-4 pb-2 flex-shrink-0">
           <div
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${
@@ -377,12 +364,18 @@ const ChatPanel = forwardRef(function ChatPanel({
                 className="w-full text-sm outline-none px-2 py-1 border border-gray-200 rounded mb-2"
               />
               <div className="max-h-48 overflow-y-auto">
-                {filteredHeadings.length === 0 ? (
+                <button
+                  onClick={() => handleAttach(document?.content || '', 'Entire document', [])}
+                  className="text-sm text-gray-500 hover:bg-gray-50 rounded py-1.5 cursor-pointer w-full text-left px-3 italic border-b border-gray-100 mb-1"
+                >
+                  Entire document
+                </button>
+                {filteredHeadings.length === 0 && sectionQuery ? (
                   <p className="text-xs text-gray-400 px-3 py-2">No headings found.</p>
                 ) : filteredHeadings.map((h, i) => (
                   <button
                     key={i}
-                    onClick={() => handleAttach(h.content, h.text)}
+                    onClick={() => handleAttach(h.content, h.text, h.path)}
                     className={`text-sm text-gray-700 hover:bg-gray-50 rounded py-1.5 cursor-pointer w-full text-left truncate ${
                       h.level === 3 ? 'pl-7 pr-3' : 'pl-3 pr-3'
                     }`}

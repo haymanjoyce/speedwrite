@@ -7,7 +7,6 @@ import Editor from '../components/Editor'
 import ContextBar from '../components/ContextBar'
 import ActionsDropdown from '../components/ActionsDropdown'
 import ResizableGutter from '../components/ResizableGutter'
-import Button from '../components/Button'
 import SegmentedControl from '../components/SegmentedControl'
 import FeedbackBar from '../components/FeedbackBar'
 import TopBar from '../components/TopBar'
@@ -15,18 +14,24 @@ import TopBar from '../components/TopBar'
 function parseHeadingsWithContent(content) {
   const lines = (content || '').split('\n')
   const headings = []
+  const ancestorStack = [] // { level, text }[]
   for (let i = 0; i < lines.length; i++) {
     const match = lines[i].match(/^(#{1,3})\s+(.+)/)
     if (match) {
       const level = match[1].length
       const text = match[2]
+      while (ancestorStack.length > 0 && ancestorStack[ancestorStack.length - 1].level >= level) {
+        ancestorStack.pop()
+      }
+      const path = [...ancestorStack.map(a => a.text), text]
+      ancestorStack.push({ level, text })
       const sectionLines = [lines[i]]
       for (let j = i + 1; j < lines.length; j++) {
         const nextMatch = lines[j].match(/^(#{1,3})\s+/)
         if (nextMatch && nextMatch[1].length <= level) break
         sectionLines.push(lines[j])
       }
-      headings.push({ text, level, content: sectionLines.join('\n') })
+      headings.push({ text, level, content: sectionLines.join('\n'), path })
     }
   }
   return headings
@@ -39,8 +44,6 @@ export default function Document() {
   const { id } = useParams()
   const [user, setUser] = useState(null)
   const [doc, setDoc] = useState(null)
-  const [contextText, setContextText] = useState('')
-  const [selectedText, setSelectedText] = useState('')
   const [editorContentOverride, setEditorContentOverride] = useState(null)
   const [pendingProposal, setPendingProposal] = useState(null)
   const [pendingProposalReason, setPendingProposalReason] = useState('ai_rewrite')
@@ -141,11 +144,6 @@ export default function Document() {
     }
   }
 
-  const handleAddToChat = () => {
-    setContextText(selectedText)
-    setSelectedText('')
-  }
-
   const handleAccept = () => {
     setEditorContentOverride(pendingProposal)
     setPendingProposal(null)
@@ -234,22 +232,11 @@ export default function Document() {
                 onChange={(mode) => {
                   setEditorMode(mode)
                   localStorage.setItem(`editorMode:${id}`, mode)
-                  if (mode === 'preview') {
-                    setSelectedText('')
-                    window.getSelection()?.removeAllRanges()
-                  }
                 }}
               />
             )}
             {!pendingProposal && (
               <>
-                <Button
-                  variant={selectedText ? 'primary' : 'secondary'}
-                  disabled={!selectedText}
-                  onClick={handleAddToChat}
-                >
-                  Add to chat
-                </Button>
                 <button
                   onClick={handleSaveVersion}
                   disabled={saveVersionStatus === 'saving'}
@@ -305,7 +292,6 @@ export default function Document() {
             ref={editorRef}
             document={doc}
             onUpdate={handleUpdate}
-            onSelectText={setSelectedText}
             contentOverride={editorContentOverride}
             onContentOverrideApplied={() => setEditorContentOverride(null)}
             pendingProposal={pendingProposal}
@@ -329,11 +315,10 @@ export default function Document() {
               docId={id}
               document={doc}
               onProposedChange={setPendingProposal}
-              contextText={contextText}
-              onClearContext={() => setContextText('')}
               headings={parseHeadingsWithContent(doc?.content)}
               evidenceSources={doc?.evidence || []}
               pendingProposal={pendingProposal}
+              protectedSections={protectedSections}
               structureLocked={structureLocked}
               actionsUsed={user?.ai_actions_used ?? 0}
               hasByokKey={user?.has_byok_key ?? false}

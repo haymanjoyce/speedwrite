@@ -95,8 +95,8 @@ export const api = {
   },
 
   // Chat
-  chatMessage: (docId, message, context, ignoreHistory = false, provider = null, contextLabel = null, signal = null, structureLocked = false) =>
-    request('POST', `/documents/${docId}/chat`, { message, context, ignore_history: ignoreHistory, provider, context_label: contextLabel, structure_locked: structureLocked }, signal),
+  chatMessage: (docId, message, sectionPath, ignoreHistory = false, provider = null, signal = null, structureLocked = false) =>
+    request('POST', `/documents/${docId}/chat`, { message, section_path: sectionPath, ignore_history: ignoreHistory, provider, structure_locked: structureLocked }, signal),
   documentAction: (docId, action, instructions = '', provider = null, structureLocked = false) =>
     request('POST', `/documents/${docId}/action`, { action, instructions, provider, structure_locked: structureLocked }),
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from auth import get_actions_used, get_byok_key, get_current_user, increment_action_count
 from limits import FREE_ACTION_CAP
-from embeddings import RAG_THRESHOLD_CHARS, load_chunks, retrieve_relevant_chunks
+from embeddings import RAG_THRESHOLD_CHARS, retrieve_relevant_chunks
 from llm import complete
 from storage import load_document, save_document
 
@@ -16,10 +16,10 @@ router = APIRouter(prefix="/documents")
 
 class ChatRequest(BaseModel):
     message: str
-    context: Optional[str] = None
+    # None = chat-only; [] = entire document rewrite; [...] = ancestor path to section
+    section_path: Optional[list[str]] = None
     ignore_history: bool = False
     provider: Optional[str] = None
-    context_label: Optional[str] = None
     structure_locked: bool = False
 
 
@@ -29,42 +29,45 @@ class ChatResponse(BaseModel):
 
 
 _AGENT_SYSTEM = """\
-You are an AI agent helping the user edit their document. You can
-propose changes to the document content.
+You are an AI agent helping the user edit their document.
 
 Document content:
 ---
 {document_content}
 ---
 
-{evidence_block}{context_block}{scope_instruction}You may also include a brief explanation before or after any \
-proposed changes.
-If the user is just asking a question, respond conversationally without
-proposing document changes.\
+{evidence_block}{context_block}{scope_instruction}\
 """
 
-_SCOPED_INSTRUCTION = """\
-The user has selected the following section for editing (shown above \
-between the --- markers). You must ONLY rewrite that selected section.
-Do NOT rewrite or modify any other part of the document.
+_SECTION_REWRITE_INSTRUCTION = """\
+Return the rewritten section inside <proposed_section> tags. Start from the section's \
+heading line (e.g. `## Section title`) — include it even if you rename it — through \
+the end of the section's content, including any subsections within scope. \
+Do not modify anything outside the marked rewrite target.
 
-When proposing changes, return the COMPLETE document with ONLY the \
-selected section replaced. Wrap the full revised document in XML tags:
-<proposed_document>
-...complete document with only the selected section changed...
-</proposed_document>
-
+Example format:
+<proposed_section>
+## Section heading
+Content here...
+</proposed_section>
 """
 
-_UNSCOPED_INSTRUCTION = """\
-If the user asks you to make changes, respond with your proposed full \
-revised document wrapped in XML tags:
-<proposed_document>
-...full markdown content of the revised document...
-</proposed_document>
+_FULL_DOC_REWRITE_INSTRUCTION = """\
+Return the complete rewritten document inside <proposed_section> tags. \
+Do not include an outer heading — begin from the first line of document content.
 
+Example format:
+<proposed_section>
+# Document title
+Content here...
+</proposed_section>
 """
 
+_CHAT_ONLY_INSTRUCTION = """\
+You are in chat-only mode. Respond conversationally to the user's message. \
+Do not propose document changes and do not return a <proposed_section> block \
+under any circumstances.
+"""
 
 _PRESERVE_INSTRUCTION = (
     "CRITICAL INSTRUCTION — PRESERVE THESE ELEMENTS EXACTLY: You must return the following elements "
@@ -76,14 +79,6 @@ _PRESERVE_INSTRUCTION = (
     "- Blockquotes (> prefixed lines)\n"
     "If any of these elements exist in the original document, they must appear verbatim in your proposed document."
 )
-
-
-def _build_mode_instruction() -> str:
-    return (
-        "\nReturn a <proposed_document> block whenever the user is asking for changes to the document. "
-        "If the message is purely conversational or a question, respond conversationally without a "
-        "<proposed_document> block."
-    )
 
 
 def _build_structure_lock_block(structure_locked: bool) -> str:
@@ -119,7 +114,6 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
     if not items:
         return ""
 
-    # Separate live sync-on document sources (never RAG, always live)
     live_doc_sources = [
         i for i in items
         if i.get("type") == "document" and i.get("sync")
@@ -131,7 +125,6 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
 
     parts = []
 
-    # Always include live document sources directly
     for item in live_doc_sources:
         source = load_document(doc["user_id"], item["source_doc_id"])
         content = source.get("content", "") if source else item.get("content", "")
@@ -139,7 +132,6 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
             content = content[:3000] + "\n[truncated]"
         parts.append(f"--- Source: {item['title']} (live document) ---\n{content}")
 
-    # Decide RAG vs full dump for other sources
     total_len = sum(len(i.get("content", "")) for i in other_sources)
 
     if query and total_len > RAG_THRESHOLD_CHARS:
@@ -155,9 +147,8 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
                 all_parts = rag_parts + parts
                 return "\n".join(all_parts) + "\n\n"
         except Exception:
-            pass  # Fall through to full dump
+            pass
 
-    # Full dump path (small evidence base, RAG unavailable, or no chunks returned)
     for item in other_sources:
         content = item.get("content", "")
         if len(content) > 3000:
@@ -167,6 +158,55 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
     if not parts:
         return ""
     return "Evidence base:\n" + "\n".join(parts) + "\n\n"
+
+
+def _locate_section(content: str, path: list[str]) -> tuple[int, int] | None:
+    """
+    Locate a section in `content` by following the ancestor path.
+    Returns (start_line_idx, end_line_idx) where lines[start:end] is the full
+    section including its heading line. Returns None if the path cannot be resolved.
+    """
+    lines = content.split("\n")
+    n = len(lines)
+
+    heading_positions: list[tuple[int, int, str]] = []
+    for i, line in enumerate(lines):
+        m = re.match(r"^(#{1,6})\s+(.+)", line)
+        if m:
+            heading_positions.append((i, len(m.group(1)), m.group(2).strip()))
+
+    search_start = 0
+    search_end = n
+    current_start = 0
+    current_level = 0
+    current_end = n
+
+    for target in path:
+        found = None
+        for li, level, text in heading_positions:
+            if li < search_start or li >= search_end:
+                continue
+            if text == target:
+                found = (li, level)
+                break
+
+        if found is None:
+            return None
+
+        current_start, current_level = found
+
+        current_end = n
+        for li, level, text in heading_positions:
+            if li <= current_start:
+                continue
+            if level <= current_level:
+                current_end = li
+                break
+
+        search_start = current_start + 1
+        search_end = current_end
+
+    return current_start, current_end
 
 
 @router.delete("/{doc_id}/chat")
@@ -194,28 +234,72 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
             )
     doc.setdefault("chat_history", [])
 
-    context_block = ""
-    if data.context:
+    doc_content = doc.get("content", "")
+    is_chat_only = data.section_path is None
+    is_full_doc = data.section_path is not None and len(data.section_path) == 0
+
+    # Derive context_label for chat history storage
+    if is_chat_only:
+        context_label = None
+    elif is_full_doc:
+        context_label = "Entire document"
+    else:
+        context_label = data.section_path[-1]
+
+    section_start: int | None = None
+    section_end: int | None = None
+
+    if is_chat_only:
+        context_block = ""
+        scope_instruction = _CHAT_ONLY_INSTRUCTION
+    elif is_full_doc:
         context_block = (
-            "The user has highlighted the following text as additional context:\n"
+            "The full document is the rewrite target:\n"
             "---\n"
-            f"{data.context}\n"
-            "---\n"
+            f"{doc_content}\n"
+            "---\n\n"
         )
+        scope_instruction = _FULL_DOC_REWRITE_INSTRUCTION
+    else:
+        result = _locate_section(doc_content, data.section_path)
+        if result is None:
+            error_msg = (
+                "Could not locate the attached section in the document — it may have been "
+                "renamed or removed since you attached it. Please re-attach the section and try again."
+            )
+            now = datetime.utcnow().isoformat()
+            doc["chat_history"].append(
+                {"role": "user", "content": data.message, "context_label": context_label, "timestamp": now}
+            )
+            doc["chat_history"].append(
+                {"role": "assistant", "content": error_msg, "timestamp": now}
+            )
+            save_document(doc)
+            return ChatResponse(message=error_msg, proposed_content=None)
+
+        section_start, section_end = result
+        section_lines = doc_content.split("\n")[section_start:section_end]
+        section_content = "\n".join(section_lines)
+        context_block = (
+            "Rewrite target section (marked for editing):\n"
+            "---\n"
+            f"{section_content}\n"
+            "---\n\n"
+        )
+        scope_instruction = _SECTION_REWRITE_INSTRUCTION
 
     evidence_block = _build_evidence_block(doc, query=data.message)
     protected_block = _build_protected_block(doc)
     structure_lock_block = _build_structure_lock_block(data.structure_locked)
-    scope_instruction = protected_block + structure_lock_block + (_SCOPED_INSTRUCTION if data.context else _UNSCOPED_INSTRUCTION)
+    full_scope = protected_block + structure_lock_block + scope_instruction
 
     system_prompt = _PRESERVE_INSTRUCTION + "\n\n" + _AGENT_SYSTEM.format(
-        document_content=doc.get("content", ""),
+        document_content=doc_content,
         evidence_block=evidence_block,
         context_block=context_block,
-        scope_instruction=scope_instruction,
-    ) + _build_mode_instruction()
+        scope_instruction=full_scope,
+    )
 
-    # Build messages for Anthropic — strip storage-only fields
     if data.ignore_history:
         api_messages = []
     else:
@@ -236,24 +320,35 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
 
     proposed_content: Optional[str] = None
     clean_message = raw_text
-    match = re.search(
-        r"<proposed_document[^>]*>(.*?)</proposed_document>",
-        raw_text,
-        re.DOTALL,
-    )
-    if match:
-        proposed_content = match.group(1).strip()
-        clean_message = re.sub(
-            r"<proposed_document[^>]*>.*?</proposed_document>",
-            "",
+
+    if not is_chat_only:
+        match = re.search(
+            r"<proposed_section[^>]*>(.*?)</proposed_section>",
             raw_text,
-            flags=re.DOTALL,
-        ).strip()
-    elif re.search(r"<proposed_document", raw_text) and "</proposed_document>" not in raw_text:
-        clean_message = "The proposed document was too large to return in full. Please use Add to chat to select a specific section and try again."
+            re.DOTALL,
+        )
+        if match:
+            rewritten = match.group(1).strip()
+            clean_message = re.sub(
+                r"<proposed_section[^>]*>.*?</proposed_section>",
+                "",
+                raw_text,
+                flags=re.DOTALL,
+            ).strip()
+            if is_full_doc:
+                proposed_content = rewritten
+            else:
+                lines = doc_content.split("\n")
+                new_lines = lines[:section_start] + rewritten.split("\n") + lines[section_end:]
+                proposed_content = "\n".join(new_lines)
+        else:
+            clean_message = (
+                "The rewrite could not be completed — the AI response was malformed. Please try again."
+            )
+
     now = datetime.utcnow().isoformat()
     doc["chat_history"].append(
-        {"role": "user", "content": data.message, "context_label": data.context_label, "timestamp": now}
+        {"role": "user", "content": data.message, "context_label": context_label, "timestamp": now}
     )
     doc["chat_history"].append(
         {

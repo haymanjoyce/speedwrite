@@ -3,7 +3,7 @@ import { api } from '../api'
 import DiffView from './DiffView'
 import MarkdownPreview from './MarkdownPreview'
 
-const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, protectedSections = [], structureLocked = false }, ref) {
+const Editor = forwardRef(function Editor({ document, onUpdate, onSaveStatus, contentOverride, onContentOverrideApplied, pendingProposal, editorMode, protectedSections = [], structureLocked = false }, ref) {
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
   const [saveError, setSaveError] = useState(false)
@@ -168,7 +168,6 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
 
   useEffect(() => {
     setContent(document?.content ?? '')
-    if (onSelectText) onSelectText('')
     clearTimeout(saveTimer.current)
   }, [document?.id])
 
@@ -209,12 +208,6 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
     const val = e.target.value
     setContent(val)
     scheduleSave(document.id, val)
-  }
-
-  const handleSelect = (e) => {
-    if (!onSelectText) return
-    const { selectionStart, selectionEnd } = e.target
-    onSelectText(selectionStart !== selectionEnd ? content.slice(selectionStart, selectionEnd) : '')
   }
 
   if (!document) {
@@ -283,9 +276,6 @@ const Editor = forwardRef(function Editor({ document, onUpdate, onSelectText, on
           className="flex-1 p-6 font-mono text-sm text-gray-800 resize-none outline-none leading-relaxed"
           value={content}
           onChange={handleChange}
-          onSelect={handleSelect}
-          onMouseUp={handleSelect}
-          onKeyUp={handleSelect}
           onKeyDown={handleTextareaKeyDown}
           placeholder={"Start writing here...\n\nUse ## headings to structure your document — they'll appear in the document tree on the left."}
           spellCheck={false}
