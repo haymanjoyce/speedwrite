@@ -55,7 +55,6 @@ export default function Document() {
   const [pendingProposal, setPendingProposal] = useState(null)
   const [pendingProposalReason, setPendingProposalReason] = useState('ai_rewrite')
   const [editorMode, setEditorMode] = useState('edit')
-  const [protectedSections, setProtectedSections] = useState([])
   const [structureLocked, setStructureLocked] = useState(false)
   const [restoreSnapshotId, setRestoreSnapshotId] = useState(null)
   const [restoreSnapshotLabel, setRestoreSnapshotLabel] = useState(null)
@@ -91,7 +90,6 @@ export default function Document() {
     if (!id) return
     api.getDocument(id).then((data) => {
       setDoc(data)
-      setProtectedSections(data.protected_sections ?? [])
       setStructureLocked(data.structure_locked ?? false)
       const saved = localStorage.getItem(`editorMode:${id}`)
       if (saved === 'edit' || saved === 'preview') {
@@ -116,24 +114,6 @@ export default function Document() {
 
   const handleUpdate = (updated) => {
     setDoc(updated)
-  }
-
-  const handleToggleProtection = async (headingText) => {
-    const isProtected = protectedSections.includes(headingText)
-    const updated = isProtected
-      ? protectedSections.filter((h) => h !== headingText)
-      : [...protectedSections, headingText]
-    setProtectedSections(updated)
-    try {
-      if (isProtected) {
-        await api.unprotectSection(id, headingText)
-      } else {
-        await api.protectSection(id, headingText)
-      }
-    } catch (err) {
-      console.error('Toggle protection failed', err)
-      setProtectedSections(protectedSections) // revert on error
-    }
   }
 
   const handleToggleStructureLock = async () => {
@@ -279,8 +259,6 @@ export default function Document() {
           <DocumentSidebar
             document={doc}
             onHeadingClick={(text) => editorMode === 'preview' ? editorRef.current?.scrollToHeadingPreview(text) : editorRef.current?.scrollToHeading(text)}
-            protectedSections={protectedSections}
-            onToggleProtection={handleToggleProtection}
             structureLocked={structureLocked}
             onToggleStructureLock={handleToggleStructureLock}
             pendingProposal={!!pendingProposal}
@@ -303,7 +281,6 @@ export default function Document() {
             onContentOverrideApplied={() => setEditorContentOverride(null)}
             pendingProposal={pendingProposal}
             editorMode={editorMode}
-            protectedSections={protectedSections}
             structureLocked={structureLocked}
           />
         </div>
@@ -325,7 +302,6 @@ export default function Document() {
               headings={parseHeadingsWithContent(doc?.content)}
               evidenceSources={doc?.evidence || []}
               pendingProposal={pendingProposal}
-              protectedSections={protectedSections}
               structureLocked={structureLocked}
               actionsUsed={user?.ai_actions_used ?? 0}
               hasByokKey={user?.has_byok_key ?? false}

@@ -26,7 +26,6 @@ function truncateContext(text) {
 const ChatPanel = forwardRef(function ChatPanel({
   docId, document, onProposedChange, provider,
   headings, pendingProposal, structureLocked = false,
-  protectedSections = [],
   actionsUsed = 0, hasByokKey = false, onActionComplete = null,
 }, ref) {
   const isCapped = !hasByokKey && actionsUsed >= FREE_ACTION_CAP
@@ -168,15 +167,6 @@ const ChatPanel = forwardRef(function ChatPanel({
   const handleSend = async (textOverride) => {
     const text = (textOverride !== undefined ? textOverride : input).trim()
     if (!text || loading) return
-
-    // Per-section lock check (not applicable to entire-document scope, path=[])
-    if (localContext && localContext.path.length > 0 && protectedSections.includes(localContext.label)) {
-      setMessages((prev) => [...prev, {
-        role: 'system-notice',
-        content: `Locked section — unlock "${localContext.label}" to edit, or attach a different section.`,
-      }])
-      return
-    }
 
     const sectionPath = localContext ? localContext.path : null
     const ignoreHistory = sectionPath !== null

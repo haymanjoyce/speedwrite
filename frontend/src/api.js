@@ -208,11 +208,6 @@ export const api = {
   // Feedback
   submitFeedback: (message) => request('POST', '/feedback', { message }),
 
-  // Section protection
-  protectSection: (docId, heading) =>
-    request('POST', `/documents/${docId}/protect`, { heading }),
-  unprotectSection: (docId, heading) =>
-    request('DELETE', `/documents/${docId}/protect`, { heading }),
   lockStructure: (docId) =>
     request('POST', `/documents/${docId}/lock-structure`),
   unlockStructure: (docId) =>

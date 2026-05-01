@@ -55,7 +55,6 @@ def create_document(data: DocumentCreate, user=Depends(get_current_user)):
         "evidence": [],
         "audit_log": [],
         "shared_with": [],
-        "protected_sections": [],
         "evidence_chat_history": [],
         "history": [],
         "save_count": 0,
@@ -104,7 +103,6 @@ async def import_document(file: UploadFile = File(...), user=Depends(get_current
         "evidence": [],
         "audit_log": [],
         "shared_with": [],
-        "protected_sections": [],
         "evidence_chat_history": [],
         "history": [],
         "save_count": 0,
@@ -146,7 +144,6 @@ def duplicate_document(doc_id: str, user=Depends(get_current_user)):
         "evidence": [],
         "audit_log": [],
         "shared_with": [],
-        "protected_sections": list(source.get("protected_sections", [])),
         "structure_locked": source.get("structure_locked", False),
         "evidence_chat_history": [],
         "history": [],
@@ -256,34 +253,6 @@ def get_snapshot(doc_id: str, snapshot_id: str, user=Depends(get_current_user)):
         if entry["id"] == snapshot_id:
             return entry
     raise HTTPException(status_code=404, detail="Snapshot not found")
-
-
-class ProtectRequest(BaseModel):
-    heading: str
-
-
-
-@router.post("/{doc_id}/protect")
-def protect_section(doc_id: str, data: ProtectRequest, user=Depends(get_current_user)):
-    doc = load_document(user["id"], doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-    doc.setdefault("protected_sections", [])
-    if data.heading not in doc["protected_sections"]:
-        doc["protected_sections"].append(data.heading)
-        save_document(doc)
-    return doc["protected_sections"]
-
-
-@router.delete("/{doc_id}/protect")
-def unprotect_section(doc_id: str, data: ProtectRequest, user=Depends(get_current_user)):
-    doc = load_document(user["id"], doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-    doc.setdefault("protected_sections", [])
-    doc["protected_sections"] = [h for h in doc["protected_sections"] if h != data.heading]
-    save_document(doc)
-    return doc["protected_sections"]
 
 
 @router.post("/{doc_id}/lock-structure")

@@ -24,6 +24,10 @@ The templates feature (`backend/templates.py`, `TemplatePickerOverlay.jsx`, `fro
 
 The "Add to chat" button (arbitrary text selection in Edit mode) was retired when sectional editing was introduced. The `+` section picker in `ChatPanel.jsx` is the only scope declaration mechanism. Do not re-add "Add to chat", `selectedText` state, `contextText` prop, or `onSelectText` plumbing.
 
+### Per-section locking removed (do not re-add)
+
+Per-section locks (`protected_sections`, `_build_protected_block`, `protectSection`/`unprotectSection` endpoints, lock icons in `DocumentTree`) were removed when sectional editing made them redundant. Scope is now opt-in via section attachment — the user explicitly declares what gets rewritten. Do not re-add `protected_sections`, per-section lock UI, or `_build_protected_block`. Structure locking remains and is unaffected.
+
 ## UI Conventions
 
 ### Three-tier navigation hierarchy
@@ -137,8 +141,7 @@ Main views:
 
 ## Document Tree
 
-- Protected nodes show lock icon; unlocked nodes show it faintly on hover. Both the per-section lock/unlock icon and the structure lock toggle in the Structure panel header are hidden during diff view.
-- During diff view (`pendingProposal` truthy), a `pendingProposal` boolean is threaded `Document.jsx` → `DocumentSidebar.jsx` → `DocumentTree.jsx` to suppress both lock controls; tree content remains fully visible.
+- The structure lock toggle in the Structure panel header is hidden during diff view (`pendingProposal` prop in `DocumentSidebar.jsx`).
 - Clicking a heading scrolls to it via `useImperativeHandle` on `Editor`. In edit mode: `scrollToHeading` mirrors into the textarea. In preview mode: `scrollToHeadingPreview` queries heading elements inside `previewContainerRef` and calls `scrollIntoView`. `Document.jsx` `onHeadingClick` branches on `editorMode`.
 - No `##` headings → DocumentSidebar shows placeholder. `parseHeadings` is exported from `DocumentTree.jsx`.
 - Tree has no left border; indentation alone carries hierarchy. Heading colour steps by level: H2 gray-700, H3 gray-600, H4+ gray-500. Each heading row carries `title={h.text}` for a native tooltip on truncated labels.
@@ -165,7 +168,6 @@ Main views:
 
 - **Attachment**: The `+` button opens a section picker inlined in `ChatPanel.jsx`. The picker shows "Entire document" at the top (always), then H1–H3 headings filtered by a search input. Each heading carries a `path: {text, index, level}[]` field (ancestor path computed by `parseHeadingsWithContent` in `Document.jsx`). Closes on item select / outside click / Escape. Evidence is auto-injected into the system prompt; per-message evidence attachment is not offered. `AttachmentPopup.jsx` is NOT used by `ChatPanel` — it is used only by `EvidenceChatPanel`. **`document` prop shadowing**: `ChatPanel` receives a prop named `document` (the SpeedWrite document object) which shadows the browser global. Any `addEventListener`/`removeEventListener` calls must use `window.document`, not `document`.
 - **Context chip**: shows attached section label + char count. Amber + `⚠` when truncated. Hard truncation at 10000 chars (`ATTACHMENT_TRUNCATION_LIMIT`); amber warning at 10000 (`ATTACHMENT_WARNING_THRESHOLD`). Section content is truncated client-side in `ChatPanel`.
-- **Locked-section notice**: if the attached section's heading is in `protectedSections`, sending renders an inline `system-notice` bubble ("Locked section — unlock to edit") and does not call the API. Input is not cleared so the user can unlock and resend.
 - **Context label**: derived server-side from the leaf of the ancestor path (or `"Entire document"`) and stored as `context_label` on the user chat history entry. Frontend reads `msg.context_label` from history unchanged — shown as a small tag above the user bubble.
 - **Single Send button**: no Edit/Chat split. Mode is signalled by `section_path` — `null` = chat-only (AI must not propose changes); otherwise rewrite mode.
 - **Preserve instruction** (`_PRESERVE_INSTRUCTION` in `chat.py`): prepended to system prompt; instructs AI to return tables, image refs, code blocks, and blockquotes verbatim. Not used in `actions.py`.
@@ -201,21 +203,14 @@ Sharing is tied to History snapshots (immutable). Anyone with a share link can v
 - **Backend**: `POST /feedback`, auth required. Email sent via `mailer.send_email()` to `FEEDBACK_EMAIL` (defaults to `EMAIL_FROM`). Always returns `{"ok": true}`; failures logged silently.
 - **`mailer.py`** named to avoid shadowing Python's stdlib `email` module — applies to all of `mailer.py`, not just feedback.
 
-## Section Locking
-
-- `protected_sections: list` on doc stores locked heading texts.
-- Backend enforces via system prompt in `chat.py` (`_build_protected_block`) — AI instructed never to modify or offer to unlock locked sections.
-- `POST /documents/{doc_id}/protect` adds; `DELETE` removes.
-- Frontend: optimistic update with error revert in `Document.jsx`. `DocumentTree.jsx` shows lock icons on protected nodes. `MarkdownPreview.jsx` and `DiffView.jsx` both highlight protected blocks visually.
-
 ## Structure Locking
 
-Separate and independent from per-section locking. Prevents AI from changing document structure (add/remove/reorder/rename sections) while allowing content rewrites.
+Prevents AI from changing document structure (add/remove/reorder/rename sections) while allowing content rewrites within sections.
 
 - `structure_locked: bool` on doc (default `False`). `doc.get('structure_locked', False)` for existing docs.
 - `POST /documents/{doc_id}/lock-structure` and `POST .../unlock-structure`.
-- Instruction injected into `chat.py` and `actions.py` system prompts: prevents adding/removing/reordering/renaming sections while allowing content rewrites.
-- UI: icon-only toggle in Structure panel header. No visual treatment on tree nodes — avoids collision with per-section lock styling.
+- Instruction injected into `chat.py` system prompt: prevents adding/removing/reordering/renaming sections while allowing content rewrites.
+- UI: icon-only toggle in Structure panel header. No visual treatment on tree nodes.
 - When `structureLocked` is true, heading lines highlighted in `DiffView` and in `MarkdownPreview` (document variant only). Highlighting uses `node.position.start.line` (1-indexed → 0-indexed) in custom `components` renderers.
 - `ChatPanel` receives and forwards `structureLocked` on every message sent via `handleSend`.
 

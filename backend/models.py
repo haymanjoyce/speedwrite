@@ -84,7 +84,6 @@ class Document(BaseModel):
     shared_with: list = []
     chat_history: list = []
     evidence_chat_history: list = []
-    protected_sections: list = []
     history: list = []
     save_count: int = 0
     structure_locked: bool = False

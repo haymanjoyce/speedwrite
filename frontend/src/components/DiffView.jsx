@@ -30,35 +30,9 @@ function diffLines(oldLines, newLines) {
   return result.reverse()
 }
 
-function getProtectedLineSet(content, protectedSections) {
-  if (!protectedSections || protectedSections.length === 0) return new Set()
-  const lines = content.split('\n')
-  const protectedSet = new Set()
-  for (const heading of protectedSections) {
-    let startLine = -1
-    let startLevel = 0
-    for (let i = 0; i < lines.length; i++) {
-      const m = lines[i].match(/^(#{1,6})\s+(.+)/)
-      if (m && m[2].trim() === heading) {
-        startLine = i
-        startLevel = m[1].length
-        break
-      }
-    }
-    if (startLine === -1) continue
-    protectedSet.add(startLine)
-    for (let i = startLine + 1; i < lines.length; i++) {
-      const m = lines[i].match(/^(#{1,6})\s+/)
-      if (m && m[1].length <= startLevel) break
-      protectedSet.add(i)
-    }
-  }
-  return protectedSet
-}
-
 import { useEffect, useMemo, useRef } from 'react'
 
-export default function DiffView({ originalContent, proposedContent, protectedSections = [], structureLocked = false }) {
+export default function DiffView({ originalContent, proposedContent, structureLocked = false }) {
   const diff = useMemo(() => {
     const oldLines = (originalContent ?? '').split('\n')
     const newLines = (proposedContent ?? '').split('\n')
@@ -66,7 +40,7 @@ export default function DiffView({ originalContent, proposedContent, protectedSe
   }, [originalContent, proposedContent])
 
   const protectedLineSet = useMemo(() => {
-    const base = getProtectedLineSet(originalContent ?? '', protectedSections)
+    const base = new Set()
     if (structureLocked) {
       const lines = (originalContent ?? '').split('\n')
       lines.forEach((line, i) => {
@@ -74,7 +48,7 @@ export default function DiffView({ originalContent, proposedContent, protectedSe
       })
     }
     return base
-  }, [originalContent, protectedSections, structureLocked])
+  }, [originalContent, structureLocked])
 
   const firstChangeRef = useRef(null)
 
