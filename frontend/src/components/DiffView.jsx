@@ -91,17 +91,16 @@ export default function DiffView({ originalContent, proposedContent, protectedSe
         const isProtected = protectedLineSet.has(entry.origIndex)
         const isEmpty = entry.line === ''
 
-        if (isProtected) {
-          prevType = 'protected'
-          return (
-            <div key={i} className={`flex border-l-2 border-gray-300 bg-gray-100 py-0.5${isEmpty ? ' min-h-[1rem]' : ''}`}>
-              <span className="w-4 font-mono text-xs flex-shrink-0 select-none text-gray-400">~</span>
-              <span className="text-gray-400 whitespace-pre-wrap break-all">{entry.line}</span>
-            </div>
-          )
-        }
-
         if (entry.type === 'equal') {
+          if (isProtected) {
+            prevType = 'protected'
+            return (
+              <div key={i} className={`flex border-l-2 border-gray-300 bg-gray-100 py-0.5${isEmpty ? ' min-h-[1rem]' : ''}`}>
+                <span className="w-4 font-mono text-xs flex-shrink-0 select-none text-gray-400">~</span>
+                <span className="text-gray-400 whitespace-pre-wrap break-all">{entry.line}</span>
+              </div>
+            )
+          }
           const separator = prevType === 'add' || prevType === 'remove'
           prevType = 'equal'
           return (
