@@ -122,7 +122,7 @@ Main views:
   - Per-section lock check on the frontend: if the attached section's heading is in `protectedSections`, an inline `system-notice` bubble is shown in chat and no request is sent. `protectedSections` is wired to `ChatPanel` as a prop.
   - `context_label` is derived server-side from the leaf heading (or `"Entire document"`) and stored on the chat history entry.
 - **Agent panel**: Chat panel is hidden via `display: none` (not unmounted) so ref and chat state survive the reject path — `className={pendingProposal ? 'hidden' : 'contents'}`.
-- **Inline diff** (`DiffView.jsx`): LCS-based. Auto-scrolls to first change on mount. Occupies the same flex slot as the editor.
+- **Inline diff** (`DiffView.jsx`): LCS-based line diff. Auto-scrolls to first change on mount. Shares the editor's flex slot. A verbatim line inside a rewritten paragraph renders as unchanged context (muted) — correct line-level behaviour, not a bug. Word/paragraph diff declined (rare; tools match; cost > benefit). Revisit if confusing.
 - **Content override**: `editorContentOverride` in `Document.jsx` is a one-shot signal; `onContentOverrideApplied` clears it to `null` immediately after `Editor.jsx` applies it.
 - **Document actions routing (important)**: Only `Home.jsx` description generation calls `api.documentAction`. All other AI chat goes through `api.chatMessage` → `chat.py` — never `actions.py`. Both `generate_description` and evidence describe return structured four-section markdown (Summary / Key themes / Key arguments / Open questions) — rendered by a hand-rolled parser, not `MarkdownPreview`.
 - **Evidence describe**: `POST /documents/{doc_id}/evidence/{evidence_id}/describe` — generates the same four-section structured description for an evidence source. Stored as `item["description"]`. Cap enforced (free users). `SourceDetail` lower panel renders via the same hand-rolled parser; shows "No description yet." when absent. Describe button disabled when no item selected or describe in progress.
@@ -198,7 +198,7 @@ Sharing is tied to History snapshots (immutable). Anyone with a share link can v
 
 - **Trigger**: `onFeedbackClick` prop on `TopBar`. All pages pass `() => setShowFeedback(true)`.
 - **UI**: `FeedbackBar.jsx` — slim bar rendered below TopBar. Single text input (maxLength 2000), Send button, × close. Escape also closes. Auto-closes 2s after successful send.
-- **Backend**: `POST /feedback` in `backend/feedback.py`, auth required. Sends email via `mailer.send_email()` to `FEEDBACK_EMAIL` (env var, defaults to `EMAIL_FROM`). Always returns `{"ok": true}` — email failures are logged but not surfaced to the user.
+- **Backend**: `POST /feedback`, auth required. Email sent via `mailer.send_email()` to `FEEDBACK_EMAIL` (defaults to `EMAIL_FROM`). Always returns `{"ok": true}`; failures logged silently.
 - **`mailer.py`** named to avoid shadowing Python's stdlib `email` module — applies to all of `mailer.py`, not just feedback.
 
 ## Section Locking
