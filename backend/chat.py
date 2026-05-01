@@ -14,10 +14,16 @@ from storage import load_document, save_document
 router = APIRouter(prefix="/documents")
 
 
+class SectionPathStep(BaseModel):
+    text: str
+    index: int
+    level: int
+
+
 class ChatRequest(BaseModel):
     message: str
     # None = chat-only; [] = entire document rewrite; [...] = ancestor path to section
-    section_path: Optional[list[str]] = None
+    section_path: Optional[list[SectionPathStep]] = None
     ignore_history: bool = False
     provider: Optional[str] = None
     structure_locked: bool = False
@@ -160,7 +166,7 @@ def _build_evidence_block(doc: dict, query: str = "") -> str:
     return "Evidence base:\n" + "\n".join(parts) + "\n\n"
 
 
-def _locate_section(content: str, path: list[str]) -> tuple[int, int] | None:
+def _locate_section(content: str, path: list[SectionPathStep]) -> tuple[int, int] | None:
     """
     Locate a section in `content` by following the ancestor path.
     Returns (start_line_idx, end_line_idx) where lines[start:end] is the full
@@ -181,22 +187,19 @@ def _locate_section(content: str, path: list[str]) -> tuple[int, int] | None:
     current_level = 0
     current_end = n
 
-    for target in path:
-        found = None
-        for li, level, text in heading_positions:
-            if li < search_start or li >= search_end:
-                continue
-            if text == target:
-                found = (li, level)
-                break
-
-        if found is None:
+    for step in path:
+        matches = [
+            (li, level)
+            for li, level, text in heading_positions
+            if search_start <= li < search_end and text == step.text and level == step.level
+        ]
+        if step.index >= len(matches):
             return None
 
-        current_start, current_level = found
+        current_start, current_level = matches[step.index]
 
         current_end = n
-        for li, level, text in heading_positions:
+        for li, level, _ in heading_positions:
             if li <= current_start:
                 continue
             if level <= current_level:
@@ -244,7 +247,7 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
     elif is_full_doc:
         context_label = "Entire document"
     else:
-        context_label = data.section_path[-1]
+        context_label = data.section_path[-1].text
 
     section_start: int | None = None
     section_end: int | None = None

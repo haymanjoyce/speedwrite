@@ -14,7 +14,8 @@ import TopBar from '../components/TopBar'
 function parseHeadingsWithContent(content) {
   const lines = (content || '').split('\n')
   const headings = []
-  const ancestorStack = [] // { level, text }[]
+  const ancestorStack = [] // { level, text, index }[]
+  const siblingCounter = new Map() // encoded (parentChain + level + text) → prior-occurrence count
   for (let i = 0; i < lines.length; i++) {
     const match = lines[i].match(/^(#{1,3})\s+(.+)/)
     if (match) {
@@ -23,8 +24,14 @@ function parseHeadingsWithContent(content) {
       while (ancestorStack.length > 0 && ancestorStack[ancestorStack.length - 1].level >= level) {
         ancestorStack.pop()
       }
-      const path = [...ancestorStack.map(a => a.text), text]
-      ancestorStack.push({ level, text })
+      const counterKey = JSON.stringify([...ancestorStack.map(a => [a.level, a.text, a.index]), level, text])
+      const index = siblingCounter.get(counterKey) ?? 0
+      siblingCounter.set(counterKey, index + 1)
+      const path = [
+        ...ancestorStack.map(a => ({ text: a.text, index: a.index, level: a.level })),
+        { text, index, level },
+      ]
+      ancestorStack.push({ level, text, index })
       const sectionLines = [lines[i]]
       for (let j = i + 1; j < lines.length; j++) {
         const nextMatch = lines[j].match(/^(#{1,3})\s+/)
