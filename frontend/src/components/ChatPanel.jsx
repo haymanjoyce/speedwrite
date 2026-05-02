@@ -169,7 +169,7 @@ const ChatPanel = forwardRef(function ChatPanel({
     if (!text || loading) return
 
     const sectionPath = localContext ? localContext.path : null
-    const ignoreHistory = sectionPath !== null
+    const ignoreHistory = true
     const contextLabel = localContext?.label ?? null
 
     setMessages((prev) => [...prev, { role: 'user', content: text, context_label: contextLabel }])

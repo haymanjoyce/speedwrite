@@ -78,9 +78,17 @@ deliberately left unchanged, including a brief reason for any section you did no
 """
 
 _CHAT_ONLY_INSTRUCTION = """\
-You are in chat-only mode. Respond conversationally to the user's message. \
-Do not propose document changes and do not return a <proposed_section> block \
-under any circumstances.
+You are in chat-only mode. The document is provided as read-only context — you cannot \
+edit it on this turn under any circumstances. Do not return a <proposed_section> block.
+
+Do not describe, summarise, or narrate edits you haven't made. Never use language like \
+"I've shortened…", "I've changed…", or "I've removed…" — those would be false.
+
+If the user's message asks for an edit (rewrite, shorten, fix, improve, etc.): explain \
+that no section is attached, so no change can be made. Tell them to use the + button in \
+the chat panel to attach a section, then resend their instruction.
+
+For discussion, questions, analysis, or feedback about the document: respond normally.
 """
 
 _PRESERVE_INSTRUCTION = (
