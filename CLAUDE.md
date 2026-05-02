@@ -10,7 +10,6 @@ SpeedWrite is an AI-assisted document authoring platform. The core unit is a doc
 
 The Audit Log feature (`log.py`, `Log.jsx`, `append_audit_log`, `addLogEntry`, `/document/:id/log` route) was removed intentionally. It is an audit trail, not a user-facing document authoring feature. Do not re-add audit logging or a Log tab to SpeedWrite.
 
-Existing `audit_log` arrays in document JSON files are harmless and simply ignored.
 
 ### Redraft and Insights removed (do not re-add)
 
@@ -134,6 +133,7 @@ Main views:
 - **Embeddings/RAG**: Embedded via Ollama `nomic-embed-text`. At chat time, if total non-live evidence > 8000 chars and embeddings exist, top-5 chunks retrieved instead of full context dump. `retrieve_relevant_chunks` accepts `active_ids`; inactive-source chunks excluded. Falls back to full context dump if Ollama unreachable.
 - **LLM abstraction** (`llm.py`): Anthropic is the only active path; `_complete_ollama()` is retained but dormant. Active model: `FREE_MODEL = "claude-haiku-4-5-20251001"`. `_complete_anthropic` catches status 529 → HTTP 503 with a user-facing message.
 - **Evidence chat** (`EvidenceChatPanel.jsx`): Persistent chat on Evidence page. Never modifies the document. When no source is manually attached, `_build_evidence_block` auto-injects the full evidence base (same RAG/full-dump logic; inactive sources excluded). A source inventory is always prepended. Attached-context and auto-evidence paths are mutually exclusive. `DELETE .../evidence-chat` clears history. No "All sources" option. **Stale-context warning**: trash icon highlights if sources toggled since last send; clear to reset context.
+- **Rewrite summary**: after the `</proposed_section>` block, AI writes a 1–3 sentence plain-text summary (becomes `clean_message`) describing what changed. Full-doc rewrites also note what was deliberately left unchanged and why. Chat-only path excluded.
 - **Token limits**: `max_tokens=8192` in `chat.py`; `max_tokens=4096` in `actions.py`. Sectional rewrites use a fraction of this budget — truncation is not a concern at normal document sizes.
 - **Document export**: `GET .../export/txt` strips markdown to plain text. `GET .../export/md` returns content as-is. `GET .../export/pdf` uses `markdown` + `weasyprint`. All auth-required. Frontend Export dropdown: `.txt` · `.md` · `.pdf`.
 - **Document import**: `POST /documents/import` (multipart, auth). Accepts `.docx`, `.md`, `.txt`. `.docx` converts via mammoth → html2text. Title from filename, truncated to 200 chars. Route must precede `/{doc_id}` routes in `documents.py`.
@@ -209,7 +209,7 @@ Prevents AI from changing document structure (add/remove/reorder/rename sections
 
 - `structure_locked: bool` on doc (default `False`). `doc.get('structure_locked', False)` for existing docs.
 - `POST /documents/{doc_id}/lock-structure` and `POST .../unlock-structure`.
-- Instruction injected into `chat.py` system prompt: prevents adding/removing/reordering/renaming sections while allowing content rewrites.
+- Instruction in `chat.py` (`_build_structure_lock_block`): absolute prohibition on structural changes — cannot be overridden by user instructions. If the request requires a structural change, AI declines in plain text only (no `<proposed_section>` block) and explains the lock. Content rewrites proceed normally. Decline responses pass through as the assistant's chat reply (`clean_message`), not surfaced as errors.
 - UI: icon-only toggle in Structure panel header. No visual treatment on tree nodes.
 - When `structureLocked` is true, heading lines highlighted in `DiffView` and in `MarkdownPreview` (document variant only). Highlighting uses `node.position.start.line` (1-indexed → 0-indexed) in custom `components` renderers.
 - `ChatPanel` receives and forwards `structureLocked` on every message sent via `handleSend`.
@@ -228,8 +228,6 @@ When a new user registers, if `/var/speedwrite/welcome_document.md` exists, a co
 - **`auth.py` registration**: builds a document dict inline after `save_users()`, then calls `save_document()`. Wrapped in bare `except` so template errors never surface to the registering user. No import from `documents.py` — avoids circular import.
 - **`POST /documents/save-as-welcome`** (admin only): loads admin's document and writes to `WELCOME_TEMPLATE_PATH`. Must be defined before `/{doc_id}` routes in `documents.py`.
 - **Frontend**: "Save as welcome" in Document ContextBar `rightControls`, visible only when `user?.is_admin`, hidden during diff view.
-
-No admin UI for viewing or editing the template directly — set it by opening any document and clicking Save as welcome.
 
 ## Data Storage
 

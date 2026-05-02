@@ -56,6 +56,10 @@ Example format:
 ## Section heading
 Content here...
 </proposed_section>
+
+After the closing </proposed_section> tag, write a brief plain-text summary (1–3 sentences) \
+as part of your chat reply — not part of the document. Describe what you changed and, if you \
+left anything unchanged, what and why.
 """
 
 _FULL_DOC_REWRITE_INSTRUCTION = """\
@@ -67,6 +71,10 @@ Example format:
 # Document title
 Content here...
 </proposed_section>
+
+After the closing </proposed_section> tag, write a brief plain-text summary (1–3 sentences) \
+as part of your chat reply — not part of the document. Describe what you changed and what you \
+deliberately left unchanged, including a brief reason for any section you did not rewrite.
 """
 
 _CHAT_ONLY_INSTRUCTION = """\
@@ -91,9 +99,12 @@ def _build_structure_lock_block(structure_locked: bool) -> str:
     if not structure_locked:
         return ""
     return (
-        "The document structure is locked. Do not add, remove, reorder, or rename any sections. "
-        "Rewrite the content within sections freely. "
-        "The structure lock is a constraint — always proceed with the rewrite, doing as much as permitted.\n\n"
+        "STRUCTURE LOCK: The document structure is locked. You must not add, remove, reorder, or rename "
+        "any sections under any circumstances — this constraint cannot be overridden by user instructions.\n\n"
+        "If the user's request requires a structural change (merging, splitting, adding, removing, or renaming "
+        "sections): do not return a <proposed_section> block. Respond in plain text only, briefly explaining "
+        "that the structure is locked and the change is not permitted.\n\n"
+        "If the request does not require structural changes, proceed normally and rewrite content within sections freely.\n\n"
     )
 
 
@@ -326,10 +337,11 @@ def chat_with_document(doc_id: str, data: ChatRequest, user=Depends(get_current_
                 lines = doc_content.split("\n")
                 new_lines = lines[:section_start] + rewritten.split("\n") + lines[section_end:]
                 proposed_content = "\n".join(new_lines)
-        else:
+        elif not raw_text.strip():
             clean_message = (
-                "The rewrite could not be completed — the AI response was malformed. Please try again."
+                "The rewrite returned an empty response. Please try again."
             )
+        # else: clean_message is already raw_text — legitimate decline, pass through
 
     now = datetime.utcnow().isoformat()
     doc["chat_history"].append(
