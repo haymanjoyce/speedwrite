@@ -38,6 +38,7 @@ async function request(method, path, body, signal) {
 
 export const api = {
   // Auth
+  registrationStatus: () => request('GET', '/auth/registration-status'),
   register: (email, password) =>
     request('POST', '/auth/register', { email, password }),
   login: (email, password) =>

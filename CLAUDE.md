@@ -220,6 +220,7 @@ Prevents AI from changing document structure (add/remove/reorder/rename sections
 - **Change password / email / profile / delete account**: standard auth endpoints in `auth.py`. Delete uses `shutil.rmtree` on docs and embeddings dirs.
 - **User record**: all optional fields use `.get()` for safe degradation. `is_admin` is set manually in `users.json` — no UI.
 - **BYOK**: `GET /auth/me` returns `has_byok_key` and `byok_key_masked`. `get_byok_key(user)` returns decrypted key or `None` — raises HTTP 500 if stored but decryption fails.
+- **Registration toggle**: `registrations_open()` in `auth.py` is the single source of truth (reads `REGISTRATIONS_OPEN`; default closed). `POST /auth/register` raises 403 `"Registrations are closed"` when closed. Public unauthenticated `GET /auth/registration-status` returns `{"open": bool}` for pre-auth surfaces. Frontend Landing and Register pages fetch it on mount and **assume closed until confirmed** (no flash of an enabled control on a closed instance). Landing omits the `<Link>` wrapper entirely when closed — a disabled button inside a router `<Link>` still navigates. Register renders a "Registrations are closed" message (no form) when closed.
 
 ## Welcome Document
 
@@ -255,6 +256,7 @@ The local dev named volume is `dev_speedwrite_data` — Docker Compose prefixes 
 | `APP_URL` | Public app URL used in reset email links (default: `http://localhost`) |
 | `ENCRYPTION_KEY` | Fernet key for encrypting BYOK API keys at rest — generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
 | `FEEDBACK_EMAIL` | Address to receive feedback emails (optional — defaults to `EMAIL_FROM`) |
+| `REGISTRATIONS_OPEN` | Whether new account registration is accepted. Truthy (case-insensitive): `true`/`1`/`yes`. Anything else, including absence, means closed (production-safe default). |
 | `OLLAMA_HOST` | Ollama base URL (default: `http://172.17.0.1:11434`) — used for embeddings only. Local dev on Windows/Mac: `http://host.docker.internal:11434` |
 | `LLM_PROVIDER` | Dormant — commented out in `.env.example`. |
 | `OLLAMA_CHAT_MODEL` | Dormant — commented out in `.env.example`. |

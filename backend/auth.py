@@ -32,6 +32,15 @@ router = APIRouter(prefix="/auth")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def registrations_open() -> bool:
+    """Single source of truth for whether new registrations are accepted.
+
+    Controlled by the REGISTRATIONS_OPEN env var. Truthy (case-insensitive):
+    "true", "1", "yes". Anything else, including absence, means closed.
+    """
+    return os.getenv("REGISTRATIONS_OPEN", "").strip().lower() in ("true", "1", "yes")
+
+
 def _get_fernet() -> Fernet:
     key = os.getenv("ENCRYPTION_KEY", "")
     if not key:
@@ -131,8 +140,15 @@ def get_current_user(
     return user
 
 
+@router.get("/registration-status")
+def registration_status():
+    return {"open": registrations_open()}
+
+
 @router.post("/register", response_model=Token)
 def register(data: UserCreate):
+    if not registrations_open():
+        raise HTTPException(status_code=403, detail="Registrations are closed")
     users = load_users()
     if any(u["email"] == data.email for u in users):
         raise HTTPException(status_code=400, detail="Email already registered")
