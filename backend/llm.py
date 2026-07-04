@@ -45,7 +45,15 @@ def _complete_anthropic(system: str, messages: list[dict], max_tokens: int, api_
                 detail="Anthropic's API is temporarily overloaded. Please try again in a moment."
             )
         raise
-    return response.content[0].text
+    # response.content may contain thinking blocks (e.g. Sonnet with default
+    # effort=high) interleaved with text blocks. Extract only the text blocks,
+    # regardless of order or mix, and join them into the model's textual reply.
+    text_parts = [
+        block.text
+        for block in response.content
+        if getattr(block, "type", None) == "text"
+    ]
+    return "".join(text_parts)
 
 
 # NOTE: Ollama chat is not currently exposed. _complete_ollama() is retained
