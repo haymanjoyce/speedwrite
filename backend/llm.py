@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic")
 FREE_MODEL = "claude-haiku-4-5-20251001"
-PAID_MODEL = "claude-sonnet-4-20250514"  # used when BYOK key is present
+PAID_MODEL = "claude-sonnet-5"  # used when BYOK key is present
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
 OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_CHAT_MODEL", "llama3.2")
 
