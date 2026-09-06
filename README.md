@@ -10,6 +10,33 @@ evidence base, AI agent chat, version history and markdown content.
 > further development or a pivot. The code still runs locally via Docker Compose.
 > See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for the full history and rationale.
 
+## Screenshots
+
+![SpeedWrite landing page](assets/1_landing_page.png)
+
+The landing page — no nav, no footer, everything centred. *Create account* is greyed out
+here because registration was closed ahead of shutdown.
+
+![Document library with AI-generated description](assets/2_document_list.png)
+
+The library: documents on the left, detail on the right. The *Describe* action generates
+the four-section AI summary shown here — Summary · Key themes · Key arguments · Open
+questions — stored on the document and rendered in app styles.
+
+![Document workspace with structure tree, editor and AI chat](assets/3_document_editing.png)
+
+The document workspace — structure tree left, editor/preview centre, AI chat right. Each
+message in the chat is tagged with the section it was scoped to ("What Are Controls?",
+"Implementation Best Practices"), so the rewrite history stays legible. The padlock in
+the STRUCTURE header shows structure lock engaged.
+
+![Evidence page with sources, source detail and evidence chat](assets/4_evidence_base.png)
+
+The evidence page — sources left, source detail centre, evidence chat right. The
+checkboxes control which sources reach the AI: unticked sources are excluded from
+retrieval, the context dump, and the source inventory. This chat interrogates the
+evidence base without ever touching the document.
+
 ## What it does
 
 A focused writing tool: the journey from blank page to polished document, AI-assisted.
